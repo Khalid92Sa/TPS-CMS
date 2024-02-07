@@ -50,6 +50,8 @@ namespace CMS.Application.DTOs
         public string InterviewerName { get; set; } // Include InterviewerName
 
         public int? TrackId { get; set; }
+        public bool IsBlacklisted { get; set; }
+
 
     }
 }

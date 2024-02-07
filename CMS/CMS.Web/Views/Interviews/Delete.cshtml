@@ -60,137 +60,168 @@
         <hr />
         <div class="row">
             <div class="col-sm-6">
-        <dl>
-        <dt >
-            Candidate Name:
-        </dt>
-        <dd >
-            @Model.FullName
-        </dd>
-        <dt  style="margin-top: 15px;">
-            Level:
-        </dt>
-        <dd  style="margin-top: 15px;">
-            @Model.Name
-        </dd>
-        <dt  style="margin-top: 15px;">
-            Track:
-        </dt>
-        <dd  style="margin-top: 15px;">
-            @Model.TrackName
-        </dd>
-        <dt  style="margin-top: 15px;">
-            First Interviewer Name:
-        </dt>
-        <dd  style="margin-top: 15px;">
-            @Model.InterviewerName
-        </dd>
+                <dl>
+                    <dt>
+                        Candidate Name:
+                    </dt>
+                    <dd>
+                        @Model.FullName
+                    </dd>
+                    <dt style="margin-top: 15px;">
+                        Level:
+                    </dt>
+                    <dd style="margin-top: 15px;">
+                        @Model.Name
+                    </dd>
+                    <dt style="margin-top: 15px;">
+                        Track:
+                    </dt>
+                    <dd style="margin-top: 15px;">
+                        @Model.TrackName
+                    </dd>
+                    <dt style="margin-top: 15px;">
+                        First Interviewer Name:
+                    </dt>
+                    <dd style="margin-top: 15px;">
+                        @Model.InterviewerName
+                    </dd>
 
-        <dt  style="margin-top: 15px;">
-            Second Interviewer Name:
-        </dt>
-        <dd  style="margin-top: 15px;">
-            @Model.SecondInterviewerName
-        </dd>
-        <dt  style="margin-top: 15px;">
-            Date:
-        </dt>
-        <dd  style="margin-top: 15px;">
-            @Model.Date
-        </dd>
-        <dt  hidden>
-            Parent ID
-        </dt>
-        </dl>
-    </div>
-    <div class="col-sm-6">
-        <dl>
-        <dt  style="margin-top: 15px;">
-            First Interview Score:
-        </dt>
-        <dd  style="margin-top: 15px;">
-            @if (@Model.FirstInterviewScore != null)
-            {
-                @Model.FirstInterviewScore
-            }
-            else
-            {
-                <text>No score available from the first interview.</text>
-            }
-        </dd>
+                    @if(Model.SecondInterviewerId !=null){
+                        <dt style="margin-top: 15px;">
+                            Second Interviewer Name:
+                        </dt>
+                        <dd style="margin-top: 15px;">
+                            @Model.SecondInterviewerName
+                        </dd>
+                    }
+                    else
+                    {
+                        <dt style="margin-top: 15px;">
+                            Second Interviewer Name:
+                        </dt>
+                        <dd style="margin-top: 15px;" class="text-muted">
+                            There is no second interviewer
+                        </dd>
+                    }
 
-        @if (@Model.ActualExperience != null)
-        {
-            <dt  style="margin-top: 15px;">
-                Actual Experience:
-            </dt>
-            <dd  style="margin-top: 15px;">
-                @Model.ActualExperience
-            </dd>
-        }
-        else
-        {
-            <dt  style="margin-top: 15px;">
-                Actual Experience:
-            </dt>
-            <dd  style="margin-top: 15px;">
-                There is no Actual Experience added here
-            </dd>
-        }
+                    <dt style="margin-top: 15px;">
+                        Date:
+                    </dt>
+                    <dd style="margin-top: 15px;">
+                        @Model.Date
+                    </dd>
+                    <dt hidden>
+                        Parent ID
+                    </dt>
+                </dl>
+            </div>
+            <div class="col-sm-6">
+                <dl>
+                    <dt style="margin-top: 15px;">
+                        First Interview Score:
+                    </dt>
+                    <dd style="margin-top: 15px;">
+                        @if (@Model.FirstInterviewScore != null)
+                        {
+                            @Model.FirstInterviewScore
+                        }
+                        else
+                        {
+                            <div>
+                                <text class="text-muted">No score available from the first interview.</text>
+                            </div>
+                        }
+                    </dd>
 
-        <dt  style="margin-top: 15px;">
-            Status:
-        </dt>
-        <dd  style="margin-top: 15px;">
-            @Model.StatusName
-        </dd>
-        @if (@Model.Notes !=null)
-        {
-            <dt  style="margin-top: 15px;">
-                Notes:
-            </dt>
-            <dd  style="margin-top: 15px;">
-                @Model.Notes
-            </dd>
-        }
-        else
-        {
-            <dt  style="margin-top: 15px;">
-                Notes:
-            </dt>
-            <dd  style="margin-top: 15px;">
-                There is no note added here
-            </dd>
-        }
-       
+                    @if (@Model.ActualExperience != null)
+                    {
+                        <dt style="margin-top: 15px;">
+                            Actual Experience:
+                        </dt>
+                        <dd style="margin-top: 15px;">
+                            @Model.ActualExperience
+                        </dd>
+                    }
+                    else
+                    {
+                        <dt style="margin-top: 15px;">
+                            Actual Experience:
+                        </dt>
+                        <dd style="margin-top: 15px;" class="text-muted">
+                            There is no Actual Experience added here
+                        </dd>
+                    }
 
-        @if (Model.AttachmentId != null)
-        {
-            <dt  style="margin-top: 15px;">
-                Evaluation:
-            </dt>
-            <dd  style="margin-top: 15px;">
-                <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.AttachmentId">Download evaluation</a>
-            </dd>
-        }
-        else
-        {
-            <dt  style="margin-top: 15px;">
-                Evaluation:
-            </dt>
-            <dd  style="margin-top: 15px;">
-                There is no Evaluation for this interview
-            </dd>
-        }
+                    <dt style="margin-top: 15px;">
+                        Status:
+                    </dt>
+                    <dd style="margin-top: 15px;">
+                        @Model.StatusName
+                    </dd>
+                    @if (@Model.Notes != null)
+                    {
+                        <dt style="margin-top: 15px;">
+                            Notes:
+                        </dt>
+                        <dd style="margin-top: 15px;">
+                            @Model.Notes
+                        </dd>
+                    }
+                    else
+                    {
+                        <dt style="margin-top: 15px;">
+                            Notes:
+                        </dt>
+                        <dd style="margin-top: 15px;" class="text-muted">
+                            There is no note added here
+                        </dd>
+                    }
 
-    </dl>
+                    @if (@Model.StopCycleNote != null)
+                    {
+                        <dt style="margin-top: 15px;">
+                            Stop Cycle Note:
+                        </dt>
+                        <dd style="margin-top: 15px;">
+                            @Model.StopCycleNote
+                        </dd>
+                    }
+                    else
+                    {
+                        <dt style="margin-top: 15px;">
+                            Stop Cycle Note:
+                        </dt>
+                        <dd style="margin-top: 15px;">
+                            <span class="text-muted">No stop cycle happend yet</span>
+                        </dd>
+                    }
+                    @if (Model.AttachmentId != null)
+                    {
+                        <dt style="margin-top: 15px;">
+                            Evaluation:
+                        </dt>
+                        <dd style="margin-top: 15px;">
+                            <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.AttachmentId">Download evaluation</a>
+                        </dd>
+                    }
+                    else
+                    {
+                        <dt style="margin-top: 15px;">
+                            Evaluation:
+                        </dt>
+                        <dd style="margin-top: 15px;" class="text-muted">
+                            There is no Evaluation for this interview
+                        </dd>
+                    }
+
+                </dl>
             </div>
         </div>
-    <form asp-action="Delete" class="">
-        <input type="submit" value="Delete" onclick="showConfirmationDialog(event)" class="btn btn-danger" />
-        <a class="btn btn-secondary" asp-action="Index">Back to List</a>
+        <form asp-action="Delete" class="">
+            <input type="submit" value="Delete" onclick="showConfirmationDialog(event)" class="btn btn-danger" />
+            <a class="btn btn-secondary" asp-action="Index">Back to List</a>
 
-    </form>
+        </form>
     </div>
 </div>
 

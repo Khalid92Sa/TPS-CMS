@@ -28,7 +28,7 @@
         <label asp-for="PositionId" class="control-label"><span class="text-danger">*</span> Level</label>
         @if (ViewBag.positionList != null)
         {
-            <select style="width: 30%;" asp-for="PositionId" asp-items="@(ViewBag.positionList)" class="form-control">
+            <select style="width: 30%;" asp-for="PositionId" asp-items="@(ViewBag.positionList)" class="form-control" >
                 <option value="">-- Select a Level --</option>
 
             </select>
@@ -213,6 +213,8 @@
         }
 
         function showConfirmationPopup(e) {
+            e.preventDefault(); // Prevent the default form submission
+
             // Proceed with form submission
             var date = $('#Date').val();
             var jsDate = new Date(date);
@@ -237,11 +239,10 @@
                 cancelButtonText: 'No, cancel!',
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // If the user clicks "Yes", proceed with form submission
-                    $('#createForm')[0].submit();
+                    // If the user clicks "Yes", manually trigger the form submission
+                    $('#createForm').unbind('submit').submit();
                 }
             });
         }
     });
 </script>
-

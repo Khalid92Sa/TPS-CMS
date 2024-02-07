@@ -16,7 +16,8 @@ namespace CMS.Repository.Interfaces
         Task<Status> GetById(int id);
 
         Task<Status> GetStatusByNameAsync(string statusName);
-        //Task<List<CandidateDTO>> GetCandidatesByCode(string code);
-
+        Task<List<CandidateDTO>> GetCandidatesByCode(string code);
+        Task<List<CandidateDTO>> GetApprovedCandidatesByCode(string code, string hrId);
+        Task<List<CandidateDTO>> GetPendingCandidatesByCode(string code);
     }
 }

@@ -46,7 +46,7 @@ namespace CMS.Repository.Implementation
             {
                 //var position=await _context.Positions.FindAsync(id);
 
-                var position =await _context.Positions.Include(c => c.Interviews)
+                var position =await _context.Positions.Include(c => c.Interviews).Include(x=>x.Candidates)
                     .FirstOrDefaultAsync(c => c.Id == id);
                 if (position.Interviews != null && position.Interviews.Any()) {
                     foreach (var c in position.Interviews.ToList())
@@ -54,7 +54,14 @@ namespace CMS.Repository.Implementation
                         _context.Interviews.Remove(c);
                     }
                 }
-           
+                if (position.Candidates != null && position.Candidates.Any())
+                {
+                    foreach (var c in position.Candidates.ToList())
+                    {
+                        _context.Candidates.Remove(c);
+                    }
+                }
+
                 _context.Positions.Remove(position);
                 return await _context.SaveChangesAsync();
                 

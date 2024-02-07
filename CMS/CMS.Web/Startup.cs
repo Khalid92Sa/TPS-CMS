@@ -86,6 +86,7 @@ namespace CMS.Web
             services.AddScoped(typeof(ITrackRepository), typeof(TrackRepository));
             services.AddScoped<ITrackService, TrackService>();
 
+
             services.AddScoped(typeof(IInterviewsRepository), typeof(InterviewsRepository));
             services.AddTransient<IInterviewsService, InterviewsService>();
             services.AddTransient<ISearchInterviewsService, SearchInterviewsService>();

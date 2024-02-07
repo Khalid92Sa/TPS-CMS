@@ -20,11 +20,6 @@
                             <th>Score</th>
                             <th>Actual Experience</th>
                             <th >Notes</th>
-                            @if (User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Admin"))
-                            {
-                                <th>Stop Cycle Note (HR)</th>
-                            }
-                            
                             <th>Evaluation</th>
                         </tr>
                     </thead>
@@ -43,16 +38,14 @@
                                 }
                                 <td>@item.Score</td>
                                 <td>@item.ActualExperience</td>
-                                <td style="max-width: 200px; white-space: pre-line;">@item.Notes</td>
-                                @if (User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Admin"))
+                                @if (item.Notes != null)
                                 {
-                                    @if(item.StopCycleNote != null){
-                                        <td style="max-width: 200px; white-space: pre-line;">@item.StopCycleNote</td>
-                                    }
-                                    else
-                                    {
-                                        <td style="max-width: 200px; white-space: pre-line;" class="text-muted">No note added</td>
-                                    }
+                                    <td style="max-width: 200px; white-space: pre-line;">@item.Notes</td>
+
+                                }
+                                else
+                                {
+                                    <td style="max-width: 200px; white-space: pre-line;" class="text-muted">No note added</td>
                                 }
                                 @if (item.AttachmentId != null)
                                     {

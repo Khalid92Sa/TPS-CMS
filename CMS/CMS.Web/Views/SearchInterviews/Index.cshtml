@@ -2,6 +2,9 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet" />
 <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css" rel="stylesheet" />
+
+
 @model IEnumerable<CMS.Application.DTOs.InterviewsDTO>
 @{
     ViewData["Title"] = "Interviews Filter";
@@ -34,7 +37,7 @@
         <div class="row">
             <div class="col-md-3">
                 @Html.Label("Filter by Levels:")
-                @Html.DropDownList("positionFilter", ViewBag.PositionList as SelectList, "All Levels", new { @class = "form-control" })
+                @Html.DropDownList("positionFilter", ViewBag.PositionList as SelectList, "All Levels", new { @class = "form-control", id = "position-dropdown" })
             </div>
             <div class="col-md-3">
                 @Html.Label("Filter by Track:")
@@ -164,10 +167,11 @@
                             } *@
 
                             <a class="bx bx-detail" style="font-size:x-large" asp-action="Details" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Details"></a> |
-                            @if (item.ParentId == null && item.StatusName != StatusCode.GetName("REJ"))
+                            @if (item.ParentId == null && item.StatusName == StatusCode.GetName("PND"))
                             {
                                 <a class="ri-delete-bin-2-line text-danger" style="font-size:x-large" asp-action="Delete" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Delete"></a>
                             }
+                          
                         </td>
 
                     </tr>
@@ -177,6 +181,7 @@
 
 
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js"></script>
 
 <script>
     function validateDates() {
@@ -197,6 +202,8 @@
         $('#add-rows3').DataTable({
             searching: false
         });
+
+        $('#position-dropdown').selectize();
     });
 </script>
 

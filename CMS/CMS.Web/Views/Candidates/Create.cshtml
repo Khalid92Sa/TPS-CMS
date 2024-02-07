@@ -43,7 +43,7 @@
         <label asp-for="PositionId" class="control-label"><span class="text-danger">*</span> Level</label>
         @if (ViewBag.positions != null)
         {
-            <select style="width: 30%;" asp-for="PositionId" asp-items="@(ViewBag.positions)" class="form-control">
+            <select style="width: 30%;" asp-for="PositionId" asp-items="@(ViewBag.positions)" class="form-control" >
                 <option value="">-- Select a Level --</option>
 
             </select>
@@ -124,9 +124,8 @@
 
         // Prevent letters in the Experience field
         $('#Experience').on('input', function () {
-            this.value = this.value.replace(/[^0-9]/g, ''); // Allow only numeric characters
+            this.value = this.value.replace(/[^0-9.]/g, ''); // Allow only numeric characters
         });
-
 
 
         $('form').submit(function (e) {

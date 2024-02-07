@@ -59,6 +59,8 @@ namespace CMS.Application.DTOs
 
         public int? TrackId { get; set; }
         public string? TrackName { get; set; }
+        public bool IsBlacklisted { get; set; }
+
 
     }
 }

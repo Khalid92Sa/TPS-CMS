@@ -39,7 +39,7 @@
                 </dt>
                 @if (@Model.SecondInterviewerId == null)
                 {
-                    <dd style="margin-top: 15px;">
+                    <dd style="margin-top: 15px;" class="text-muted">
                         There is no second interviewer
                     </dd>
                 }
@@ -123,6 +123,10 @@
                         <span class="text-muted">There is no Note added here</span>
                     </dd>
                 }
+                @if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
+                {
+                    
+                
                 @if (@Model.StopCycleNote != null)
                 {
                     <dt style="margin-top: 15px;">
@@ -138,8 +142,9 @@
                         Stop Cycle Note:
                     </dt>
                     <dd style="margin-top: 15px;">
-                        <span class="text-muted">There is no Stop Cycle Note added here</span>
+                        <span class="text-muted">No stop cycle happend yet</span>
                     </dd>
+                }
                 }
                 @if (User.IsInRole("Interviewer") || User.IsInRole("HR Manager") || User.IsInRole("Admin"))
                 {

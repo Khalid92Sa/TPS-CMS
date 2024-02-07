@@ -1,5 +1,9 @@
 ﻿@model CMS.Application.DTOs.InterviewsDTO
-
+<style>
+    .text-mute {
+        color: #6c757d;
+    }
+</style>
 <div class="card">
     <div class="card-body">
         <h2>Interview Details</h2>
@@ -30,12 +34,48 @@
             <dt class="col-sm-2">Status:</dt>
             <dd class="col-sm-10">@Model.StatusName</dd>
 
-            <dt class="col-sm-2">Notes:</dt>
-            <dd class="col-sm-10">@Model.Notes</dd>
+            @if (Model.Notes !=null)
+            {
+                <dt class="col-sm-2">Notes:</dt>
+                <dd class="col-sm-10">@Model.Notes</dd>
+            }
+            else
+            {
+                <dt class="col-sm-2">Notes:</dt>
+                <dd class="col-sm-10 text-mute">No note added</dd>
+            }
+      
 
-            <dt class="col-sm-2">Stop Cycle Note:</dt>
-            <dd class="col-sm-10">@Model.StopCycleNote</dd>
+            @if (Model.StopCycleNote != null)
+            {
+                <dt class="col-sm-2">Stop Cycle Note:</dt>
+                <dd class="col-sm-10">@Model.StopCycleNote</dd>
+            }
+            else
+            {
+                <dt class="col-sm-2">Stop Cycle Note:</dt>
+                <dd class="col-sm-10 text-mute">No note added</dd>
 
+            }
+
+            @if (@Model.CandidateCVAttachmentId != null)
+            {
+                <dt class="col-sm-2" style="margin-top: 8px;">CV Attachment:</dt>
+                <dd class="col-sm-10" style="margin-top: 6px;">
+                    <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.CandidateCVAttachmentId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Download CV"><i style="font-size: x-large;" class="bx bxs-cloud-download"></i></a>
+                </dd>
+            }
+            else
+            {
+                <dt class="col-sm-2" style="margin-top: 8px;">CV Attachment:</dt>
+                <dd class="col-sm-10 text-mute" style="margin-top: 6px;">
+                    CV not added for<br />
+                    this candidate
+                </dd>
+            }
+
+
+          
 
             @*  @if (Model.AttachmentId != null)
             {

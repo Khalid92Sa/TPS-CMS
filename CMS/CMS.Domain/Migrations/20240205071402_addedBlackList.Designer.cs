@@ -4,14 +4,16 @@ using CMS.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace CMS.Domain.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240205071402_addedBlackList")]
+    partial class addedBlackList
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -57,6 +59,24 @@ namespace CMS.Domain.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Attachments");
+                });
+
+            modelBuilder.Entity("CMS.Domain.Entities.BlackList", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<DateTime>("BlackListedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CandidateId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BlackLists");
                 });
 
             modelBuilder.Entity("CMS.Domain.Entities.Candidate", b =>
@@ -664,35 +684,35 @@ namespace CMS.Domain.Migrations
                         new
                         {
                             Id = "b024cbbe-f64e-4d1b-9c6e-05ac0f0e3ebb",
-                            ConcurrencyStamp = "04c3d58c-feae-4ab7-abdb-d80a07d999af",
+                            ConcurrencyStamp = "cb574c1a-37fd-4ffd-b3f5-5d63b60199d1",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
                             Id = "1eecb40c-c701-4445-89d4-d1aa7d70460d",
-                            ConcurrencyStamp = "f6c27801-e27b-43fc-9e27-4ea6e8bfd3be",
+                            ConcurrencyStamp = "7411f180-1c7a-4458-8c68-05da0ee34a70",
                             Name = "General Manager",
                             NormalizedName = "GENERAL MANAGER"
                         },
                         new
                         {
                             Id = "226cca69-f046-4d15-8b81-9b9ba34f2214",
-                            ConcurrencyStamp = "16b330e1-1219-4346-9682-1c56d387fcb5",
+                            ConcurrencyStamp = "64749616-cd45-49d8-93b7-320919980135",
                             Name = "HR Manager",
                             NormalizedName = "HR MANAGERF"
                         },
                         new
                         {
                             Id = "91c3461a-7da3-4033-b907-b104b903d793",
-                            ConcurrencyStamp = "786a435f-de75-4aec-a77f-dc02091d0d41",
+                            ConcurrencyStamp = "fa752513-f9c2-4b07-b2dd-e874cf8fef6e",
                             Name = "Interviewer",
                             NormalizedName = "INTERVIEWER"
                         },
                         new
                         {
                             Id = "3F476A40-97F4-42C6-A226-602AED74A4BC",
-                            ConcurrencyStamp = "9ad59c4d-a3be-4991-a77a-6cef086a73c4",
+                            ConcurrencyStamp = "8a220613-3aac-4686-a058-ee9ffb44dc2b",
                             Name = "Solution Architecture",
                             NormalizedName = "SOLUTION ARCHITECTURE"
                         });
@@ -791,15 +811,15 @@ namespace CMS.Domain.Migrations
                         {
                             Id = "c6585ab9-8b5f-4332-a174-92429db8add2",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "9bbdf4de-947d-45fe-ac48-ab5404c52c34",
+                            ConcurrencyStamp = "817a2a01-7572-43b0-ac46-5e7d94c1681c",
                             Email = "admin@admin.com",
                             EmailConfirmed = true,
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@ADMIN.COM",
                             NormalizedUserName = "ADMIN",
-                            PasswordHash = "AQAAAAEAACcQAAAAELMXLl3jV37fmcNqniXfYDA4tdAm/sMrgWIEGBR0nX0F/r+G28TDiXoS6jDbrOFYzw==",
+                            PasswordHash = "AQAAAAEAACcQAAAAEI26HfCCBSEjQ2zWvN7tyX5jUkrQ1svEWc5fJJMlbVCXdL1HYu1SpDWIizjqHAMxfA==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "490669f2-e253-4ebe-bc6f-f4b7e837bd2e",
+                            SecurityStamp = "741d5b42-8faf-4531-b184-3c060d7844c8",
                             TwoFactorEnabled = false,
                             UserName = "admin"
                         });

@@ -28,7 +28,6 @@ namespace CMS.Domain
         public DbSet<Log> Logs { get; set; }
         public DbSet<Track> Tracks { get; set; }
 
-
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.ApplyConfiguration(new CompanyMapper());

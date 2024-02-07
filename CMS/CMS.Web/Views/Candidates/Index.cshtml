@@ -52,6 +52,7 @@
                 <div>
                     <a asp-action="Create" class="btn btn-primary">Create New Candidate</a>
                 </div>
+
             </div>
             <div class="card-body">
                 <table id="candidateTable" class="table table-nowrap dt-responsive table-bordered display" style="width:100%">
@@ -85,7 +86,7 @@
                                 <td id="cvColumn_@candidate.Id">
                                     @if (candidate.CVAttachmentId != null)
                                     {
-                                        <a asp-controller="Attachments" asp-action="Download" asp-route-id="@candidate.CVAttachmentId">
+                                        <a asp-controller="Attachments" asp-action="Download" asp-route-id="@candidate.CVAttachmentId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Download CV">
                                             <i style="font-size: x-large;" class="bx bxs-cloud-download"></i>
                                         </a>
                                     }
@@ -94,6 +95,7 @@
                                         <p>No CV Available</p>
                                     }
                                 </td>
+
 
                                 <td>
                                     <form asp-action="UpdateAttachment" asp-route-id="@candidate.Id" enctype="multipart/form-data">
@@ -104,11 +106,13 @@
                                         </div>
                                     </form>
                                 </td>
+                               
                                 <td>
                                     <a class="bx bxs-edit-alt" style="font-size:x-large" asp-action="Edit" asp-route-id="@candidate.Id" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="Edit"></a> |
                                     <a class="bx bx-detail" style="font-size:x-large" asp-action="Details" asp-route-id="@candidate.Id" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Details"></a> |
                                     <a class="ri-delete-bin-2-line text-danger" style="font-size:x-large" asp-action="Delete" asp-route-id="@candidate.Id" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Delete"></a>
                                 </td>
+
                             </tr>
                         }
                     </tbody>
@@ -117,9 +121,9 @@
 
             </div>
         </div>
+
     </div><!--end col-->
 </div><!--end row-->
-
 
 <script>
     $(document).ready(function () {

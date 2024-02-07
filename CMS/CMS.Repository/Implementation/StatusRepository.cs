@@ -1,6 +1,7 @@
 ﻿using CMS.Application.DTOs;
 using CMS.Domain;
 using CMS.Domain.Entities;
+using CMS.Domain.Enums;
 using CMS.Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -72,22 +73,89 @@ namespace CMS.Repository.Implementation
             }
         }
 
-        //public async Task<List<CandidateDTO>> GetCandidatesByCode(string code)
-        //{
-        //    var candidates = await _context.Candidates
-        //        .Include(c => c.Interviews)
-        //        .ThenInclude(i => i.Status)
-        //        .Where(c => c.Interviews.Any(i => i.Status.Code == code))
-        //        .Select(candidate => new CandidateDTO
-        //        {
-        //            Name = candidate.FullName,
-        //            Status = code,
-        //        })
-        //        .ToListAsync();
+        public async Task<List<CandidateDTO>> GetCandidatesByCode(string code)
+        {
+            var candidates = await _context.Candidates
+                .Include(c => c.Interviews)
+                .ThenInclude(i => i.Status)
+                .Where(c => c.Interviews.Any(i => i.Status.Code == code))
+                .Select(candidate => new CandidateDTO
+                {
+                    Name = candidate.FullName,
+                    CompanyId = candidate.CompanyId,
+                    CompanyName = candidate.Company.Name,
+                    CountryId = candidate.CountryId,
+                    CountryName = candidate.Country.Name,
+                    Experience = candidate.Experience,
+                     PositionId = candidate.PositionId,
+                     PositionName = candidate.Position.Name,
+                     TrackId = candidate.TrackId,
+                     TrackName = candidate.Track.Name,
+                     Phone = candidate.Phone,
+                    Status = code,
+                })
+                .ToListAsync();
 
-        //    return candidates;
-        //}
+            return candidates;
+        }
 
+
+        public async Task<List<CandidateDTO>> GetApprovedCandidatesByCode(string code, string hrId)
+        {
+            var candidates = await _context.Candidates
+                .Include(c => c.Interviews)
+                .ThenInclude(i => i.Status)
+                .Where(c => c.Interviews.Any(i => i.Status.Code == code && i.InterviewerId == hrId))
+                .Select(candidate => new CandidateDTO
+                {
+                    Name = candidate.FullName,
+                    CompanyId = candidate.CompanyId,
+                    CompanyName = candidate.Company.Name,
+                    CountryId = candidate.CountryId,
+                    CountryName = candidate.Country.Name,
+                    Experience = candidate.Experience,
+                    PositionId = candidate.PositionId,
+                    PositionName = candidate.Position.Name,
+                    TrackId = candidate.TrackId,
+                    TrackName = candidate.Track.Name,
+                    Phone = candidate.Phone,
+                    Status = code,
+                })
+                .ToListAsync();
+
+            return candidates;
+        }
+
+
+        public async Task<List<CandidateDTO>> GetPendingCandidatesByCode(string code)
+        {
+            var candidates = await _context.Candidates
+                .Include(c => c.Interviews)
+                .ThenInclude(i => i.Status)
+                .Where(candidate =>
+                   candidate.Interviews.Any(interview => interview.Status.Code == StatusCode.Pending) ||
+                   !candidate.Interviews.Any(interview => interview.Status.Code == StatusCode.Rejected) &&
+                   !candidate.Interviews.Any(interview => interview.Status.Code == StatusCode.Approved) &&
+                   !candidate.Interviews.Any(interview => interview.Status.Code == StatusCode.OnHold))
+                .Select(candidate => new CandidateDTO
+                {
+                    Name = candidate.FullName,
+                    CompanyId = candidate.CompanyId,
+                    CompanyName = candidate.Company.Name,
+                    CountryId = candidate.CountryId,
+                    CountryName = candidate.Country.Name,
+                    Experience = candidate.Experience,
+                    PositionId = candidate.PositionId,
+                    PositionName = candidate.Position.Name,
+                    TrackId = candidate.TrackId,
+                    TrackName = candidate.Track.Name,
+                    Phone = candidate.Phone,
+                    Status = code,
+                })
+                .ToListAsync();
+
+            return candidates;
+        }
 
 
     }

@@ -2,6 +2,7 @@
 using CMS.Application.DTOs;
 using CMS.Domain.Entities;
 using CMS.Services.Interfaces;
+using CMS.Services.Services;
 using CMS.Web.Customes;
 using CMS.Web.Utils;
 using Microsoft.AspNetCore.Authorization;
@@ -63,7 +64,7 @@ namespace CMS.Web.Controllers
         {
             try
             {
-                if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
+                if (User.IsInRole("Admin") || User.IsInRole("HR Manager") )
                 {
                     var candidates = await _candidateService.GetAllCandidatesAsync();
 
@@ -89,6 +90,8 @@ namespace CMS.Web.Controllers
                             .Where(i => i.TrackId == trackFilter.Value)
                             .ToList();
                     }
+
+               
 
                     return View(candidates);
                 }
@@ -436,6 +439,9 @@ namespace CMS.Web.Controllers
                 throw ex;
             }
         }
+
+
+
     }
 }
 
