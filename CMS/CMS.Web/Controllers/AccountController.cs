@@ -1,18 +1,11 @@
 ﻿using CMS.Application.DTOs;
-using CMS.Domain;
-using CMS.Domain.Entities;
 using CMS.Services.Interfaces;
-using CMS.Services.Services;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
-using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -22,69 +15,48 @@ namespace CMS.Web.Controllers
     //Test
     public class AccountController : Controller
     {
-        SignInManager<IdentityUser> _signInManager;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        //private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly SignInManager<IdentityUser> _signInManager;
         private readonly IAccountService _accountService;
         private readonly UserManager<IdentityUser> _userManager;
-        private readonly ApplicationDbContext Db;
         private readonly RoleManager<IdentityRole> _roleManager;
 
-        public AccountController(IAccountService accountService, UserManager<IdentityUser> userManager, 
-            ApplicationDbContext _db, RoleManager<IdentityRole> roleManager, 
-            SignInManager<IdentityUser> signInManager,IHttpContextAccessor httpContextAccessor
-            /*IWebHostEnvironment webHostEnvironment*/)
+        public AccountController(IAccountService accountService,
+                                 UserManager<IdentityUser> userManager,
+                                 RoleManager<IdentityRole> roleManager,
+                                 SignInManager<IdentityUser> signInManager,
+                                 IHttpContextAccessor httpContextAccessor)
         {
             _accountService = accountService;
             _userManager = userManager;
-            Db = _db;
             _roleManager = roleManager;
             _signInManager = signInManager;
-            _httpContextAccessor = httpContextAccessor;
-            //_webHostEnvironment = webHostEnvironment;
         }
 
-        public void LogException(string methodName, Exception ex, string additionalInfo = null)
-        {
-            
-            _accountService.LogException(methodName, ex, additionalInfo);
-        }
-       
-
+        public void LogException(string methodName, Exception ex, string additionalInfo = null) => _accountService.LogException(methodName, ex, additionalInfo);
 
         //GET
         public async Task<ActionResult> Login()
         {
             try
             {
-
-            
-            if (_signInManager.IsSignedIn(User))
-            {
-
-                if (User.IsInRole("HR Manager") || User.IsInRole("Admin") || User.IsInRole("General Manager") )
+                if (_signInManager.IsSignedIn(User))
                 {
-                    return RedirectToAction("Index", "Dashboard");
-                }
-                else if (User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture"))
-                {
-                    return RedirectToAction("MyInterviews", "Interviews");
+                    if (User.IsInRole("HR Manager") || User.IsInRole("Admin") || User.IsInRole("General Manager"))
+                        return RedirectToAction("Index", "Dashboard");
+
+                    else if (User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture"))
+                        return RedirectToAction("MyInterviews", "Interviews");
+
+                    else
+                        return RedirectToAction("Index", "Home");
                 }
                 else
-                {
-                    return RedirectToAction("Index", "Home");
-                }
-
-            }
-            else
-            {
-                return View();
-            }
+                    return View();
             }
             catch (Exception ex)
             {
                 LogException(nameof(Login), ex, "Faild to went to the Login Page");
-                throw ex;
+                throw;
             }
         }
 
@@ -95,12 +67,6 @@ namespace CMS.Web.Controllers
         {
             try
             {
-
-                //if (!ModelState.IsValid)
-                //{
-                //    ModelState.AddModelError("", "Email or Password not correct..!");
-                //    return View();
-                //}
                 if (ModelState.IsValid)
                 {
                     var result = await _accountService.LoginAsync(collection);
@@ -109,41 +75,31 @@ namespace CMS.Web.Controllers
                         if (_signInManager.IsSignedIn(User))
                         {
                             if (User.IsInRole("HR Manager") || User.IsInRole("Admin") || User.IsInRole("General Manager"))
-                            {
                                 return RedirectToAction("Index", "Dashboard");
-                            }
+
                             else if (User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture"))
-                            {
                                 return RedirectToAction("MyInterviews", "Interviews");
-                            }
+
                             else
-                            {
                                 return RedirectToAction("Index", "Home");
-                            }
                         }
                         else
-                        {
                             return RedirectToAction("Index", "Home");
-                        }
                     }
                     else
                     {
                         var user = await _accountService.GetUserByEmailAsync(collection.UserEmail);
-                        if (user == null)
-                        {
+                        if (user is null)
                             ModelState.AddModelError("", "Invalid email address.");
-                        }
+
                         else
-                        {
                             ModelState.AddModelError("", $"Wrong password");
-                        }
+
                         return View();
                     }
                 }
                 else
-                {
                     return View();
-                }
             }
 
             catch (Exception ex)
@@ -153,32 +109,22 @@ namespace CMS.Web.Controllers
             }
         }
 
-
-
-        //POST
-
         public async Task<ActionResult> DeleteAccount(string id)
         {
             try
             {
-                
-
-
                 var result = await _accountService.DeleteAccountAsync(id);
-            if (result)
-            {
-                return RedirectToAction(nameof(Index));
+                if (result)
+                    return RedirectToAction(nameof(Index));
+
+                else
+                    // Handle user not found or deletion failure
+                    return View("Index");
             }
-            else
-            {
-                // Handle user not found or deletion failure
-                return View("Index");
-            }
-}
             catch (Exception ex)
             {
                 LogException(nameof(DeleteAccount), ex, $"Faild to delete User ID: {id}");
-                throw ex;
+                throw;
             }
         }
 
@@ -187,16 +133,13 @@ namespace CMS.Web.Controllers
         {
             try
             {
-
-                
-
                 await _accountService.LogoutAsync();
-            return RedirectToAction("Login", "Account");
+                return RedirectToAction("Login", "Account");
             }
             catch (Exception ex)
             {
                 LogException(nameof(Logout), ex, "Faild to Logout");
-                throw ex;
+                throw;
             }
         }
 
@@ -204,79 +147,61 @@ namespace CMS.Web.Controllers
         {
             try
             {
-
-            
-            if (User.IsInRole("Admin") ||  User.IsInRole("HR Manager") )
-            {
-                // User is in the Admin role
-                var usersWithRoles = _accountService.GetAllUsersWithRoles();
-                return View(usersWithRoles);
-            }
-            else
-            {
-                    if (User.Identity.IsAuthenticated)
-                    {
-                        return View("AccessDenied");
-                    }
-                    else
-                    {
-                        return RedirectToAction("Login", "Account");
-                    }
+                if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
+                {
+                    // User is in the Admin role
+                    var usersWithRoles = _accountService.GetAllUsersWithRoles();
+                    return View(usersWithRoles);
                 }
+
+                else if (User.Identity.IsAuthenticated)
+                    return View("AccessDenied");
+
+                else
+                    return RedirectToAction("Login", "Account");
             }
             catch (Exception ex)
             {
                 LogException(nameof(Index), ex, "Faild to Load the Index Page");
-                throw ex;
+                throw;
             }
 
         }
-
-
-
 
         public async Task<IActionResult> Details(string id)
         {
             try
             {
-
-            
-            var userDetails =  _accountService.GetUsersById(id);
-
-            return View(userDetails);
+                var userDetails = _accountService.GetUsersById(id);
+                return View(userDetails);
             }
             catch (Exception ex)
             {
                 LogException(nameof(Details), ex, "Faild to Load the Details of the users");
-                throw ex;
+                throw;
             }
-
         }
-
-
 
         // GET: Register/Create
         public IActionResult Create()
         {
             try
             {
+                var roles = _roleManager.Roles.Select(r => r.Name).ToList();
 
-            
-            var roles = _roleManager.Roles.Select(r => r.Name).ToList();
+                var model = new Register
+                {
+                    SelectedRole = roles.ToString()
+                };
 
-            var model = new Register
-            {
-                SelectedRole = roles.ToString()
-            };
+                ViewBag.Roles = new SelectList(roles);
 
-            ViewBag.Roles = new SelectList(roles);
-
-            return View(model);
+                return View(model);
             }
             catch (Exception ex)
             {
                 LogException(nameof(Create), ex, "Faild to load the Create page");
-                throw ex;
+                throw;
             }
         }
 
@@ -286,48 +211,20 @@ namespace CMS.Web.Controllers
         {
             try
             {
-
-            
-            if (ModelState.IsValid)
-            {
-                    //var existingUser = await _userManager.FindByEmailAsync(collection.Email);
-                    //if (existingUser != null)
-                    //{
-                    //    ModelState.AddModelError(string.Empty, "Email is already in use.");
-                    //    var roless = _roleManager.Roles.Select(r => r.Name).ToList();
-                    //    ViewBag.Roles = new SelectList(roless);
-                    //    return View(collection);
-                    //}
-                    //if (collection.ProfilePicture != null && collection.ProfilePicture.Length > 0)
-                    //{
-                    //    var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "ProfilePictures");
-                    //    var uniqueFileName = Guid.NewGuid().ToString() + "_" + collection.ProfilePicture.FileName;
-                    //    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                    //    using (var fileStream = new FileStream(filePath, FileMode.Create))
-                    //    {
-                    //        await collection.ProfilePicture.CopyToAsync(fileStream);
-                    //    }
-
-                    //    // Save the file path or uniqueFileName to the database for later retrieval
-                    //    collection.ProfilePicturePath = "/ProfilePictures/" + uniqueFileName; // Assuming you store the path in the Register DTO
-                    //}
-
+                if (ModelState.IsValid)
+                {
                     var user = new IdentityUser
-                {
-                    Email = collection.Email,
-                    UserName = collection.UserName
-                };
-
-                var result = await _userManager.CreateAsync(user, collection.Password);
-
-                if (result.Succeeded)
-                {
-                    if (!string.IsNullOrEmpty(collection.SelectedRole))
                     {
-                        await _userManager.AddToRoleAsync(user, collection.SelectedRole);
-                    }
+                        Email = collection.Email,
+                        UserName = collection.UserName
+                    };
 
+                    var result = await _userManager.CreateAsync(user, collection.Password);
+
+                    if (result.Succeeded)
+                    {
+                        if (!string.IsNullOrEmpty(collection.SelectedRole))
+                            await _userManager.AddToRoleAsync(user, collection.SelectedRole);
 
                         var emailModel = new EmailDTOs
                         {
@@ -341,33 +238,30 @@ namespace CMS.Web.Controllers
                                     $"  <li>Password: {collection.Password}</li>\n" +
                                     $"</ul>\n\n" +
                                     $"<p>Login to your account: <a href='https://apps.sssprocess.com:6134/'>Click here</a></p>"
-                                   };
-
+                        };
 
                         //Send an Email to the user after creted it
                         await _accountService.SendRegistrationEmail(user, collection.Password, emailModel);
 
-                    // Your registration success logic here
-                    return RedirectToAction("Index");
-                }
-                else
-                {
-                    foreach (var error in result.Errors)
+                        // Your registration success logic here
+                        return RedirectToAction("Index");
+                    }
+                    else
                     {
-                        ModelState.AddModelError(string.Empty, error.Description);
+                        foreach (var error in result.Errors)
+                            ModelState.AddModelError(string.Empty, error.Description);
                     }
                 }
-            }
 
-            var roles = _roleManager.Roles.Select(r => r.Name).ToList();
-            ViewBag.Roles = new SelectList(roles);
+                var roles = _roleManager.Roles.Select(r => r.Name).ToList();
+                ViewBag.Roles = new SelectList(roles);
 
-            return View(collection);
+                return View(collection);
             }
             catch (Exception ex)
             {
                 LogException(nameof(Create), ex, "Faild to Create a new user");
-                throw ex;
+                throw;
             }
         }
 
@@ -375,33 +269,29 @@ namespace CMS.Web.Controllers
         {
             try
             {
+                var user = await _userManager.FindByIdAsync(id);
 
-            
-            var user = await _userManager.FindByIdAsync(id);
+                var roles = _roleManager.Roles.Select(r => r.Name).ToList();
 
-            var roles = _roleManager.Roles.Select(r => r.Name).ToList();
+                var userRole = await _userManager.GetRolesAsync(user);
 
-            var userRole = await _userManager.GetRolesAsync(user);
+                var model = new Register
+                {
+                    RegisterrId = user.Id,
+                    Email = user.Email,
+                    UserName = user.UserName,
+                    SelectedRole = userRole.FirstOrDefault(),
+                };
 
-            var model = new Register
-            {
-                RegisterrId=user.Id,
-                Email = user.Email,
-                UserName = user.UserName,
-                SelectedRole = userRole.FirstOrDefault(),
-            };
-
-            ViewBag.Roles = new SelectList(roles);
-            return View(model);
+                ViewBag.Roles = new SelectList(roles);
+                return View(model);
             }
             catch (Exception ex)
             {
                 LogException(nameof(Edit), ex, $"faild to load the edit page for the users");
-                throw ex;
+                throw;
             }
         }
-
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -409,49 +299,44 @@ namespace CMS.Web.Controllers
         {
             try
             {
-
-            
-            if (ModelState.IsValid)
-            {
-                var user = await _userManager.FindByIdAsync(collection.RegisterrId);
+                if (ModelState.IsValid)
+                {
+                    var user = await _userManager.FindByIdAsync(collection.RegisterrId);
                     var currentEmail = user.Email;
                     var currentUsername = user.UserName;
                     var currentUserRoles = await _userManager.GetRolesAsync(user);
-                    var currentPassowrd = collection.Password;
 
                     user.Email = collection.Email;
-                user.UserName = collection.UserName;
+                    user.UserName = collection.UserName;
 
-                if (!string.IsNullOrEmpty(collection.Password))
-                {
-
-                    var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                    var passwordChangeResult = await _userManager.ResetPasswordAsync(user, token, collection.Password);
-
-                    if (!passwordChangeResult.Succeeded)
+                    if (!string.IsNullOrEmpty(collection.Password))
                     {
 
-                        foreach (var error in passwordChangeResult.Errors)
-                        {
-                            ModelState.AddModelError("", error.Description);
-                        }
-                        return View(collection);
-                    }
-                }
-
-                var result = await _userManager.UpdateAsync(user);
-
-                if (result.Succeeded)
-                {
-                    if (!string.IsNullOrEmpty(collection.SelectedRole))
-                    {
-                        var userRoles = await _userManager.GetRolesAsync(user);
-                        await _userManager.RemoveFromRolesAsync(user, userRoles);
-                        await _userManager.AddToRoleAsync(user, collection.SelectedRole);
-                    }
                         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
                         var passwordChangeResult = await _userManager.ResetPasswordAsync(user, token, collection.Password);
 
+                        if (!passwordChangeResult.Succeeded)
+                        {
+                            foreach (var error in passwordChangeResult.Errors)
+                                ModelState.AddModelError(string.Empty, error.Description);
+
+                            return View(collection);
+                        }
+                    }
+
+                    var result = await _userManager.UpdateAsync(user);
+
+                    if (result.Succeeded)
+                    {
+                        if (!string.IsNullOrEmpty(collection.SelectedRole))
+                        {
+                            var userRoles = await _userManager.GetRolesAsync(user);
+                            await _userManager.RemoveFromRolesAsync(user, userRoles);
+                            await _userManager.AddToRoleAsync(user, collection.SelectedRole);
+                        }
+
+                        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                        var passwordChangeResult = await _userManager.ResetPasswordAsync(user, token, collection.Password);
 
                         if (currentEmail != collection.Email || currentUsername != collection.UserName || passwordChangeResult.Succeeded || !currentUserRoles.SequenceEqual(new[] { collection.SelectedRole }))
                         {
@@ -470,75 +355,62 @@ namespace CMS.Web.Controllers
                             };
 
                             // Send an email only if there are changes
-                            await _accountService.SendRegistrationEmail(user,collection.Password, emailModel);
+                            await _accountService.SendRegistrationEmail(user, collection.Password, emailModel);
                         }
 
                         return RedirectToAction(nameof(Index));
-                }
-                else
-                {
-                    foreach (var error in result.Errors)
+                    }
+                    else
                     {
-                        ModelState.AddModelError("", error.Description);
+                        foreach (var error in result.Errors)
+                            ModelState.AddModelError("", error.Description);
                     }
                 }
-            }
 
-            var roles = _roleManager.Roles.Select(r => r.Name).ToList();
-            ViewBag.Roles = new SelectList(roles);
+                var roles = _roleManager.Roles.Select(r => r.Name).ToList();
+                ViewBag.Roles = new SelectList(roles);
 
-            return View(collection);
+                return View(collection);
             }
-             catch (Exception ex)
+            catch (Exception ex)
             {
                 LogException(nameof(Edit), ex, $"User ID: {collection.RegisterrId}");
-                throw ex;
+                throw;
             }
         }
-
-
 
         public async Task<IActionResult> Delete(string id)
         {
             try
             {
+                if (string.IsNullOrEmpty(id))
+                    return NotFound();
 
-            
-            if (string.IsNullOrEmpty(id))
-            {
-                return NotFound();
-            }
+                var user = await _userManager.FindByIdAsync(id);
 
-            var user = await _userManager.FindByIdAsync(id);
+                if (user is null)
+                    return NotFound();
 
-            if (user == null)
-            {
-                return NotFound();
-            }
+                var roles = _roleManager.Roles.Select(r => r.Name).ToList();
 
-            var roles = _roleManager.Roles.Select(r => r.Name).ToList();
+                var model = new Register
+                {
+                    RegisterrId = user.Id,
+                    Email = user.Email,
+                    UserName = user.UserName,
+                    SelectedRole = (await _userManager.GetRolesAsync(user)).FirstOrDefault()
+                };
 
-            var model = new Register
-            {
-                RegisterrId = user.Id,
-                Email = user.Email,
-                UserName = user.UserName,
-                SelectedRole = (await _userManager.GetRolesAsync(user)).FirstOrDefault()
-            };
+                ViewBag.Roles = new SelectList(roles);
 
-            ViewBag.Roles = new SelectList(roles);
-
-            return View(model);
+                return View(model);
             }
             catch (Exception ex)
             {
                 LogException(nameof(Delete), ex, "faild to load the delete page for the users");
-                throw ex;
+                throw;
             }
         }
-
-
-
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
@@ -546,55 +418,43 @@ namespace CMS.Web.Controllers
         {
             try
             {
+                var user = await _userManager.FindByIdAsync(id);
 
-            
-            var user = await _userManager.FindByIdAsync(id);
+                if (user is null)
+                    return NotFound();
 
-            if (user == null)
-            {
-                return NotFound();
-            }
+                var result = await _userManager.DeleteAsync(user);
 
-            var result = await _userManager.DeleteAsync(user);
+                if (result.Succeeded)
+                    return RedirectToAction(nameof(Index));
 
-            if (result.Succeeded)
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            else
-            {
-                foreach (var error in result.Errors)
+                else
                 {
-                    ModelState.AddModelError("", error.Description);
+                    foreach (var error in result.Errors)
+                        ModelState.AddModelError("", error.Description);
+
+                    return View(user);
                 }
-                return View(user);
-            }
             }
             catch (Exception ex)
             {
                 LogException(nameof(DeleteConfirmed), ex, $"Faild to delete User ID: {id}");
-                throw ex;
+                throw;
             }
         }
-
 
         public IActionResult AccessDenied()
         {
             try
             {
-
-            return View();
+                return View();
             }
-
-            catch(Exception ex) {
+            catch (Exception ex)
+            {
                 LogException(nameof(AccessDenied), ex, "Faild to load the AccessDenied page");
-                throw ex;
-
+                throw;
             }
         }
-
-
-
 
         [HttpGet]
         public IActionResult ChangePassword()
@@ -606,7 +466,7 @@ namespace CMS.Web.Controllers
             catch (Exception ex)
             {
                 LogException(nameof(ChangePassword), ex, "Faild to load the ChangePassword page");
-                throw ex;
+                throw;
             }
         }
 
@@ -619,25 +479,24 @@ namespace CMS.Web.Controllers
                 if (ModelState.IsValid)
                 {
                     var user = await _userManager.GetUserAsync(User);
-                    if (user == null)
-                    {
+                    if (user is null)
                         return NotFound();
-                    }
+
                     // Check if the current password is correct
                     var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, model.CurrentPassword);
 
-                        if (!isCurrentPasswordValid)
-                        {
-                            ModelState.AddModelError(string.Empty, "The current password is incorrect.");
-                            return View(model);
-                        }
+                    if (!isCurrentPasswordValid)
+                    {
+                        ModelState.AddModelError(string.Empty, "The current password is incorrect.");
+                        return View(model);
+                    }
 
-                        // Check if the new password is different from the current password
-                        if (model.CurrentPassword == model.NewPassword)
-                        {
-                            ModelState.AddModelError(string.Empty, "The new password must be different from the current password.");
-                            return View(model);
-                        }
+                    // Check if the new password is different from the current password
+                    if (model.CurrentPassword == model.NewPassword)
+                    {
+                        ModelState.AddModelError(string.Empty, "The new password must be different from the current password.");
+                        return View(model);
+                    }
 
                     var changePasswordResult = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
 
@@ -652,9 +511,7 @@ namespace CMS.Web.Controllers
                     else
                     {
                         foreach (var error in changePasswordResult.Errors)
-                        {
                             ModelState.AddModelError(string.Empty, error.Description);
-                        }
                     }
                 }
 
@@ -663,10 +520,9 @@ namespace CMS.Web.Controllers
             catch (Exception ex)
             {
                 LogException(nameof(ChangePassword), ex, "Failed to change password");
-                throw ex;
+                throw;
             }
         }
-
 
         public IActionResult Profile()
         {
@@ -678,9 +534,5 @@ namespace CMS.Web.Controllers
 
             return View(user);
         }
-
-
-
-
     }
 }

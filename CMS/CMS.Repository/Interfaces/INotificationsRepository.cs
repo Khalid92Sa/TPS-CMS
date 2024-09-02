@@ -14,9 +14,6 @@ namespace CMS.Repository.Interfaces
         Task Update(Notifications entity);
         Task Delete(Notifications entity);
 
-
-
-
         Task<List<Notifications>> GetSpacificNotificationsforHR( );
 
         Task<List<Notifications>> GetSpacificNotificationsforGeneral();

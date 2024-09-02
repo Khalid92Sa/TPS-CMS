@@ -2,9 +2,9 @@
 
 @{
     ViewData["Title"] = "Accepted Candidates";
-    var candidateName = ViewData["candidateName"] as string; // Retrieve candidateName from ViewData
-    var selectedTrack = ViewData["selectedTrack"] as int?; // Retrieve selectedTrack from ViewData
-
+    var candidateName = ViewData["candidateName"] as string;
+    var selectedTrack = ViewData["selectedTrack"] as int?;
+    var companyName = ViewData["companyName"] as string;
 }
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -48,6 +48,11 @@
             </div>
 
             <div class="col-md-3">
+                @Html.Label("Filter by Company Name:")
+                <input type="text" id="companyName" name="companyName" class="form-control" placeholder="Enter company name" value="@Html.Raw(companyName)">
+            </div>
+
+            <div class="col-md-3">
                 @Html.Label("Filter by Track:")
                 @Html.DropDownList("trackFilter", ViewBag.TrackList as SelectList, "All Tracks", new { @class = "form-control", @value = selectedTrack })
             </div>
@@ -74,7 +79,7 @@
                             <th>Experience</th>
                             <th>Level</th>
                             <th>Track</th>
-                            <th>CV Provider Name</th>
+                            <th>Company Name</th>
                             <th>Status</th>
                         </tr>
                     </thead>

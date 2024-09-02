@@ -160,7 +160,7 @@
 
             // Validate Notes (if StatusId is 3)
             if ($('[name="StatusId"]').val() === "3" && !$('[name="Notes"]').val()) {
-                $('#Notes').next(".text-danger").text("Please add a note for why (He/She) was rejected.");
+                $('#Notes').next(".text-danger").text("Please provide a reason for the candidate rejection.");
                 e.preventDefault();
                 return;
             }

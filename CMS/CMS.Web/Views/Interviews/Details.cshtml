@@ -7,8 +7,10 @@
         <!-- Main Details Card -->
         <div class="col-md-4">
             <div class="card">
+                <div class="card-header" style="background-color: #79cd79;">
+                    <h5 class="card-title" style="color:white;">Main Details</h5>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Main Details</h5>
                     <hr />
                     <dl class="row">
                         <div class="col-sm-12">
@@ -24,7 +26,6 @@
                             <dd>@Model.StatusName</dd>
                             @if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
                             {
-
                                 <dt style="margin-top: 15px;">Stop Cycle Note:</dt>
                                 <dd>
                                     @if (Model.StopCycleNote != null)
@@ -57,12 +58,14 @@
         <!-- First Interview Card -->
         <div class="col-md-4">
             <div class="card">
+                <div class="card-header" style="background-color: #79cd79;">
+                    <h5 class="card-title" style="color:white;">First Interview</h5>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">First Interview</h5>
                     <hr />
                     <dl class="row">
                         <div class="col-sm-12">
-                            <dt s>First Interviewer Name:</dt>
+                            <dt>First Interviewer Name:</dt>
                             <dd>@Model.InterviewerName</dd>
                             @if (@Model.SecondInterviewerId == null)
                             {
@@ -78,7 +81,6 @@
                                     @Model.SecondInterviewerName
                                 </dd>
                             }
-
 
                             <dt style="margin-top: 15px;">Actual Experience:</dt>
                             <dd>
@@ -113,8 +115,10 @@
             <!-- Second Interview Card -->
             <div class="col-md-4">
                 <div class="card">
+                    <div class="card-header" style="background-color: #79cd79;">
+                        <h5 class="card-title" style="color:white;">Second Interview</h5>
+                    </div>
                     <div class="card-body">
-                        <h5 class="card-title">Second Interview</h5>
                         <hr />
                         <dl class="row">
                             <div class="col-sm-12">
@@ -170,20 +174,20 @@
         }
         @if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
         {
-
             <!-- HR Interview Card -->
-            <div class="col-md-4 offset-md-4" style="margin-top: -12%;">
+            <div class="col-md-4 offset-md-4">
                 <div class="card">
+                    <div class="card-header" style="background-color: #79cd79;">
+                        <h5 class="card-title" style="color:white;">HR Interview</h5>
+                    </div>
                     <div class="card-body">
-                        <h5 class="card-title">HR Interview</h5>
-                        <hr />
                         <dl class="row">
                             <div class="col-sm-12">
                                 <dt style="margin-top: 15px;">HR Note:</dt>
                                 <dd>
                                     @if (Model.HRNotes != null)
                                     {
-                                        <span style="margin-top: 15px;">@Model.HRNotes</span>
+                                        <p class="bg-light p-3 border rounded">@Model.HRNotes</p>
                                     }
                                     else
                                     {
@@ -196,9 +200,6 @@
                 </div>
             </div>
         }
-
-
-
     </div>
 </div>
 

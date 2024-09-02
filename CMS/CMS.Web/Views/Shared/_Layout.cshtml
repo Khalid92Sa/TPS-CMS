@@ -23,12 +23,7 @@
     <link href="~/theme/css/app.min.css" rel="stylesheet" type="text/css" />
     <!-- custom Css-->
     <link href="~/theme/css/custom.min.css" rel="stylesheet" type="text/css" />
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.18.0/font/bootstrap-icons.css" rel="stylesheet">
-
-
-
-
 
     <style>
         /* Style for notification container */
@@ -94,7 +89,6 @@
         }
     </style>
 
-
 </head>
 
 <body>
@@ -118,9 +112,6 @@
                             </a>
 
                             <a href="/" class="logo logo-light">
-                               @*  <span class="logo-sm">   
-                                    <img src="~/theme/images/logo-sm.png" alt="" height="22">
-                                </span> *@
                                 <span class="logo-lg">
                                     <img style="width: 200px;height: 38px;" src="~/theme/images/logo-light.png" alt="" height="17">
 
@@ -154,13 +145,6 @@
                             </button>
                         </div>
 
-
-
-
-
-
-
-                        @* Icon *@
 
                         @if (User.IsInRole("General Manager"))
                         {
@@ -346,14 +330,7 @@
 
                         }
 
-
-
-
                         @* end of the icon *@
-
-
-
-
 
                         <div class="dropdown ms-sm-3 header-item topbar-user">
                             <button type="button" class="btn" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -390,10 +367,7 @@
                             <div class="dropdown-menu dropdown-menu-end">
                                 <!-- item-->
                                 <h6 class="dropdown-header">Welcome @User.Identity.Name !</h6>
-                                @* <a class="dropdown-item" href="pages-profile.html"><i class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i> <span class="align-middle">Profile</span></a> *@
-                                @* <a class="dropdown-item" href="apps-chat.html"><i class="mdi mdi-message-text-outline text-muted fs-16 align-middle me-1"></i> <span class="align-middle">Messages</span></a> *@
                                 <div class="dropdown-divider"></div>
-                                @* <a class="dropdown-item" href="pages-profile-settings.html"><i class="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i> <span class="align-middle">Settings</span></a> *@
                                 @if (!User.IsInRole("Admin") && (User.IsInRole("Interviewer") || User.IsInRole("General Manager") || User.IsInRole("Solution Architecture") || User.IsInRole("HR Manager")))
                                 {
                                     <a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword">
@@ -401,10 +375,6 @@
                                         <span class="align-middle" data-key="t-change-password">Change Password</span>
                                     </a>
                                 }
-                            @*     <a class="dropdown-item" asp-controller="Account" asp-action="Profile">
-                                    <i class="ri-map-pin-user-fill text-muted fs-16 align-middle me-1"></i>
-                                    <span class="align-middle" data-key="t-My-Profile">My Profile</span>
-                                </a> *@
 
                                 <a class="dropdown-item" asp-controller="Account" asp-action="Logout"><i class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span class="align-middle" data-key="t-logout">Logout</span></a>
 
@@ -455,9 +425,6 @@
                 </a>
                 <!-- Light Logo-->
                 <a href="/" class="logo logo-light" style="margin-left:-15px;">
-                   @*  <span class="logo-sm">
-                        <img src="~/theme/images/logo-sm.png" alt="" height="22">
-                    </span> *@
                     <span class="logo-lg">
                         <img style="width: 200px;height: 45px;" src="~/theme/images/TechProcessSolutions-logo (1).svg" alt="" height="17">
                     </span>
@@ -489,14 +456,6 @@
                     Label = "Interviews",
                     Roles = new[] {"Admin","HR Manager"}
                     },
-                    // new
-                    // {
-                    // Controller =  "InterviewsGM",
-                    // Action = "Index",
-                    // Icon = "ri-team-fill",
-                    // Label = "Interviews for GM",
-                    // Roles = new[] {"Admin","HR Manager"}
-                    // },
                     new
                     {
                     Controller =  "Interviews",
@@ -521,23 +480,6 @@
                     Label = "Candidates",
                     Roles = new[] {"Admin","HR Manager"}
                     },
-                    
-                    // new
-                    // {
-                    //     Controller =  "Templates",
-                    //     Action = "Index",
-                    //     Icon = "ri-pages-line",
-                    //     Label = "Templates",
-                    //     Roles = new[] {"Admin"}
-                    // },
-                    //new
-                    //{
-                    //    Controller =  "AppRoles",
-                    //    Action = "Index",
-                    //    Icon = "ri-map-pin-user-fill",
-                    //    Label = "Roles",
-                    //    Roles = new[] {"Admin"}
-                    //},
                     new
                     {
                     Controller =  "Account",
@@ -546,14 +488,6 @@
                     Label = "Users",
                     Roles = new[] {"Admin","HR Manager"}
                     },
-                    //new
-                    //{
-                    //    Controller =  "Status",
-                    //    Action = "Get",
-                    //    Icon = "ri-map-pin-user-fill",
-                    //    Label = "Interview Status",
-                    //    Roles = new[] {"Admin"}
-                    //},
                     new
                     {
                     Controller =  "Country",
@@ -578,14 +512,6 @@
                     Label = "Interviews Filter",
                     Roles = new[] {"Admin","HR Manager","General Manager"}
                     }
-                    // new
-                    // {
-                    // Controller =  "AppRoles",
-                    // Action = "Index",
-                    // Icon = "bx bx-shield",
-                    // Label = "Roles",
-                    // Roles = new[] {"Admin","HR Manager"}
-                    // },
 
                                 };
                     }
@@ -634,14 +560,6 @@
                         <div class="col-12">
                             <div class="page-title-box d-sm-flex align-items-center justify-content-between">
                                 <h4 class="mb-sm-0">@ViewData["Title"]</h4>
-
-                                <!-- <div class="page-title-right">
-                                    <ol class="breadcrumb m-0">
-                                        <li class="breadcrumb-item"><a href="javascript: void(0);">Pages</a></li>
-                                        <li class="breadcrumb-item active">Starter</li>
-                                    </ol>
-                                </div> -->
-
                             </div>
                         </div>
                     </div>
@@ -666,20 +584,8 @@
 
     </div>
     <!-- END layout-wrapper -->
-    <!--start back-to-top-->
-    @*  <button onclick="topFunction()" class="btn btn-danger btn-icon" id="back-to-top">
-    <i class="ri-arrow-up-line"></i>
-    </button> *@
-    <!--end back-to-top-->
-    <!--preloader-->
-    <div id="preloader">
-        <div id="status">
-            <div class="spinner-border text-primary avatar-sm" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
-    </div>
 
+    <!--preloader-->
    
 
     <!-- JAVASCRIPT -->

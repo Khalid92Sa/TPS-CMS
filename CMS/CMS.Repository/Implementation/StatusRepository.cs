@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace CMS.Repository.Implementation
@@ -32,14 +31,14 @@ namespace CMS.Repository.Implementation
             }
         }
 
-        public async  Task<Status> GetByCode(string co)
+        public async Task<Status> GetByCode(string co)
         {
-             return await _context.Statuses.Where(c => c.Code == co).AsNoTracking().FirstOrDefaultAsync();
+            return await _context.Statuses.Where(c => c.Code == co).AsNoTracking().FirstOrDefaultAsync();
         }
 
         public async Task<Status> GetById(int id)
         {
-           return await _context.Statuses.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+            return await _context.Statuses.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
         }
 
         public async Task<int> Insert(Status entity)
@@ -87,12 +86,13 @@ namespace CMS.Repository.Implementation
                     CountryId = candidate.CountryId,
                     CountryName = candidate.Country.Name,
                     Experience = candidate.Experience,
-                     PositionId = candidate.PositionId,
-                     PositionName = candidate.Position.Name,
-                     TrackId = candidate.TrackId,
-                     TrackName = candidate.Track.Name,
-                     Phone = candidate.Phone,
+                    PositionId = candidate.PositionId,
+                    PositionName = candidate.Position.Name,
+                    TrackId = candidate.TrackId,
+                    TrackName = candidate.Track.Name,
+                    Phone = candidate.Phone,
                     Status = code,
+                    CreatedOn = candidate.CreatedOn
                 })
                 .ToListAsync();
 
@@ -120,6 +120,7 @@ namespace CMS.Repository.Implementation
                     TrackName = candidate.Track.Name,
                     Phone = candidate.Phone,
                     Status = code,
+                    CreatedOn = candidate.CreatedOn
                 })
                 .ToListAsync();
 
@@ -151,6 +152,7 @@ namespace CMS.Repository.Implementation
                     TrackName = candidate.Track.Name,
                     Phone = candidate.Phone,
                     Status = code,
+                    CreatedOn = candidate.CreatedOn
                 })
                 .ToListAsync();
 
@@ -177,6 +179,7 @@ namespace CMS.Repository.Implementation
                     TrackId = candidate.TrackId,
                     TrackName = candidate.Track.Name,
                     Phone = candidate.Phone,
+                    CreatedOn = candidate.CreatedOn,
                 })
                 .ToListAsync();
 

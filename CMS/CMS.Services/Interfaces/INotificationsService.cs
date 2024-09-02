@@ -17,7 +17,6 @@ namespace CMS.Services.Interfaces
         Task Update(int notificationsId, NotificationsDTO entity);
         Task Delete(int notificationsId);
         
-
         Task<List<NotificationsDTO>> GetNotificationsForUserAsync(string userId);
         Task<IEnumerable<NotificationsDTO>> GetAllNotificationsAsyncForInterviewer(string interviewerId);
         Task<IEnumerable<NotificationsDTO>> GetAllNotificationsAnotherTab();

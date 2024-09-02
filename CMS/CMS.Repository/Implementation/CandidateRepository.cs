@@ -161,13 +161,13 @@ namespace CMS.Repository.Implementation
                 int candidateCounts = await _dbContext.Candidates
                     .Include(a => a.Interviews)
                     .ThenInclude(a => a.Status)
-                    .Where(a => (a.Interviews.Count == 3 || a.Interviews.Count == 4) && a.Interviews.All(a => a.Status.Code == StatusCode.Approved))
+                    .Where(a => (a.Interviews.Count == 3 || a.Interviews.Count == 4) && a.Interviews.All(a => a.Status.Code == StatusCode.Approved && a.StopCycleNote == null))
                     .CountAsync();
 
                 int candidateCountsWithTwoAccepted = await _dbContext.Candidates
                     .Include(a => a.Interviews)
                     .ThenInclude(a => a.Status)
-                    .Where(a => a.Interviews.Count == 2 && a.Interviews.Skip(1).All(i => i.Status.Code == StatusCode.Approved))
+                    .Where(a => a.Interviews.Count == 2 && a.Interviews.Skip(1).All(i => i.Status.Code == StatusCode.Approved && i.StopCycleNote == null))
                     .CountAsync();
 
                 return candidateCounts + candidateCountsWithTwoAccepted;
@@ -191,7 +191,7 @@ namespace CMS.Repository.Implementation
             int rejectedCount = await _dbContext.Candidates
               .Include(a => a.Interviews)
               .ThenInclude(a => a.Status)
-              .Where(a => a.Interviews.Count > 0 && a.Interviews.Any(a => a.Status.Code == StatusCode.Rejected))
+              .Where(a => a.Interviews.Count > 0 && a.Interviews.Any(a => a.Status.Code == StatusCode.Rejected && a.StopCycleNote == null))
               .CountAsync();
 
             return rejectedCount;
@@ -212,10 +212,12 @@ namespace CMS.Repository.Implementation
         .Include(a => a.Interviews)
         .ThenInclude(a => a.Status)
         .Where(candidate =>
-            candidate.Interviews.Any(interview => interview.Status.Code == StatusCode.Pending) ||
-           candidate.Interviews.All(interview => interview.Status.Code != StatusCode.Rejected) &&
-           candidate.Interviews.All(interview => interview.Status.Code != StatusCode.Approved) &&
-           candidate.Interviews.All(interview => interview.Status.Code != StatusCode.OnHold))
+                            candidate.Interviews.Any(interview => interview.Status.Code == StatusCode.Pending) ||
+                            candidate.Interviews.All(interview => interview.Status.Code != StatusCode.Rejected) &&
+                            candidate.Interviews.All(interview => interview.Status.Code != StatusCode.Approved) &&
+                            candidate.Interviews.All(interview => interview.Status.Code != StatusCode.OnHold) &&
+                            candidate.Interviews.All(interview => interview.StopCycleNote == null)
+              )
         .CountAsync();
 
             return candidateCounts;
@@ -237,7 +239,7 @@ namespace CMS.Repository.Implementation
                     .Include(a => a.Interviews)
                     .ThenInclude(a => a.Status)
                     .Where(candidate =>
-                        candidate.Interviews.Any(interview => interview.Status.Code == StatusCode.OnHold))
+                        candidate.Interviews.Any(interview => interview.Status.Code == StatusCode.OnHold && interview.StopCycleNote == null))
                     .CountAsync();
 
                 return onHoldCount;
