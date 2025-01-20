@@ -40,6 +40,9 @@ namespace CMS.Services.Interfaces
 
         Task<Result<int>> SaveStopCycleNote(int id, string note);
         Task<bool> DeletePendingInterviews(int candidateId, InterviewsDTO collection);
+        Task<Result<bool>> AddArchitectureInterviewer(int interviewId, string architectureId);
+        Task<Result<bool>> RemoveArchitectureInterviewer(int interviewId);
+        Task<Result<bool>> AddOrUpdateArchitectureInterviewer(int interviewId, string architectureId);
 
     }
 }

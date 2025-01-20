@@ -1301,6 +1301,93 @@ namespace CMS.Services.Services
             }
         }
 
+        public async Task NotifyAssignArchiAsync(int status, string notes, int CandidateId, int positionId)
+        {
+            try
+            {
+                var archiId = "";
+
+                var statusResult = await _statusService.GetById(status);
+                var statusstatus = statusResult.Value;
+
+                var archi = await _roleManager.FindByNameAsync("Solution Architecture");
+                archiId = (await _userManager.GetUsersInRoleAsync(archi.Name)).FirstOrDefault().Id;
+
+                string userName = GetLoggedInUserName();
+                var currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+
+                var candidateName = await GetCandidateName(CandidateId);
+                var positionName = await GetPositionName(positionId);
+
+                // Create the notification for the manager.
+                var notification = new Notifications
+                {
+                    SendDate = DateTime.Now,
+                    CandidateId = CandidateId,
+                    IsReceived = true,
+                    IsRead = false,
+                    Title = "",
+                    BodyDesc = notes,
+                    CreatedBy = currentUser.Id,
+                    CreatedOn = DateTime.Now
+                };
+
+                notification.Title = $"You have been assigned, along with the GM, to interview {candidateName} for the {positionName} position. Prepare to make a great impression! 💼🚀";
+                notification.ReceiverId = archiId;
+
+                await _notificationsRepository.Create(notification);
+            }
+            catch (Exception ex)
+            {
+
+                LogException(nameof(CreateNotificationForGeneralManagerAsync), ex, "CreateNotificationForGeneralManagerAsync not working");
+                throw ex;
+            }
+        }
+        public async Task RemoveNotifyAssignArchiAsync(int status, string notes, int CandidateId, int positionId)
+        {
+            try
+            {
+                var archiId = "";
+
+                var statusResult = await _statusService.GetById(status);
+                var statusstatus = statusResult.Value;
+
+                var archi = await _roleManager.FindByNameAsync("Solution Architecture");
+                archiId = (await _userManager.GetUsersInRoleAsync(archi.Name)).FirstOrDefault().Id;
+
+                string userName = GetLoggedInUserName();
+                var currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+
+                var candidateName = await GetCandidateName(CandidateId);
+                var positionName = await GetPositionName(positionId);
+
+                // Create the notification for the manager.
+                var notification = new Notifications
+                {
+                    SendDate = DateTime.Now,
+                    CandidateId = CandidateId,
+                    IsReceived = true,
+                    IsRead = false,
+                    Title = "",
+                    BodyDesc = notes,
+                    CreatedBy = currentUser.Id,
+                    CreatedOn = DateTime.Now
+                };
+
+                notification.Title = $"Your interview with the GM for {candidateName} regarding the {positionName} position has been removed. Thank you!";
+                notification.ReceiverId = archiId;
+
+                await _notificationsRepository.Create(notification);
+            }
+            catch (Exception ex)
+            {
+
+                LogException(nameof(CreateNotificationForGeneralManagerAsync), ex, "CreateNotificationForGeneralManagerAsync not working");
+                throw ex;
+            }
+        }
+
 
     }
 }

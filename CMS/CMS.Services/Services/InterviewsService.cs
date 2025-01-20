@@ -238,10 +238,6 @@ namespace CMS.Services.Services
             }
         }
 
-
-
-
-
         public async Task<Result<List<InterviewsDTO>>> GetAll()
         {
             try
@@ -1497,9 +1493,6 @@ namespace CMS.Services.Services
             return interview?.AttachmentId; // Adjust property name based on your data structure
         }
 
-
-
-
         public async Task<Result<int>> SaveStopCycleNote(int id, string note)
         {
             try
@@ -1537,6 +1530,71 @@ namespace CMS.Services.Services
             {
                 _interviewsRepository.LogException(nameof(DeletePendingInterviews), ex, $"Error deleting pending interviews for candidate with ID: {candidateId}");
                 return false;
+            }
+        }
+
+        public async Task<Result<bool>> AddArchitectureInterviewer(int interviewId, string architectureId)
+        {
+            try
+            {
+                var interview = await _interviewsRepository.GetById(interviewId);
+                if (interview == null)
+                {
+                    return Result<bool>.Failure(false, "Interview not found.");
+                }
+
+                interview.SecondInterviewerId = architectureId;
+                await _interviewsRepository.Update(interview);
+                return Result<bool>.Success(true);
+            }
+            catch (Exception ex)
+            {
+                LogException(nameof(AddArchitectureInterviewer), ex, $"Failed to update architecture interviewer for interview ID: {interviewId}");
+                return Result<bool>.Failure(false, "Failed to update architecture interviewer.");
+            }
+        }
+
+        public async Task<Result<bool>> RemoveArchitectureInterviewer(int interviewId)
+        {
+            try
+            {
+                var interview = await _interviewsRepository.GetById(interviewId);
+                if (interview == null)
+                {
+                    return Result<bool>.Failure(false, "Interview not found.");
+                }
+
+                interview.SecondInterviewerId = null;
+                await _interviewsRepository.Update(interview);
+
+                return Result<bool>.Success(true);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                return Result<bool>.Failure(false, "Failed to remove Architecture Interviewer.");
+            }
+        }
+
+        public async Task<Result<bool>> AddOrUpdateArchitectureInterviewer(int interviewId, string architectureId)
+        {
+            try
+            {
+                var interview = await _interviewsRepository.GetById(interviewId);
+                if (interview == null)
+                {
+                    return Result<bool>.Failure(false, "Interview not found.");
+                }
+
+                interview.SecondInterviewerId = architectureId;
+                await _interviewsRepository.Update(interview);
+
+                return Result<bool>.Success(true);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                return Result<bool>.Failure(false, "Failed to add or update Architecture Interviewer.");
             }
         }
 

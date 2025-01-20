@@ -6,6 +6,7 @@
 @model IEnumerable<CMS.Application.DTOs.InterviewsDTO>
 @{
     ViewData["Title"] = "Interviews";
+    var archiId = ViewBag.ArchiId as string;
 }
 
 <style>
@@ -170,6 +171,16 @@
                                             <input type="hidden" name="StatusId" value="@item.StatusId" />
                                             <a class="bx bxs-edit-alt" style="font-size:x-large" asp-action="Edit" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit"></a>
                                             <a class="ri-delete-bin-2-line text-danger" style="font-size:x-large" asp-action="Delete" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Delete"></a>
+                                        }
+
+                                        @if ((item.InterviewerRole == "General Manager" && item.SecondInterviewerId == null) && item.ArchitectureInterviewerId == null && item.StatusName != StatusCode.GetName("APR") && item.StopCycleNote == null)
+                                        {
+                                            <a class="bx bx-user-plus" style="font-size:x-large; color:green" asp-action="AssignArchitectureInterviewer" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Add Architecture"></a>
+                                        }
+
+                                        @if (item.InterviewerRole == "General Manager" && item.SecondInterviewerId == archiId && item.ArchitectureInterviewerId == null && item.StatusName != StatusCode.GetName("APR") && item.StopCycleNote == null)
+                                        {
+                                            <a class="bx bx-user-minus" style="font-size:x-large; color:red" asp-action="AssignArchitectureInterviewer" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit/Remove Architecture"></a>
                                         }
 
                                         @if (item.StatusName != StatusCode.GetName("PND"))

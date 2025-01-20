@@ -1,0 +1,136 @@
+﻿@{
+    ViewData["Title"] = "Assign Architecture Interviewer";
+}
+@{
+    string currentArchitectureInterviewer = null;
+    IEnumerable<SelectListItem> architectureList = ViewBag.ArchitectureList as IEnumerable<SelectListItem>;
+
+    if (ViewBag.AssignedArchitectureId != null && architectureList != null)
+    {
+        currentArchitectureInterviewer = architectureList
+            .FirstOrDefault(a => a.Value == (string)ViewBag.AssignedArchitectureId)?.Text;
+    }
+}
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+<!-- Include SweetAlert2 CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10">
+
+<!-- Include SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+
+
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 style="color:white;" class="mb-0">Assign Architecture Interviewer</h4>
+        </div>
+        <div class="card-body">
+            <form id="assignForm" method="post">
+                <input type="hidden" name="interviewId" value="@ViewBag.InterviewId" />
+
+                <div class="form-group mb-4">
+                    <label for="ArchitectureId" class="form-label"><span style="color:red;">*</span> Select Architecture Interviewer:</label>
+                    <select id="ArchitectureId" name="ArchitectureId" class="form-control form-select">
+                        <option value="">-- Select Architecture Interviewer --</option>
+                        @foreach (var arch in ViewBag.ArchitectureList as SelectList)
+                        {
+                            if (arch.Value == (string)ViewBag.AssignedArchitectureId)
+                            {
+                                <option value="@arch.Value" selected>@arch.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@arch.Value">@arch.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                @if (!string.IsNullOrEmpty(currentArchitectureInterviewer))
+                {
+                    <div class="alert alert-info">
+                        Current Architecture Interviewer:
+                        <strong>@currentArchitectureInterviewer</strong>
+                    </div>
+                }
+
+                <div class="d-flex justify-content-start">
+                    <button type="button" id="assignButton" class="btn btn-primary me-2">
+                        <i class="fas fa-check-circle"></i> Assign/Update
+                    </button>
+                    @if (ViewBag.AssignedArchitectureId != null)
+                    {
+                        <button type="button" id="removeButton" class="btn btn-danger me-2">
+                            <i class="fas fa-trash-alt"></i> Remove
+                        </button>
+                    }
+                    <a asp-action="Index" class="btn btn-secondary">
+                        Back
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const assignButton = document.getElementById("assignButton");
+        const removeButton = document.getElementById("removeButton");
+        const form = document.getElementById("assignForm");
+
+        assignButton.addEventListener("click", function () {
+            const architectureId = document.getElementById("ArchitectureId").value;
+
+            if (!architectureId) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "Please select an Architecture Interviewer before proceeding.",
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: "Are you sure?",
+                text: "Do you want to assign/update this Architecture Interviewer?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Yes, Proceed!",
+                cancelButtonText: "Cancel",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+
+        if (removeButton) {
+            removeButton.addEventListener("click", function () {
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "Do you want to remove the assigned Architecture Interviewer?",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#3085d6",
+                    cancelButtonColor: "#d33",
+                    confirmButtonText: "Yes, Remove!",
+                    cancelButtonText: "Cancel",
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const removeInput = document.createElement("input");
+                        removeInput.type = "hidden";
+                        removeInput.name = "remove";
+                        removeInput.value = "true";
+                        form.appendChild(removeInput);
+                        form.submit();
+                    }
+                });
+            });
+        }
+    });
+</script>
+

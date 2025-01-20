@@ -32,6 +32,7 @@ namespace CMS.Web.Controllers
         private readonly IEmailService _emailService;
         private readonly IAttachmentService _attachmentService;
         private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ICompanyService _companyService;
         private readonly ITrackService _trackService;
 
@@ -48,6 +49,7 @@ namespace CMS.Web.Controllers
                                     IEmailService emailService,
                                     IAttachmentService attachmentService,
                                     SignInManager<IdentityUser> signInManager,
+                                    RoleManager<IdentityRole> roleManager,
                                     ICompanyService companyService,
                                     ITrackService trackService)
         {
@@ -60,6 +62,7 @@ namespace CMS.Web.Controllers
             _emailService = emailService;
             _attachmentService = attachmentService;
             _signInManager = signInManager;
+            _roleManager = roleManager;
             _companyService = companyService;
             _trackService = trackService;
             _accountService = accountService;
@@ -192,6 +195,21 @@ namespace CMS.Web.Controllers
                     var candidatesDTO = await _candidateService.GetAllCandidatesAsync();
                     ViewBag.CandidateList = new SelectList(candidatesDTO, "Id", "FullName");
 
+                    var architectureRole = await _roleManager.FindByNameAsync("Solution Architecture");
+                    if (architectureRole == null)
+                    {
+                        throw new Exception("Role 'Solution Architecture' not found.");
+                    }
+
+                    var usersInRole = await _userManager.GetUsersInRoleAsync(architectureRole.Name);
+
+                    var archiId = usersInRole.FirstOrDefault()?.Id;
+
+                    if (string.IsNullOrEmpty(archiId))
+                    {
+                        throw new Exception("No users found in the role 'Solution Architecture'.");
+                    }
+                    ViewBag.ArchiId = archiId;
 
                     // Apply filters and retrieve filtered interviews
                     var filteredInterviews = await ApplyFiltersAndRetrieveData(statusFilter, candidateFilter, trackFilter);
@@ -1060,7 +1078,6 @@ namespace CMS.Web.Controllers
                 throw ex;
             }
         }
-
 
         [HttpPost]
         public async Task<IActionResult> UpdateAfterInterview(InterviewsDTO interviewsDTO, IFormFile file)
@@ -2096,8 +2113,6 @@ namespace CMS.Web.Controllers
             }
         }
 
-
-
         public async Task<bool> IsUserInRolesAsync(string firstUserId, string secondUserId, string firstRole, string secondRole)
         {
             var firstUser = await _userManager.FindByIdAsync(firstUserId);
@@ -2113,6 +2128,162 @@ namespace CMS.Web.Controllers
             var isSecondUserInRoles = await _userManager.IsInRoleAsync(secondUser, secondRole);
 
             return isFirstUserInRoles && isSecondUserInRoles;
+        }
+
+        public async Task<IActionResult> AssignArchitectureInterviewer(int id)
+        {
+            try
+            {
+                var interviewResult = await _interviewsService.GetById(id);
+                if (!interviewResult.IsSuccess || interviewResult.Value == null)
+                {
+                    return NotFound();
+                }
+
+                var architecturesResult = await _accountService.GetAllArchitectureInterviewers();
+                if (!architecturesResult.IsSuccess)
+                {
+                    ModelState.AddModelError("", architecturesResult.Error);
+                    return View(new List<SelectListItem>());
+                }
+
+                ViewBag.ArchitectureList = new SelectList(architecturesResult.Value, "Id", "UserName");
+
+                // Set the currently assigned Architecture Interviewer
+                ViewBag.AssignedArchitectureId = interviewResult.Value.SecondInterviewerId;
+                ViewBag.InterviewId = id;
+
+                return View();
+            }
+            catch (Exception ex)
+            {
+                LogException(nameof(AssignArchitectureInterviewer), ex, $"Failed to load page for interview ID: {id}");
+                return StatusCode(500);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AssignArchitectureInterviewer(int interviewId, string architectureId, bool remove = false)
+        {
+            try
+            {
+                var architectureEmail = await _emailService.GetInterviewerEmail(architectureId);
+                var architectureUser = await _userManager.FindByIdAsync(architectureId);
+
+                if (interviewId <= 0)
+                {
+                    TempData["ErrorMessage"] = "Invalid interview ID.";
+                    return RedirectToAction("Index");
+                }
+
+                if (remove)
+                {
+                    // Remove the assigned Architecture Interviewer
+                    var removeResult = await _interviewsService.RemoveArchitectureInterviewer(interviewId);
+                    if (removeResult.IsSuccess)
+                    {
+                        // Send removal notification and email
+                        var interviewResult = await _interviewsService.GetById(interviewId);
+                        if (interviewResult.IsSuccess && interviewResult.Value != null)
+                        {
+                            var interview = interviewResult.Value;
+                            var candidateName = await _candidateService.GetCandidateByIdAsync(interview.CandidateId);
+
+                            await _notificationsService.RemoveNotifyAssignArchiAsync(
+                                interview.StatusId ?? 0,
+                                "Interview assignment removed.",
+                                interview.CandidateId,
+                                interview.PositionId
+                            );
+
+                            var emailModel = new EmailDTOs
+                            {
+                                EmailTo = new List<string> { architectureEmail },
+                                Subject = $"Interview Assignment Removed ({candidateName.FullName})",
+                                EmailBody = $@"<html>
+                                <body style='font-family: Arial, sans-serif;'>
+                                    <p style='font-size: 16px;'>Dear {architectureUser.UserName.Replace("_", " ")},</p>
+                                    <p style='font-size: 16px;'>Your assignment for the Architecture Interview with candidate <strong>{candidateName.FullName}</strong> has been removed.</p>
+                                    <p style='font-size: 14px;'>If you have any questions, please contact the HR department.</p>
+                                    <p>Thank you.</p>
+                                </body>
+                            </html>"
+                            };
+
+
+                            await _emailService.SendEmailToInterviewer(architectureEmail, interview, emailModel);
+                        }
+
+                        TempData["SuccessMessage"] = "Architecture Interviewer removed successfully.";
+                        return RedirectToAction("Index");
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = removeResult.Error;
+                        return RedirectToAction(nameof(AssignArchitectureInterviewer), new { id = interviewId });
+                    }
+                }
+
+                if (string.IsNullOrEmpty(architectureId))
+                {
+                    TempData["ErrorMessage"] = "Please select an Architecture Interviewer.";
+                    return RedirectToAction(nameof(AssignArchitectureInterviewer), new { id = interviewId });
+                }
+
+                var result = await _interviewsService.AddOrUpdateArchitectureInterviewer(interviewId, architectureId);
+
+                if (result.IsSuccess)
+                {
+                    // Send addition notification and email
+                    var interviewResult = await _interviewsService.GetById(interviewId);
+                    if (interviewResult.IsSuccess && interviewResult.Value != null)
+                    {
+                        var interview = interviewResult.Value;
+
+                        // Send notification
+                        await _notificationsService.NotifyAssignArchiAsync(
+                            interview.StatusId ?? 0,
+                            "You have been assigned to a new interview.",
+                            interview.CandidateId,
+                            interview.PositionId
+                        );
+
+                        // Send email
+                        var candidateName = await _candidateService.GetCandidateByIdAsync(interview.CandidateId);
+                        var formattedDate = interview.Date.ToString("dd/MM/yyyy hh:mm tt");
+
+                        var emailModel = new EmailDTOs
+                        {
+                            EmailTo = new List<string> { architectureEmail },
+                            Subject = $"New Architecture Interview Assigned ({candidateName.FullName})",
+                            EmailBody = $@"<html>
+                        <body style='font-family: Arial, sans-serif;'>
+                            <p style='font-size: 16px;'>Dear {architectureUser.UserName.Replace("_", " ")},</p>
+                            <p style='font-size: 16px;'>You have been assigned with the GM to interview {candidateName.FullName}, scheduled on {formattedDate}.</p>
+                            <p><a href='https://apps.sssprocess.com:6134/Interviews/Details/{interviewId}'>Click here</a> for more details.</p>
+                            <p>Thank you.</p>
+                        </body>
+                    </html>"
+                        };
+
+                        await _emailService.SendEmailToInterviewer(architectureEmail, interview, emailModel);
+                    }
+
+                    TempData["SuccessMessage"] = "Architecture Interviewer updated successfully.";
+                    return RedirectToAction("Index");
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = result.Error;
+                    return RedirectToAction(nameof(AssignArchitectureInterviewer), new { id = interviewId });
+                }
+            }
+            catch (Exception ex)
+            {
+                LogException(nameof(AssignArchitectureInterviewer), ex, $"Failed to assign/update/remove architecture interviewer for interview ID: {interviewId}");
+                return StatusCode(500);
+            }
         }
 
 
