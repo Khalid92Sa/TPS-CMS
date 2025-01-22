@@ -48,7 +48,7 @@ public class CandidatesController : Controller
     }
 
 
-    [Route("")]
+    [Route("index")]
     public async Task<IActionResult> Index(string FullName, string Phone, int? trackFilter, int pageNumber = 1, int pageSize = 5)
     {
         try
@@ -94,7 +94,7 @@ public class CandidatesController : Controller
                 return View("AccessDenied");
 
             else
-                return RedirectToAction("login", "users");
+                return Redirect(Url.Action("login", "users"));
         }
         catch (Exception)
         {

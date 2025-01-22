@@ -41,10 +41,10 @@ public class AccountController : Controller
             if (_signInManager.IsSignedIn(User))
             {
                 if (User.IsInRole("HR Manager") || User.IsInRole("Admin") || User.IsInRole("General Manager"))
-                    return RedirectToAction("dashboard");
+                    return Redirect(Url.Action("index", "dashboard"));
 
                 else if (User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture"))
-                    return RedirectToAction("myInterviews", "interviews");
+                    return Redirect(Url.Action("myInterviews", "interviews"));
 
                 else
                     return RedirectToAction("Index", "Home");
@@ -73,10 +73,10 @@ public class AccountController : Controller
                     if (_signInManager.IsSignedIn(User))
                     {
                         if (User.IsInRole("HR Manager") || User.IsInRole("Admin") || User.IsInRole("General Manager"))
-                            return RedirectToAction("dashboard");
+                            return Redirect(Url.Action("index", "dashboard"));
 
                         else if (User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture"))
-                            return RedirectToAction("myInterviews", "interviews");
+                            return Redirect(Url.Action("myInterviews", "interviews"));
 
                         else
                             return RedirectToAction("Index", "Home");
@@ -130,7 +130,7 @@ public class AccountController : Controller
         try
         {
             await _accountService.LogoutAsync();
-            return RedirectToAction("login", "users");
+            return Redirect(Url.Action("login", "users"));
         }
         catch (Exception)
         {
@@ -138,7 +138,7 @@ public class AccountController : Controller
         }
     }
 
-    [Route("")]
+    [Route("index")]
     public async Task<IActionResult> Index(string userName, int pageNumber = 1, int pageSize = 5)
     {
         try
@@ -169,7 +169,7 @@ public class AccountController : Controller
             }
             else
             {
-                return RedirectToAction("login", "users");
+                return Redirect(Url.Action("login", "users"));
             }
         }
         catch (Exception)
@@ -254,7 +254,7 @@ public class AccountController : Controller
                     await _accountService.SendRegistrationEmail(user, collection.Password, emailModel);
 
                     // Your registration success logic here
-                    return RedirectToAction("users");
+                    return RedirectToAction("index");
                 }
                 else
                 {

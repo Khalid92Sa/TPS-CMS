@@ -96,7 +96,7 @@ public class PositionController : Controller
     }
 
     [HttpGet]
-    [Route("")]
+    [Route("getPositions")]
     public async Task<IActionResult> GetPositions(string positionName, int pageNumber = 1, int pageSize = 5)
     {
         try

@@ -152,7 +152,7 @@ public class InterviewsController : Controller
         }
     }
 
-    [Route("")]
+    [Route("index")]
     public async Task<ActionResult> Index(int? statusFilter, string candidateFilter, int? trackFilter, int pageNumber = 1, int pageSize = 5)
     {
         try

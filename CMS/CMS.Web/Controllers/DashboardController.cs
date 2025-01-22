@@ -49,7 +49,7 @@ public class DashboardController : Controller
     }
 
 
-    [Route("")]
+    [Route("index")]
     public async Task<IActionResult> Index()
     {
         try

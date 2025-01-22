@@ -20,7 +20,7 @@ public class CountryController : Controller
     public CountryController(ICountryService countryService) => _countryService = countryService;
 
     [HttpGet]
-    [Route("")]
+    [Route("getCountries")]
     public async Task<IActionResult> GetCountries(string countryName, int pageNumber = 1, int pageSize = 5)
     {
         try

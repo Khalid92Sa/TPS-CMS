@@ -162,7 +162,7 @@ app.UseStatusCodePages(async context =>
 {
     if (context.HttpContext.Response.StatusCode == 404)
     {
-        context.HttpContext.Response.Redirect("/dashboard");
+        context.HttpContext.Response.Redirect("/dashboard/index");
     }
 });
 

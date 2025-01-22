@@ -82,7 +82,7 @@ public class CompanyController : Controller
     }
 
     [HttpGet]
-    [Route("")]
+    [Route("getCompanies")]
     public async Task<IActionResult> GetCompanies(string companyName, int pageNumber = 1, int pageSize = 5)
     {
         try

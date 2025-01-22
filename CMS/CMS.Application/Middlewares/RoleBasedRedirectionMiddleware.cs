@@ -49,7 +49,7 @@ namespace CMS.Application.Middlewares
                         if ((roles.Contains("General Manager") || roles.Contains("Admin") || roles.Contains("HR Manager"))
                             && (currentPath.Contains("/dashboard") || currentPath.Equals("/")))
                         {
-                            context.Response.Redirect($"/dashboard{queryString}");
+                            context.Response.Redirect($"/dashboard/index{queryString}"); // Updated to /dashboard/index
                             return;
                         }
                         else if ((roles.Contains("Solution Architecture") || roles.Contains("Interviewer"))

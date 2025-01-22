@@ -54,7 +54,7 @@ public class SearchInterviewsController : Controller
             Directory.CreateDirectory(_attachmentStoragePath);
     }
 
-    [Route("")]
+    [Route("index")]
     public async Task<ActionResult> Index(string positionFilter,
                                       int? scoreFilter,
                                       int? statusFilter,
