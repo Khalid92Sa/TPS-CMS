@@ -59,7 +59,7 @@ public class CountryController : Controller
             }
             else
             {
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -102,7 +102,7 @@ public class CountryController : Controller
                 Result<CountryDTO> result = await _countryService.Insert(countryDTO);
 
                 if (result.IsSuccess)
-                    return RedirectToAction("GetCountries");
+                    return RedirectToAction(nameof(GetCountries));
 
                 ModelState.AddModelError(string.Empty, result.Error);
             }
@@ -200,7 +200,7 @@ public class CountryController : Controller
                 Result<CountryDTO> result = await _countryService.Update(countryDTO);
 
                 if (result.IsSuccess)
-                    return RedirectToAction("GetCountries");
+                    return RedirectToAction(nameof(GetCountries));
 
                 ModelState.AddModelError(string.Empty, result.Error);
                 return View(countryDTO);

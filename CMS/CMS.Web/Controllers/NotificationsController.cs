@@ -46,7 +46,7 @@ public class NotificationsController : Controller
                 if (User.Identity.IsAuthenticated)
                     return View("AccessDenied");
                 else
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -83,7 +83,7 @@ public class NotificationsController : Controller
                 if (User.Identity.IsAuthenticated)
                     return View("AccessDenied");
                 else
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -107,7 +107,7 @@ public class NotificationsController : Controller
                 if (User.Identity.IsAuthenticated)
                     return View("AccessDenied");
                 else
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -132,7 +132,7 @@ public class NotificationsController : Controller
                 if (User.Identity.IsAuthenticated)
                     return View("AccessDenied");
                 else
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -156,7 +156,7 @@ public class NotificationsController : Controller
                 if (User.Identity.IsAuthenticated)
                     return View("AccessDenied");
                 else
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -180,7 +180,7 @@ public class NotificationsController : Controller
                 if (User.Identity.IsAuthenticated)
                     return View("AccessDenied");
                 else
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -212,7 +212,7 @@ public class NotificationsController : Controller
                 if (User.Identity.IsAuthenticated)
                     return View("AccessDenied");
                 else
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("login", "users");
                 }
         }
         catch (Exception)

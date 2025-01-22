@@ -138,7 +138,7 @@ public class SearchInterviewsController : Controller
                 if (User.Identity.IsAuthenticated)
                     return View("AccessDenied");
                 else
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -402,7 +402,7 @@ public class SearchInterviewsController : Controller
             if (collection is null)
             {
                 ModelState.AddModelError(string.Empty, $"the interview dto you are trying to update is null ");
-                return RedirectToAction("Index");
+                return RedirectToAction(nameof(Index));
             }
 
             Result<IEnumerable<PositionDTO>> positionDTOs = await _positionService.GetAll();
@@ -422,7 +422,7 @@ public class SearchInterviewsController : Controller
                 Result<InterviewsDTO> result = await _searchInterviewsService.Update(collection);
 
                 if (result.IsSuccess)
-                    return RedirectToAction("Index");
+                    return RedirectToAction(nameof(Index));
 
                 ModelState.AddModelError(string.Empty, result.Error);
                 return View(collection);
@@ -476,7 +476,7 @@ public class SearchInterviewsController : Controller
 
             Result<InterviewsDTO> result = await _searchInterviewsService.Delete(id);
             if (result.IsSuccess)
-                return RedirectToAction("Index");
+                return RedirectToAction(nameof(Index));
         
             ModelState.AddModelError(string.Empty, result.Error);
             return View();

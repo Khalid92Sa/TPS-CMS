@@ -41,10 +41,10 @@ public class AccountController : Controller
             if (_signInManager.IsSignedIn(User))
             {
                 if (User.IsInRole("HR Manager") || User.IsInRole("Admin") || User.IsInRole("General Manager"))
-                    return RedirectToAction("Index", "Dashboard");
+                    return RedirectToAction("dashboard");
 
                 else if (User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture"))
-                    return RedirectToAction("MyInterviews", "Interviews");
+                    return RedirectToAction("myInterviews", "interviews");
 
                 else
                     return RedirectToAction("Index", "Home");
@@ -73,10 +73,10 @@ public class AccountController : Controller
                     if (_signInManager.IsSignedIn(User))
                     {
                         if (User.IsInRole("HR Manager") || User.IsInRole("Admin") || User.IsInRole("General Manager"))
-                            return RedirectToAction("Index", "Dashboard");
+                            return RedirectToAction("dashboard");
 
                         else if (User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture"))
-                            return RedirectToAction("MyInterviews", "Interviews");
+                            return RedirectToAction("myInterviews", "interviews");
 
                         else
                             return RedirectToAction("Index", "Home");
@@ -130,7 +130,7 @@ public class AccountController : Controller
         try
         {
             await _accountService.LogoutAsync();
-            return RedirectToAction("Login", "Account");
+            return RedirectToAction("login", "users");
         }
         catch (Exception)
         {
@@ -169,7 +169,7 @@ public class AccountController : Controller
             }
             else
             {
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -254,7 +254,7 @@ public class AccountController : Controller
                     await _accountService.SendRegistrationEmail(user, collection.Password, emailModel);
 
                     // Your registration success logic here
-                    return RedirectToAction("Index");
+                    return RedirectToAction("users");
                 }
                 else
                 {

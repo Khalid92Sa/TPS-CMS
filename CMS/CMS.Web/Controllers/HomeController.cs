@@ -17,7 +17,7 @@ public class HomeController : Controller
             return View();
 
         else
-            return RedirectToAction("Login", "Account");
+            return RedirectToAction("login", "users");
     }
     public IActionResult Privacy()
     {

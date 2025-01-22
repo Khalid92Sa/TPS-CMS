@@ -45,7 +45,7 @@ public class CarrerOfferController : Controller
             }
             else
             {
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("login", "users");
             }
         }
 
@@ -81,7 +81,7 @@ public class CarrerOfferController : Controller
             }
             else
             {
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("login", "users");
             }
         }
 
@@ -103,7 +103,7 @@ public class CarrerOfferController : Controller
             }
             else
             {
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("login", "users");
             };
         }
     }
@@ -160,7 +160,7 @@ public class CarrerOfferController : Controller
             }
             else
             {
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("login", "users");
             }
         }
     }
@@ -222,7 +222,7 @@ public class CarrerOfferController : Controller
             }
             else
             {
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("login", "users");
             }
         }
     }

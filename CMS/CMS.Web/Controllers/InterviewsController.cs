@@ -143,7 +143,7 @@ public class InterviewsController : Controller
                 if (User.Identity.IsAuthenticated)
                     return View("AccessDenied");
                 else
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -207,7 +207,7 @@ public class InterviewsController : Controller
                 if (User.Identity.IsAuthenticated)
                     return View("AccessDenied");
                 else
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -278,7 +278,7 @@ public class InterviewsController : Controller
             else
             {
                 TempData["ErrorMessage"] = "You must log in first.";
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -308,7 +308,7 @@ public class InterviewsController : Controller
                         bool deletePendingResult = await _interviewsService.DeletePendingInterviews(collection.CandidateId, collection);
 
                         if (deletePendingResult)
-                            return RedirectToAction("Index");
+                            return RedirectToAction(nameof(Index));
 
                         else
                             ModelState.AddModelError("", "Error deleting pending interviews.");
@@ -325,7 +325,7 @@ public class InterviewsController : Controller
             else
             {
                 TempData["ErrorMessage"] = "You must log in first.";
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -412,7 +412,7 @@ public class InterviewsController : Controller
                 if (User.Identity.IsAuthenticated)
                     return View("AccessDenied");
                 else
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -556,10 +556,10 @@ public class InterviewsController : Controller
                         else
                             await _emailService.SendEmailToInterviewer(interviewerEmail, collection, emailModel);
 
-                        return RedirectToAction("Index");
+                        return RedirectToAction(nameof(Index));
                     }
                     else
-                        return RedirectToAction("Index");
+                        return RedirectToAction(nameof(Index));
                 }
 
                 ModelState.AddModelError("", result.Error);
@@ -606,7 +606,7 @@ public class InterviewsController : Controller
                 }
                 else
                 {
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("login", "users");
                 }
             }
         }
@@ -626,7 +626,7 @@ public class InterviewsController : Controller
             if (collection is null)
             {
                 ModelState.AddModelError("", $"The interview DTO you are trying to update is null ");
-                return RedirectToAction("Index");
+                return RedirectToAction(nameof(Index));
             }
 
             Result<List<StatusDTO>> StatusDTOs = await _StatusService.GetAll();
@@ -758,11 +758,11 @@ public class InterviewsController : Controller
                         else
                             await _emailService.SendEmailToInterviewer(interviewerEmail, collection, emailModel);
 
-                        return RedirectToAction("Index");
+                        return RedirectToAction(nameof(Index));
                     }
                     else
                     {
-                        return RedirectToAction("Index");
+                        return RedirectToAction(nameof(Index));
                     }
                 }
 
@@ -819,7 +819,7 @@ public class InterviewsController : Controller
             Result<InterviewsDTO> result = await _interviewsService.Delete(id);
 
             if (result.IsSuccess)
-                return RedirectToAction("Index");
+                return RedirectToAction(nameof(Index));
 
             ModelState.AddModelError("", result.Error);
             return View();
@@ -925,7 +925,7 @@ public class InterviewsController : Controller
             else
             {
                 TempData["ErrorMessage"] = "You must log in first.";
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -1938,7 +1938,7 @@ public class InterviewsController : Controller
             if (interviewId <= 0)
             {
                 TempData["ErrorMessage"] = "Invalid interview ID.";
-                return RedirectToAction("Index");
+                return RedirectToAction(nameof(Index));
             }
 
             if (remove)
@@ -1980,7 +1980,7 @@ public class InterviewsController : Controller
                     }
 
                     TempData["SuccessMessage"] = "Architecture Interviewer removed successfully.";
-                    return RedirectToAction("Index");
+                    return RedirectToAction(nameof(Index));
                 }
                 else
                 {
@@ -2035,7 +2035,7 @@ public class InterviewsController : Controller
                 }
 
                 TempData["SuccessMessage"] = "Architecture Interviewer updated successfully.";
-                return RedirectToAction("Index");
+                return RedirectToAction(nameof(Index));
             }
             else
             {

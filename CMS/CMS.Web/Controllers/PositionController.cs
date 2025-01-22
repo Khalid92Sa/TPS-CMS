@@ -80,7 +80,7 @@ public class PositionController : Controller
                 }
 
                 if (result.IsSuccess)
-                    return RedirectToAction("GetPositions");
+                    return RedirectToAction(nameof(GetPositions));
 
                 ModelState.AddModelError(string.Empty, result.Error);
             }
@@ -133,7 +133,7 @@ public class PositionController : Controller
                 if (User.Identity.IsAuthenticated)
                     return View("AccessDenied");
                 else
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -177,7 +177,7 @@ public class PositionController : Controller
             Result<PositionDTO> result = await _positionService.Delete(positionDTO.Id);
             
             if (result.IsSuccess)
-                return RedirectToAction("GetPositions");
+                return RedirectToAction(nameof(GetPositions));
 
             ModelState.AddModelError(string.Empty, result.Error);
             return View("DeleteConfirmation", positionDTO);
@@ -222,10 +222,10 @@ public class PositionController : Controller
                 Result<PositionDTO> result = await _positionService.Update(positionDTO);
 
                 if (result.IsSuccess)
-                    return RedirectToAction("GetPositions");
+                    return RedirectToAction(nameof(GetPositions));
             
                 ModelState.AddModelError(string.Empty, result.Error);
-                return RedirectToAction("GetPositions");
+                return RedirectToAction(nameof(GetPositions));
             }
             else
                 ModelState.AddModelError(string.Empty, $"the model state is not valid");

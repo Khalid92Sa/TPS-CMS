@@ -94,7 +94,7 @@ public class CandidatesController : Controller
                 return View("AccessDenied");
 
             else
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("login", "users");
         }
         catch (Exception)
         {

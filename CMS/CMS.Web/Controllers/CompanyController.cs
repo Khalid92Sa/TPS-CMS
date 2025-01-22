@@ -66,7 +66,7 @@ public class CompanyController : Controller
                 Result<CompanyDTO> result = await _companyService.Insert(companyDTO);
 
                 if (result.IsSuccess)
-                    return RedirectToAction("GetCompanies");
+                    return RedirectToAction(nameof(GetCompanies));
 
                 ModelState.AddModelError(string.Empty, result.Error);
             }
@@ -120,7 +120,7 @@ public class CompanyController : Controller
                 if (User.Identity.IsAuthenticated)
                     return View("AccessDenied");
                 else
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("login", "users");
             }
         }
         catch (Exception)
@@ -164,7 +164,7 @@ public class CompanyController : Controller
                 Result<CompanyDTO> result = await _companyService.Delete(id);
 
                 if (result.IsSuccess)
-                    return RedirectToAction("GetCompanies");
+                    return RedirectToAction(nameof(GetCompanies));
 
                 ModelState.AddModelError(string.Empty, result.Error);
             
@@ -224,7 +224,7 @@ public class CompanyController : Controller
                 Result<CompanyDTO> result = await _companyService.Update(companyDTO);
 
                 if (result.IsSuccess)
-                    return RedirectToAction("GetCompanies");
+                    return RedirectToAction(nameof(GetCompanies));
 
                 ModelState.AddModelError(string.Empty, result.Error);
                 return View(companyDTO);
