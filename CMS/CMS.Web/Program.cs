@@ -159,14 +159,7 @@ app.UseHangfireDashboard("/jobs");
 app.UseSession();
 app.UseMiddleware<RoleBasedRedirectionMiddleware>();
 
-// Handle 404 errors globally
-app.UseStatusCodePages(async context =>
-{
-    if (context.HttpContext.Response.StatusCode == 404)
-    {
-        context.HttpContext.Response.Redirect("/dashboard/index");
-    }
-});
+
 
 app.MapControllerRoute(
     name: "default",
