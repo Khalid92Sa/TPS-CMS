@@ -254,7 +254,7 @@ public class AccountController : Controller
                     await _accountService.SendRegistrationEmail(user, collection.Password, emailModel);
 
                     // Your registration success logic here
-                    return RedirectToAction("index");
+                    return Redirect(Url.Action("index", "users"));
                 }
                 else
                 {

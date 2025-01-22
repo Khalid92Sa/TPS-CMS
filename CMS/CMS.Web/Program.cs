@@ -87,6 +87,8 @@ builder.Services.AddDefaultIdentity<IdentityUser>()
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/users/login";
+    options.LogoutPath = "/users/logout";
+    options.AccessDeniedPath = "/users/accessDenied";
 });
 builder.Services.Configure<IdentityOptions>(x =>
 {
@@ -168,7 +170,7 @@ app.UseStatusCodePages(async context =>
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Account}/{action=Login}/{id?}");
+    pattern: "{controller=users}/{action=login}/{id?}");
 
 app.Logger.LogInformation("Starting the app");
 
