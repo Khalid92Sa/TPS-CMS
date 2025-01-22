@@ -1,15 +1,88 @@
 ﻿@model CMS.Application.DTOs.InterviewsDTO
-<style>
-    .text-mute {
-        color: #6c757d;
-    }
-</style>
-<div class="card">
-    <div class="card-body">
-        <h2>Interview Details</h2>
-        <hr />
-        <dl class="row">
 
+<style>
+    .text-muted-custom {
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    .details-card {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .card-header-custom {
+        background-color: #405189;
+        color: white;
+        padding: 20px;
+        border-bottom: 3px solid #ffffff;
+    }
+
+    .card-body-custom {
+        padding: 20px;
+    }
+
+    dt {
+        font-weight: bold;
+        color: #333;
+    }
+
+    dd {
+        margin-bottom: 1rem;
+    }
+
+    .no-note {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .icon-download {
+        font-size: 1.5rem;
+        color: #007bff;
+    }
+
+        .icon-download:hover {
+            color: #0056b3;
+        }
+
+    .more-text {
+        display: none;
+    }
+
+    .more-link {
+        cursor: pointer;
+        color: #007bff;
+        text-decoration: none;
+    }
+
+        .more-link:hover {
+            text-decoration: underline;
+        }
+
+    .card-header {
+        color: white;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
+
+    .btn-secondary {
+        background-color: gray;
+        border-color: gray;
+    }
+
+        .btn-secondary:hover {
+            background-color: darkgray !important;
+            border-color: darkgray !important;
+        }
+</style>
+
+<div class="card details-card">
+    <div class="card-header card-header-custom">
+        <h2 style="color:white;">Interview Details</h2>
+    </div>
+
+    <div class="card-body card-body-custom">
+        <dl class="row">
             <dt class="col-sm-2">Candidate Name:</dt>
             <dd class="col-sm-10">@Model.FullName</dd>
 
@@ -23,28 +96,21 @@
             <dd class="col-sm-10">@Model.InterviewerName</dd>
 
             <dt class="col-sm-2">Date:</dt>
-            <dd class="col-sm-10">@Model.Date</dd>
-
-            <dt class="col-sm-2" hidden>Parent ID</dt>
-            <dd class="col-sm-10" hidden>@Model.ParentId</dd>
-
-            @* <dt class="col-sm-2">Score:</dt>
-            <dd class="col-sm-10">@Model.Score</dd> *@
+            <dd class="col-sm-10">@Model.Date.ToString("MMMM dd, yyyy")</dd>
 
             <dt class="col-sm-2">Status:</dt>
             <dd class="col-sm-10">@Model.StatusName</dd>
 
-            @if (Model.Notes !=null)
+            @if (Model.Notes != null)
             {
                 <dt class="col-sm-2">Notes:</dt>
-                <dd class="col-sm-10">@Model.Notes</dd>
+                <dd class="col-sm-10">@Html.Raw(ShowMore(Model.Notes, 100))</dd>
             }
             else
             {
                 <dt class="col-sm-2">Notes:</dt>
-                <dd class="col-sm-10 text-mute">No note added</dd>
+                <dd class="col-sm-10 text-muted-custom">No notes added</dd>
             }
-      
 
             @if (Model.StopCycleNote != null)
             {
@@ -54,47 +120,60 @@
             else
             {
                 <dt class="col-sm-2">Stop Cycle Note:</dt>
-                <dd class="col-sm-10 text-mute">No note added</dd>
-
+                <dd class="col-sm-10 text-muted-custom">No stop cycle notes available</dd>
             }
 
             @if (@Model.CandidateCVAttachmentId != null)
             {
-                <dt class="col-sm-2" style="margin-top: 8px;">CV Attachment:</dt>
-                <dd class="col-sm-10" style="margin-top: 6px;">
-                    <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.CandidateCVAttachmentId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Download CV"><i style="font-size: x-large;" class="bx bxs-cloud-download"></i></a>
+                <dt class="col-sm-2">CV Attachment:</dt>
+                <dd class="col-sm-10">
+                    <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.CandidateCVAttachmentId" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Download CV">
+                        <i class="bx bxs-cloud-download icon-download"></i>
+                    </a>
                 </dd>
             }
             else
             {
-                <dt class="col-sm-2" style="margin-top: 8px;">CV Attachment:</dt>
-                <dd class="col-sm-10 text-mute" style="margin-top: 6px;">
-                    CV not added for<br />
-                    this candidate
-                </dd>
+                <dt class="col-sm-2">CV Attachment:</dt>
+                <dd class="col-sm-10 text-muted-custom">No CV uploaded for this candidate</dd>
             }
-
-
-          
-
-            @*  @if (Model.AttachmentId != null)
-            {
-            <dt class="col-sm-2">Evaluation:</dt>
-            <dd class="col-sm-10">
-            <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.AttachmentId">Download evaluation</a>
-            </dd>
-            }
-            else
-            {
-            <dt class="col-sm-2">Evaluation:</dt>
-            <dd class="col-sm-10">There is no Evaluation for this interview</dd>
-            } *@
-
         </dl>
     </div>
 </div>
 
-<div class="form-group mt-3">
-    @* <a asp-action="Edit" asp-route-id="@Model.InterviewsId" class="btn btn-primary">Edit</a> *@
+<div class="form-group text-center">
     <a class="btn btn-secondary" href="@Url.Action("Index", new { positionFilter = ViewBag.PositionFilter, scoreFilter = ViewBag.ScoreFilter, statusFilter = ViewBag.StatusFilter, candidateFilter = ViewBag.CandidateFilter, interviewerFilter = ViewBag.InterviewerFilter, fromDate = ViewBag.FromDate, toDate = ViewBag.ToDate, trackFilterDropdown = ViewBag.TrackList })">Back to List</a>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $(".more-link").click(function () {
+            var moreContent = $(this).siblings(".more-text");
+            var moreLink = $(this);
+
+            moreContent.toggle();
+            moreLink.text(moreContent.is(":visible") ? "Less" : "More");
+        });
+    });
+</script>
+
+@functions {
+    public string ShowMore(string text, int maxLength)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+
+        text = text.Trim();
+
+        if (text.Length <= maxLength)
+        {
+            return text;
+        }
+
+        var shortText = text.Substring(0, maxLength);
+        var moreText = text.Substring(maxLength);
+
+        return $"{shortText}<span class=\"more-text\">{moreText}</span> <a class=\"more-link\">More</a>";
+    }
+}

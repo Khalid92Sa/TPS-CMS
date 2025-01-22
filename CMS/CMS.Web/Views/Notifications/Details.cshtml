@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Notification Details</title>
-    <!-- Add your CSS styles or link to an external stylesheet here -->
+
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -38,6 +38,11 @@
             margin-bottom: 15px;
         }
 
+        .no-description {
+            color: #6c757d;
+            font-style: italic;
+        }
+
         .form-group {
             text-align: center;
             margin-top: 20px;
@@ -46,9 +51,9 @@
         .btn-secondary {
             background-color: #6c757d;
             color: #ffffff;
+            border-color: #6c757d;
         }
 
-        /* Add more styling as needed */
     </style>
 </head>
 <body>
@@ -63,13 +68,20 @@
         <dd class="col-sm-10">@Html.Raw(Model.Title)</dd>
 
         <dt class="col-sm-2">Description:</dt>
-        <dd class="col-sm-10">@Html.Raw(Model.BodyDesc)</dd>
+        @if (Model.BodyDesc != null)
+        {
+            <dd class="col-sm-10">@Html.Raw(Model.BodyDesc)</dd>
+        }
+        else
+        {
+            <dd class="col-sm-10 no-description">No description/notes added</dd>
+        }
     </dl>
 
     <div class="form-group">
         @if (User.IsInRole("HR Manager"))
         {
-            <div class="">
+            <div class=string.Empty>
                 <a class="btn btn-secondary" asp-action="IndexHRnotification" style="margin-left: 12px;">Back to your Notifications</a>
             </div>
         }

@@ -1,185 +1,165 @@
-﻿using CMS.Services.Interfaces;
+﻿using CMS.Application.DTOs;
+using CMS.Services.Interfaces;
+using CMS.Web.Utils;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using System;
-using CMS.Application.DTOs;
-using CMS.Web.Utils;
-using CMS.Services.Services;
-using System.Security.Claims;
 
-namespace CMS.Web.Controllers
+namespace CMS.Web.Controllers;
+
+public class AttachmentsController : Controller
 {
-    public class AttachmentsController : Controller
+    private readonly IAttachmentService _attachmentService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly string _attachmentStoragePath;
+
+    public AttachmentsController(
+        IAttachmentService attachmentService,
+        IWebHostEnvironment env,
+        IHttpContextAccessor httpContextAccessor)
     {
-        private readonly IAttachmentService _attachmentService;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly string _attachmentStoragePath;
+        _attachmentService = attachmentService;
+        _httpContextAccessor = httpContextAccessor;
+        _attachmentStoragePath = Path.Combine(env.WebRootPath, "attachments");
 
-        public AttachmentsController(IAttachmentService attachmentService, IWebHostEnvironment env,IHttpContextAccessor httpContextAccessor)
+        if (!Directory.Exists(_attachmentStoragePath))
+            Directory.CreateDirectory(_attachmentStoragePath);
+    }
+
+    public async Task<IActionResult> Index()
+    {
+        try
         {
-            _attachmentService = attachmentService;
-            _httpContextAccessor = httpContextAccessor;
-            _attachmentStoragePath = Path.Combine(env.WebRootPath, "attachments");
-
-            if (!Directory.Exists(_attachmentStoragePath))
-            {
-                Directory.CreateDirectory(_attachmentStoragePath);
-            }
+            IEnumerable<AttachmentDTO> attachments = await _attachmentService.GetAllAttachmentsAsync();
+            return View(attachments);
         }
-        public void LogException(string methodName, Exception ex, string additionalInfo = null)
+        catch (Exception)
         {
+            throw;
+        }
+    }
+
+    public IActionResult Create() => View();
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(IFormFile file)
+    {
+        try
+        {
+            if (file is null || file.Length == 0)
+            {
+                ModelState.AddModelError("File", "Please choose a file to upload.");
+                return View();
+            }
+
+            FileStream attachmentStream = await AttachmentHelper.handleUpload(file, _attachmentStoragePath);
+            int attachmentId = await _attachmentService.CreateAttachmentAsync(file.FileName, file.Length, attachmentStream);
+            attachmentStream.Close();
+            return RedirectToAction(nameof(Index));
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public async Task<IActionResult> Download(int id)
+    {
+        try
+        {
+            AttachmentDTO attachment = await _attachmentService.GetAttachmentByIdAsync(id);
             
-            _attachmentService.LogException(methodName, ex, additionalInfo);
-        }
-        
-        public async Task<IActionResult> Index()
-        {
-            try
-            {
-                var attachments = await _attachmentService.GetAllAttachmentsAsync();
-                return View(attachments);
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(Index), ex, "Index page for Attachments not working");
-                throw ex;
-            }
-        }
+            if (attachment is null)
+                return NotFound();
 
-        public IActionResult Create()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(IFormFile file)
-        {
-            try
+            string contentType = "application/octet-stream";
+            FileContentResult result = new(attachment.FileData, contentType)
             {
-                if (file == null || file.Length == 0)
-                {
-                    ModelState.AddModelError("File", "Please choose a file to upload.");
-                    return View();
-                }
+                FileDownloadName = attachment.FileName
+            };
 
-                FileStream attachmentStream = await AttachmentHelper.handleUpload(file, _attachmentStoragePath);
-                var attachmentId = await _attachmentService.CreateAttachmentAsync(file.FileName, file.Length, attachmentStream);
-                attachmentStream.Close();
+            return result;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public async Task<IActionResult> Edit(int id)
+    {
+        try
+        {
+            AttachmentDTO attachment = await _attachmentService.GetAttachmentByIdAsync(id);
+            
+            if (attachment is null)
+                return NotFound();
+
+            return View(attachment);
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, AttachmentDTO attachmentDTO)
+    {
+        try
+        {
+            if (id != attachmentDTO.Id)
+                return NotFound();
+
+            if (ModelState.IsValid)
+            {
+                await _attachmentService.UpdateAttachmentAsync(id, attachmentDTO);
                 return RedirectToAction(nameof(Index));
             }
-            catch (Exception ex)
-            {
-                LogException(nameof(Create), ex, "Faild to create an Attachment");
-                throw ex;
-            }
+
+            return View(attachmentDTO);
         }
-        public async Task<IActionResult> Download(int id)
+        catch (Exception)
         {
-            try
-            {
-                var attachment = await _attachmentService.GetAttachmentByIdAsync(id);
-                if (attachment == null)
-                {
-                    return NotFound();
-                }
-
-                string contentType = "application/octet-stream";
-                var result = new FileContentResult(attachment.FileData, contentType)
-                {
-                    FileDownloadName = attachment.FileName
-                };
-
-                return result;
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(Download), ex, $"Faild to download Attachment ID: {id}");
-                throw ex;
-            }
+            throw;
         }
-        public async Task<IActionResult> Edit(int id)
+    }
+
+    public async Task<IActionResult> Delete(int id)
+    {
+        try
         {
-            try
-            {
-                var attachment = await _attachmentService.GetAttachmentByIdAsync(id);
-                if (attachment == null)
-                {
-                    return NotFound();
-                }
+            AttachmentDTO attachment = await _attachmentService.GetAttachmentByIdAsync(id);
+            
+            if (attachment is null)
+                return NotFound();
 
-                return View(attachment);
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(Edit), ex, $"Faild to load Attachment ID: {id} edit page");
-                throw ex;
-            }
+            return View(attachment);
         }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, AttachmentDTO attachmentDTO)
+        catch (Exception)
         {
-            try
-            {
-                if (id != attachmentDTO.Id)
-                {
-                    return NotFound();
-                }
-
-                if (ModelState.IsValid)
-                {
-                    await _attachmentService.UpdateAttachmentAsync(id, attachmentDTO);
-                    return RedirectToAction(nameof(Index));
-                }
-
-                return View(attachmentDTO);
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(Edit), ex, $"Faild to edit Attachment ID: {id}");
-                throw ex;
-            }
+            throw;
         }
-        public async Task<IActionResult> Delete(int id)
+    }
+
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        try
         {
-            try
-            {
-                var attachment = await _attachmentService.GetAttachmentByIdAsync(id);
-                if (attachment == null)
-                {
-                    return NotFound();
-                }
-
-                return View(attachment);
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(Delete), ex, $"Faild to load Attachment ID: {id} page");
-                throw ex;
-            }
+            await _attachmentService.DeleteAttachmentAsync(id);
+            return RedirectToAction(nameof(Index));
         }
-
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        catch (Exception)
         {
-            try
-            {
-                await _attachmentService.DeleteAttachmentAsync(id);
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(DeleteConfirmed), ex, $"Faild to delete Attachment ID: {id}");
-                throw ex;
-            }
+            throw;
         }
-
-
     }
 }

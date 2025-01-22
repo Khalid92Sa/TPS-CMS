@@ -4,36 +4,26 @@ using CMS.Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace CMS.Repository.Implementation
+namespace CMS.Repository.Implementation;
+
+public class TrackRepository : ITrackRepository
 {
-    public class TrackRepository : ITrackRepository
+    private readonly ApplicationDbContext _context;
+    public TrackRepository(ApplicationDbContext context) => _context = context;
+
+    public async Task<List<Track>> GetAll()
     {
-        private readonly ApplicationDbContext _context;
-        public TrackRepository(ApplicationDbContext context)
+        try
         {
-            _context = context;
+            return await _context.Tracks.AsNoTracking().ToListAsync();
         }
-        public async Task<List<Track>> GetAll()
+        catch (Exception)
         {
-
-            try
-            {
-                return await _context.Tracks.AsNoTracking().ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            throw;
         }
-
-
-        public async Task<Track> GetById(int? id)
-        {
-            return await _context.Tracks.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
-        }
-
     }
+
+    public async Task<Track> GetById(int? id) => await _context.Tracks.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
 }

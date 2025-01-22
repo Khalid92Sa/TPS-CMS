@@ -45,8 +45,8 @@
             </div>
 
             <div class="col-md-3">
-                @Html.Label("Filter by Company Name:")
-                <input type="text" id="companyName" name="companyName" class="form-control" placeholder="Enter company name" value="@Html.Raw(companyName)">
+                @Html.Label("Filter by Company:")
+                @Html.DropDownList("companyFilter", ViewBag.CompanyList as SelectList, "Select a Company", new { @class = "form-control" })
             </div>
 
             <div class="col-md-3">
@@ -54,9 +54,12 @@
                 @Html.DropDownList("trackFilter", ViewBag.TrackList as SelectList, "All Tracks", new { @class = "form-control", @value = selectedTrack })
             </div>
 
-            <div class="col-md-3" style="margin-top: 27px;">
+            <div class="col-md-1" style="margin-top: 27px;">
                 <label>&nbsp;</label>
-                <button type="submit" class="btn btn-primary btn-block" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Filter Candidates">Filter</button>
+                <button type="submit" class="btn btn-primary btn-block" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Filter Candidates">Filter</button>
+            </div>
+            <div class="col-md-1" style="margin-top: 27px;">
+                <button type="button" id="resetButton" class="btn btn-secondary btn-block" title="Reset Filters">Reset</button>
             </div>
         </div>
     </div>
@@ -95,6 +98,8 @@
                     </tbody>
 
                 </table>
+
+                @await Html.PartialAsync("_PaginationPartial", Model)
             </div>
         </div>
 
@@ -112,7 +117,18 @@
 <script>
     $(document).ready(function () {
         $('#stoppedCyclesCandidatesId').DataTable({
-            searching: false
+            searching: false,
+            paging: false,
+            info: false,
+                scrollCollapse: true,
+                scrollY: '50vh'
+        });
+
+           $('#resetButton').on('click', function () {
+            $('#candidateName').val('');
+            $('#companyFilter').val('');
+            $('#trackFilter').val('');
+            window.location.href = '@Url.Action("StoppedCyclesCandidates", "Dashboard")';
         });
     });
 </script>

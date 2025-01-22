@@ -15,6 +15,27 @@
     }
 </style>
 
+@using (Html.BeginForm("GetPositions", "Position", FormMethod.Get, new { id = "filterForm" }))
+{
+    <div class="form-group" style="margin-bottom: 23px;">
+        <div class="row">
+            <div class="col-md-3">
+                @Html.Label("Filter by Position Name:")
+                <input type="text" id="positionName" name="positionName" class="form-control" placeholder="Search by Position Name" value="@ViewBag.positionNameFilter">
+            </div>
+            <div class="col-md-1" style="margin-top: 27px;">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn-primary btn-block" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Filter Positions">Filter</button>
+            </div>
+            <div class="col-md-1" style="margin-top: 27px;">
+                <button type="button" id="resetButton" class="btn btn-secondary btn-block" title="Reset Filters">Reset</button>
+            </div>
+        </div>
+    </div>
+}
+
+
+
 <div class="row">
     <div class="col-lg-12">
         <div class="card">
@@ -26,7 +47,7 @@
 
 
             <div class="card-body">
-                <table id="add-rows" class="table table-nowrap dt-responsive table-bordered display" style="width:100%">
+                <table id="add-rows" class="display nowrap" style="width:100%">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -54,18 +75,17 @@
                                 }
 
                                 <td>
-                                    <a class="bx bxs-edit-alt" style="font-size:x-large" asp-action="UpdatePosition" asp-route-id="@pos.Id" asp-route-idd="@pos.EvaluationId" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="Edit"></a>
+                                    <a class="bx bxs-edit-alt" style="font-size:x-large" asp-action="UpdatePosition" asp-route-id="@pos.Id" asp-route-attachmentId="@pos.EvaluationId" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="Edit"></a>
                                     <a class="ri-delete-bin-2-line text-danger" style="font-size:x-large" asp-action="GetDeleteConfirmation" asp-route-id="@pos.Id" class="btn btn-danger" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Delete"></a>
                                 </td>
-
-
-
-
                             </tr>
                         }
 
                     </tbody>
                 </table>
+
+                @await Html.PartialAsync("_PaginationPartial", Model)
+
             </div>
         </div>
 
@@ -75,7 +95,19 @@
 <script>
     $.noConflict();
     jQuery(document).ready(function ($) {
-        $('#add-rows').DataTable();
+        $('#add-rows').DataTable({
+            paging: false,
+            info: false,
+            scrollCollapse: true,
+            ordering: false,
+            scrollY: '50vh',
+            searching: false
+        });
 
-    });
+            $('#resetButton').on('click', function () {
+                $('#positionName').val('');
+                window.location.href = '@Url.Action("GetPositions", "Position")';
+            });
+        });
 </script>
+

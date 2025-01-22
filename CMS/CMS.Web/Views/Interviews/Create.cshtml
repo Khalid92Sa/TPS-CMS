@@ -5,244 +5,329 @@
     ViewData["Title"] = "Schedule New Interview";
 }
 
+<style>
+    #InterviewerId-error {
+        position: relative;
+        z-index: 3;
+    }
+
+    .interview-section {
+        background-image: url('@Url.Content("~/theme/images/job_interview.png")');
+        background-size: cover;
+        background-position: center;
+        background-color: #f7f3f3;
+        padding: 20px;
+        position: relative;
+        height: 265px;
+        border-radius: 8px;
+    }
+
+    .interview-section::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.7);
+        z-index: 1;
+    }
+
+    .interview-section h5,
+    .interview-section label,
+    .interview-section select {
+        position: relative;
+        z-index: 2;
+    }
+
+    .text-danger {
+        display: none;
+        font-size: 0.9em;
+    }
+
+    .card-header{
+        color:white;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        border: none;
+        color: white;
+    }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
+            color: white;
+            transition: background 0.3s ease;
+        }
+
+    .btn-secondary {
+        background-color: gray; 
+        border-color: gray; 
+    }
+
+        .btn-secondary:hover {
+            background-color: darkgray !important;
+            border-color: darkgray !important;
+        }
+
+
+</style>
+
 <link href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css" rel="stylesheet" />
-
-
-
-<form asp-action="Create" id="createForm">
-    @*     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    *@
-    <div class="form-group">
-        <label asp-for="CandidateId" class="control-label"><span class="text-danger">*</span> Candidate</label>
-        @if (ViewBag.candidateList != null)
-        {
-            <select style="width: 30%;" asp-for="CandidateId" asp-items="@(ViewBag.candidateList)" class="form-control" id="candidate-dropdown" name="CandidateId" data-selectize="true">
-                <option value="">-- Select Name --</option>
-            </select>
-        }
-        <span asp-validation-for="CandidateId" class="text-danger" id="candidateIdError"></span>
-    </div>
-
-    <div class="form-group" style="margin-top: 15px;">
-
-        <label asp-for="PositionId" class="control-label"><span class="text-danger">*</span> Level</label>
-        @if (ViewBag.positionList != null)
-        {
-            <select style="width: 30%;" asp-for="PositionId" asp-items="@(ViewBag.positionList)" class="form-control" >
-                <option value="">-- Select a Level --</option>
-
-            </select>
-        }
-
-        <span asp-validation-for="PositionId" class="text-danger" id="positionIdError"></span>
-    </div>
-
-    <div class="form-group" style="margin-top: 15px;">
-        <label asp-for="TrackId" class="control-label"><span class="text-danger">*</span> Track</label>
-        @if (ViewBag.Tracks != null)
-        {
-            <select style="width: 30%;" asp-for="TrackId" asp-items="@(ViewBag.Tracks)" class="form-control">
-                <option value="">-- Select a Track --</option>
-            </select>
-        }
-
-        <span asp-validation-for="TrackId" class="text-danger"></span>
-        <span id="trackIdError" class="text-danger"></span>
-    </div>
-
-    <div class="card" style="width: 400px; margin-top: 20px; padding: 20px;">
-
-        <div class="form-group">
-            <label style="font-size: medium;">First Interview</label>
-            <div style="width: 78%;">
-                <label asp-for="InterviewerId" class="control-label">#1 <span class="text-danger">*</span></label>
-                @if (ViewBag.interviewersList != null)
-                {
-                    <select style="width: 100%;" asp-for="InterviewerId" asp-items="@(ViewBag.interviewersList)" class="form-control">
-                        <option value="">-- Select an Interviewer --</option>
-                    </select>
-                }
-                <span asp-validation-for="InterviewerId" class="text-danger" id="interviewerIdError"></span>
-            </div>
-        </div>
-
-        <div class="form-group" style="margin-top: 20px;">
-            <label asp-for="SecondInterviewerId" class="control-label">#2 <span>(optional)</span></label>
-            <div style="width: 78%;">
-                @if (ViewBag.interviewersList != null)
-                {
-                    <select style="width: 100%;" asp-for="SecondInterviewerId" asp-items="@(ViewBag.interviewersList)" class="form-control">
-                        <option value="">-- Select Second Interviewer --</option>
-                    </select>
-                }
-                <span asp-validation-for="SecondInterviewerId" class="text-danger"></span>
-            </div>
-        </div>
-
-    </div>
-
-
-    
-    <div class="form-group" style="margin-top: 30px;">
-    <label asp-for="ArchitectureInterviewerId" class="control-label">Architecture Interviewers <span>(optional)</span></label>
-    @if (ViewBag.architecturesList != null)
-    {
-    <select style="width: 30%;" asp-for="ArchitectureInterviewerId" asp-items="@(ViewBag.architecturesList)" class="form-control">
-    <option value="">-- Select Architecture Interviewer --</option>
-    </select>
-    }
-    <span asp-validation-for="ArchitectureInterviewerId" class="text-danger"></span>
-    </div>
-   
-
-
-    @*   <div class="form-group">
-    <label asp-for="InterviewerId" class="control-label">Interviewer</label>
-    @Html.DropDownListFor(model => model.InterviewerId, (SelectList)ViewBag.interviewersList, "Select an Interviewer", new { @class = "form-control" })
-    <span asp-validation-for="InterviewerId" class="text-danger"></span>
-
-    </div> *@
-    <div class="form-group" style="margin-top: 30px;">
-        <label asp-for="Date" class="control-label"><span class="text-danger">*</span> Date</label>
-        <input style="width: 30%;" asp-for="Date" class="form-control" />
-        <span asp-validation-for="Date" class="text-danger" id="dateValidationMessage"></span>
-    </div>
-    <div class="form-group" hidden>
-        <label asp-for="ParentId" class="control-label"></label>
-        <input asp-for="ParentId" class="form-control" />
-        <span asp-validation-for="ParentId" class="text-danger"></span>
-    </div>
-
-
-
-
-    <div class="form-group " style="margin-top: 20px;">
-        <input type="submit" value="Schedule" class="btn btn-primary" />
-        <a class="btn btn-secondary" asp-action="Index">Back to List</a>
-
-    </div>
-
-</form>
-@* <p>@Html.ValidationSummary()</p> *@
-@* <script>
-
-    document.getElementById("createForm").onsubmit = function () {
-        return validateDate();
-    };
-
-    function validateDate() {
-        var dateInput = document.getElementById("Date");
-        var date = new Date(dateInput.value);
-        var currentDate = new Date();
-
-        if (date <= currentDate) {
-            var dateValidationMessage = document.getElementById("dateValidationMessage");
-            dateValidationMessage.textContent = "Date must be in the future";
-            return false;
-        }
-
-        return true;
-    }
-</script>
- *@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js"></script>
-
-<!-- SweetAlert2 CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10">
-
-<!-- SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+
+<script src="~/JS/Interviews.js"></script>
+
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 style="color:white;">Schedule New Interview</h2>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create" id="createForm" class="needs-validation" novalidate>
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <!-- Candidate Selection -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="CandidateId" class="form-label">
+                            <span style="color:red;">*</span> Candidate
+                        </label>
+                        @if (ViewBag.candidateList != null)
+                        {
+                            <select asp-for="CandidateId" asp-items="@(ViewBag.candidateList)" class="form-control" id="candidate-dropdown" data-selectize="true" required>
+                                <option value="">-- Select Name --</option>
+                            </select>
+                        }
+                        <span id="CandidateId-error" class="text-danger">Please select a candidate.</span>
+                        <span asp-validation-for="CandidateId" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Level Selection -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="PositionId" class="form-label">
+                            <span style="color:red;">*</span> Level
+                        </label>
+                        @if (ViewBag.positionList != null)
+                        {
+                            <select asp-for="PositionId" asp-items="@(ViewBag.positionList)" class="form-control" id="level-dropdown" data-selectize="true" required>
+                                <option value="">-- Select a Level --</option>
+                            </select>
+                        }
+                        <span id="PositionId-error" class="text-danger">Please select a level.</span>
+                        <span asp-validation-for="PositionId" class="text-danger"></span>
+                    </div>
+                </div>
+
+
+                <!-- Track Selection -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="TrackId" class="form-label">
+                            <span style="color:red;">*</span> Track
+                        </label>
+                        @if (ViewBag.Tracks != null)
+                        {
+                            <select asp-for="TrackId" asp-items="@(ViewBag.Tracks)" class="form-control" id="track-dropdown" data-selectize="true" required>
+                                <option value="">-- Select a Track --</option>
+                            </select>
+                        }
+                        <span id="TrackId-error" class="text-danger">Please select a track.</span>
+                        <span asp-validation-for="TrackId" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Interviewers -->
+                <div class="card mb-4 interview-section" style="padding: 20px; background-color:#f7f3f3;">
+                    <h5 class="card-title" style="margin-top:10px;">First Interview</h5>
+
+                    <!-- First Interviewer -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="InterviewerId" class="form-label">
+                                <span style="color:red;">*</span> Interviewer #1
+                            </label>
+                            @if (ViewBag.interviewersList != null)
+                            {
+                                <select asp-for="InterviewerId" asp-items="@(ViewBag.interviewersList)" data-selectize="true" class="form-control" required>
+                                    <option value="">-- Select an Interviewer --</option>
+                                </select>
+                            }
+                            <span id="InterviewerId-error" class="text-danger">Please select an interviewer.</span>
+                            <span asp-validation-for="InterviewerId" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <!-- Second Interviewer (Optional) -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="SecondInterviewerId" class="form-label">Interviewer #2 (optional)</label>
+                            @if (ViewBag.interviewersList != null)
+                            {
+                                <select asp-for="SecondInterviewerId" asp-items="@(ViewBag.interviewersList)" data-selectize="true" class="form-control">
+                                    <option value="">-- Select Second Interviewer --</option>
+                                </select>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Architecture Interviewer (Optional) -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="ArchitectureInterviewerId" class="form-label">Architecture Interviewer (optional)</label>
+                        @if (ViewBag.architecturesList != null)
+                        {
+                            <select asp-for="ArchitectureInterviewerId" asp-items="@(ViewBag.architecturesList)" class="form-control">
+                                <option value="">-- Select Architecture Interviewer --</option>
+                            </select>
+                        }
+                    </div>
+                </div>
+
+                <!-- Interview Date -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="Date" class="form-label">
+                            <span style="color:red;">*</span> Date
+                        </label>
+                        <input asp-for="Date" class="form-control" required />
+                        <span id="Date-error" class="text-danger">Please select a date.</span>
+                        <span asp-validation-for="Date" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-success px-4">Schedule</button>
+                    <a class="btn btn-secondary" asp-action="Index">Back to List</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 
 
 <script>
     $(document).ready(function () {
-        $('#candidate-dropdown').selectize();
-
-        $('#createForm').submit(function (e) {
-            // Validate the form
-            if (!validateForm()) {
-                e.preventDefault(); // Prevent the default form submission if validation fails
-                return;
-            }
-
-            // If validation passed, show the confirmation popup
-            showConfirmationPopup(e);
+        $('[data-selectize="true"]').selectize({
+            allowEmptyOption: false,
+            searchField: 'text',
+            placeholder: "Start typing to search...",
+            selectOnTab: true,
         });
 
-        function validateForm() {
-            var valid = true;
+        $('#createForm').on('submit', function (e) {
+            e.preventDefault();
 
-            // Validate Position
-            var positionId = $('#PositionId').val();
-            if (!positionId) {
-                $('#positionIdError').text('Level is required.');
+            let valid = true;
+
+            if ($('#candidate-dropdown').val() === '') {
+                $('#CandidateId-error').show();
                 valid = false;
             } else {
-                $('#positionIdError').text('');
+                $('#CandidateId-error').hide();
             }
 
-            // Validate Track
-            var trackId = $('#TrackId').val();
-            if (!trackId) {
-                $('#trackIdError').text('Track is required.');
+            if ($('[name="PositionId"]').val() === '') {
+                $('#PositionId-error').show();
                 valid = false;
             } else {
-                $('#trackIdError').text('');
+                $('#PositionId-error').hide();
             }
 
-            // Validate #1 (InterviewerId)
-            var interviewerId = $('#InterviewerId').val();
-            if (!interviewerId) {
-                $('#interviewerIdError').text('First Interviewer is required.');
+            if ($('[name="TrackId"]').val() === '') {
+                $('#TrackId-error').show();
                 valid = false;
             } else {
-                $('#interviewerIdError').text('');
+                $('#TrackId-error').hide();
             }
 
-            // Validate Date
+            if ($('[name="InterviewerId"]').val() === '') {
+                $('#InterviewerId-error').show();
+                valid = false;
+            } else {
+                $('#InterviewerId-error').hide();
+            }
+
+            if ($('[name="Date"]').val() === '') {
+                $('#Date-error').show();
+                valid = false;
+            } else {
+                $('#Date-error').hide();
+            }
+
+            if (valid) {
+                var candidateId = $('#candidate-dropdown').val();
+
+                $.ajax({
+                    url: '@Url.Action("CheckExistingInterview", "Interviews")',
+                    type: 'POST',
+                    data: { candidateId: candidateId },
+                    success: function (response) {
+                        if (response.exists) {
+                            Swal.fire({
+                                title: 'Warning',
+                                text: 'An interview for the selected candidate already exists. Do you want to continue and schedule another interview?',
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'Yes, continue',
+                                cancelButtonText: 'No, cancel'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    showConfirmationPopup();
+                                }
+                            });
+                        } else {
+                            showConfirmationPopup();
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'An error occurred while checking for existing interviews.',
+                            icon: 'error',
+                            confirmButtonText: 'Okay'
+                        });
+                    }
+                });
+            }
+        });
+
+        function showConfirmationPopup() {
             var date = $('#Date').val();
-            if (!date) {
-                $('#dateValidationMessage').text('Date is required.');
-                valid = false;
-            } else {
-                $('#dateValidationMessage').text('');
+                var jsDate = new Date(date);
+                var formattedDate =
+                    ('0' + jsDate.getDate()).slice(-2) + '/' +
+                    ('0' + (jsDate.getMonth() + 1)).slice(-2) + '/' +
+                    jsDate.getFullYear() + ' ' +
+                    ('0' + ((jsDate.getHours() % 12) || 12)).slice(-2) + ':' +
+                    ('0' + jsDate.getMinutes()).slice(-2) + ' ' +
+                    (jsDate.getHours() >= 12 ? 'PM' : 'AM');
+
+                var message = 'You are about to schedule an interview on ' + formattedDate + '. Are you sure you want to proceed?';
+
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: message,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, submit it!',
+                    cancelButtonText: 'No, cancel!',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#createForm')[0].submit(); 
+                    }
+                });
             }
-
-            return valid;
-        }
-
-        function showConfirmationPopup(e) {
-            e.preventDefault(); // Prevent the default form submission
-
-            // Proceed with form submission
-            var date = $('#Date').val();
-            var jsDate = new Date(date);
-            var formattedDate =
-                ('0' + jsDate.getDate()).slice(-2) + '/' +
-                ('0' + (jsDate.getMonth() + 1)).slice(-2) + '/' +
-                jsDate.getFullYear() + ' ' +
-                ('0' + ((jsDate.getHours() % 12) || 12)).slice(-2) + ':' +
-                ('0' + jsDate.getMinutes()).slice(-2) + ' ' +
-                (jsDate.getHours() >= 12 ? 'PM' : 'AM');
-
-            var message = 'You are about to schedule an interview on ' + formattedDate + '. Are you sure you want to proceed?';
-
-            Swal.fire({
-                title: 'Are you sure?',
-                text: message,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, submit it!',
-                cancelButtonText: 'No, cancel!',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // If the user clicks "Yes", manually trigger the form submission
-                    $('#createForm').unbind('submit').submit();
-                }
-            });
-        }
-    });
+        });
 </script>

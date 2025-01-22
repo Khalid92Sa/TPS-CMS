@@ -8,17 +8,14 @@ public class CustomUserValidator : UserValidator<IdentityUser>
 
     public override async Task<IdentityResult> ValidateAsync(UserManager<IdentityUser> manager, IdentityUser user)
     {
-        var result = await base.ValidateAsync(manager, user);
+        IdentityResult result = await base.ValidateAsync(manager, user);
 
-        // Remove the check for unique username
-        var otherUser = await manager.FindByNameAsync(user.UserName);
-        if (otherUser != null && !string.Equals(await manager.GetUserIdAsync(otherUser), await manager.GetUserIdAsync(user)))
+        IdentityUser otherUser = await manager.FindByNameAsync(user.UserName);
+        if (otherUser is not null && !string.Equals(await manager.GetUserIdAsync(otherUser), await manager.GetUserIdAsync(user)))
         {
-            var duplicateUserNameError = result.Errors.FirstOrDefault(e => e.Code == "DuplicateUserName");
+            IdentityError duplicateUserNameError = result.Errors.FirstOrDefault(e => e.Code == "DuplicateUserName");
             if (duplicateUserNameError != null)
-            {
                 result = IdentityResult.Success;
-            }
         }
 
         return result;

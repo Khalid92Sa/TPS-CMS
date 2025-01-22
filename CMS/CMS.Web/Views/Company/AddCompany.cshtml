@@ -3,115 +3,127 @@
 @{
     ViewData["Title"] = "Add a company";
 }
-<form asp-action="AddCompany">
-@*     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
- *@    <div class="form-group">
-        <label asp-for="Name" class="control-label"><span class="text-danger">*</span> Company Name</label>
-        <input style="width: 30%;" asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
-        <span id="errorMessage" class="text-danger"></span>
-    </div>
 
-    <div class="form-group" style="margin-top: 15px;">
-        <label asp-for="CountryId" class="control-label"><span class="text-danger">*</span> Country</label>
-        @if (ViewBag.CountriesDTOs != null)
-        {
-            <select style="width: 30%;" asp-for="CountryId" asp-items="@(ViewBag.CountriesDTOs)" class="form-control">
-                <option value="">-- Select a country --</option>
-            </select>
+<style>
+    .card-header {
+        color: white;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        border: none;
+        color: white;
+    }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
+            color: white;
+            transition: background 0.3s ease;
         }
-        else
-        {
-            <p>No countries available.</p>
+
+    .btn-secondary {
+        background-color: gray;
+        border-color: gray;
+    }
+
+        .btn-secondary:hover {
+            background-color: darkgray !important;
+            border-color: darkgray !important;
         }
-        <span asp-validation-for="CountryId" class="text-danger"></span>
-        <span id="CountryError" class="text-danger"></span> 
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 style="color:white !important">Add a Company</h2>
+        </div>
+        <div class="card-body">
+            <form asp-action="AddCompany" class="needs-validation" novalidate>
+                <div class="row">
+                    <!-- Company Name -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Name" class="form-label">
+                            <span class="text-danger">*</span> Company Name
+                            <i class="fas fa-info-circle" data-toggle="tooltip" title="Enter the full company name."></i>
+                        </label>
+                        <input asp-for="Name" class="form-control" placeholder="Enter company name" required>
+                        <div class="invalid-feedback">Company name is required.</div>
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                    <!-- Country -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="CountryId" class="form-label">
+                            <span class="text-danger">*</span> Country
+                        </label>
+                        <select asp-for="CountryId" asp-items="@(ViewBag.CountriesDTOs)" class="form-control" required>
+                            <option value="">-- Select a country --</option>
+                        </select>
+                        <div class="invalid-feedback">Please select a country.</div>
+                        <span asp-validation-for="CountryId" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Contact Person Details -->
+                <h3 class="mt-4">Contact Person</h3>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="PersonName" class="form-label">Person Name</label>
+                        <input asp-for="PersonName" class="form-control" placeholder="Enter person's name">
+                        <span asp-validation-for="PersonName" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Email" class="form-label">Email</label>
+                        <input asp-for="Email" type="email" class="form-control" placeholder="Enter email">
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="PhoneNumber" class="form-label">Phone Number</label>
+                        <input asp-for="PhoneNumber" class="form-control" placeholder="Enter phone number">
+                        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-success px-4">Add Company</button>
+                    <a class="btn btn-secondary" asp-action="GetCompanies">Back to list</a>
+                </div>
+            </form>
+        </div>
     </div>
-
-    <h3 style="margin-top: 50px;font-size: 24px;">Contact Person</h3>
-    <div class="form-group" style="margin-top: 15px;">
-        <label asp-for="PersonName" class="control-label">Person Name</label>
-        <input style="width: 30%;" asp-for="PersonName" class="form-control" />
-        <span asp-validation-for="PersonName" class="text-danger"></span>
-    </div>
-
-    <div class="form-group" style="margin-top: 15px;">
-        <label asp-for="Email" class="control-label">Email</label>
-        <input style="width: 30%;" asp-for="Email" class="form-control" />
-        <span asp-validation-for="Email" class="text-danger"></span>
-    </div>
-
-    <div class="form-group" style="margin-top: 15px;">
-        <label asp-for="PhoneNumber" class="control-label">Phone Number</label>
-        <input style="width: 30%;" asp-for="PhoneNumber" class="form-control" />
-        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
-    </div>
-
-    <div class="form-group " style="margin-top: 10px;">
-        <button type="submit" class="btn btn-primary">Add</button>
-        <a class="btn btn-secondary" asp-action="GetCompanies">Back to list</a>
-
-    </div>
-</form>
-
-
-
-
-
-
-<script>
-    $(document).ready(function () {
-        $("#Name").on("input", function () {
-            var name = $(this).val();
-            var countryId = $("#CountryId").val(); 
-
-            $.ajax({
-                url: '@Url.Action("CheckCompanyName", "Company")',
-                data: { name: name, countryId: countryId }, // Send data as an object
-                type: "POST",
-                success: function (response) {
-                    if (response.exists) {
-                        $("#errorMessage").text("A company with the same name already exists in the selected country.");
-                    } else {
-                        $("#errorMessage").hide();
-                    }
-                },
-                error: function () {
-                    $("#errorMessage").text("Error checking company name.");
-                }
-            });
-        });
-    });
-</script>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
-<!-- Add this script block after your existing script -->
 <script>
-    $(document).ready(function () {
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+
         $('form').submit(function (e) {
-            var name = $('#Name').val();
+            var isValid = true;
+            var name = $('#Name').val().trim();
             var countryId = $('#CountryId').val();
 
             // Validate Name
-            if (!name.trim()) {
-                $('#errorMessage').text('Name is required.');
-                e.preventDefault(); // Prevent form submission
+            if (!name) {
+                $('#Name').addClass('is-invalid');
+                isValid = false;
             } else {
-                $('#errorMessage').text('');
+                $('#Name').removeClass('is-invalid').addClass('is-valid');
             }
 
             // Validate Country
             if (!countryId) {
-                $('#CountryError').text('Please select a country.');
-                e.preventDefault(); // Prevent form submission
+                $('#CountryId').addClass('is-invalid');
+                isValid = false;
             } else {
-                $('#CountryError').text('');
+                $('#CountryId').removeClass('is-invalid').addClass('is-valid');
             }
 
-       
+            if (!isValid) {
+                e.preventDefault();
+            }
         });
-
-    
     });
 </script>

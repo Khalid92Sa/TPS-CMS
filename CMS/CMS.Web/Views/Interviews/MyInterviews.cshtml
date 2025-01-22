@@ -19,32 +19,35 @@
 {
     <div class="form-group" style="margin-bottom:20px;">
         <div class="row">
-        <div class="col-md-3">
-            @Html.Label("Filter by Status:")
-            @Html.DropDownList("statusFilter", ViewBag.StatusList as SelectList, null, new { @class = "form-control" })
-        </div>
+            <div class="col-md-3">
+                @Html.Label("Filter by Status:")
+                @Html.DropDownList("statusFilter", ViewBag.StatusList as SelectList, null, new { @class = "form-control" })
+            </div>
 
             @if (User.IsInRole("General Manager"))
             {
-            
-            <div class="col-md-3">
-            @Html.Label("Filter by Company:")
-                @Html.DropDownList("companyFilter", ViewBag.CompanyList as SelectList, "Select a Company", new { @class = "form-control" })
-            </div>
+                <div class="col-md-3">
+                    @Html.Label("Filter by Company:")
+                    @Html.DropDownList("companyFilter", ViewBag.CompanyList as SelectList, "Select a Company", new { @class = "form-control" })
+                </div>
 
                 <div class="col-md-3">
                     @Html.Label("Filter by Track:")
                     @Html.DropDownList("trackFilter", ViewBag.TrackList as SelectList, "Select a Track", new { @class = "form-control" })
                 </div>
             }
-        <div class="col-md-3" style="margin-top: 27px;">
-            <label>&nbsp;</label>
-                <button type="submit" class="btn btn-primary btn-block" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Filter your Interviews">Filter</button>
+
+            <div class="col-md-1" style="margin-top: 27px;">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn-primary btn-block" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Filter your Interviews">Filter</button>
+            </div>
+
+            <div class="col-md-1" style="margin-top: 27px;">
+                <button type="button" id="resetButton" class="btn btn-secondary btn-block" title="Reset Filters">Reset</button>
+            </div>
         </div>
-        </div>  
     </div>
 }
-
 
 <div class="row">
     <div class="col-lg-12">
@@ -52,7 +55,7 @@
        
             <div class="card-body">
              
-                <table id="add-rows" class="table table-nowrap dt-responsive table-bordered display" style="width:100%">
+                <table id="add-rows" class="display nowrap" style="width:100%">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -190,12 +193,10 @@
                                         if (item.StatusName == StatusCode.GetName("PND"))
                                         {
                                             <a class="bx bxs-edit-alt" style="font-size:x-large" href="javascript:void(0);" onclick="showScoreWarningModalForGM()" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit"></a>
-
                                         }
                                         else
                                         {
                                             <a class="bx bxs-edit-alt" style="font-size:x-large" asp-action="UpdateAfterInterviewForEdit" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit"></a>
-
                                         }
                                     }
                                 </td>
@@ -204,6 +205,9 @@
                         }
                     </tbody>
                 </table>
+
+                @await Html.PartialAsync("_PaginationPartial", Model)
+
             </div>
         </div>
     </div><!--end col-->
@@ -242,7 +246,22 @@
 <script>
     $.noConflict();
     jQuery(document).ready(function ($) {
-        $('#add-rows').DataTable();
+        $('#add-rows').DataTable({
+            paging: false,
+            searching: false,
+            info: false,
+            ordering: false,
+            scrollCollapse: true,
+            scrollY: '50vh'
+        });
 
+        // Reset button functionality
+        $('#resetButton').on('click', function () {
+            $('#statusFilter').val(''); // Clear the status filter
+            $('#companyFilter').val(''); // Clear the company filter (if present)
+            $('#trackFilter').val(''); // Clear the track filter (if present)
+            window.location.href = '@Url.Action("MyInterviews", "Interviews")'; // Redirect to base URL without filters
+        });
     });
 </script>
+

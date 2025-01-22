@@ -1,35 +1,84 @@
 ﻿@model CMS.Application.DTOs.CountryDTO
+
 @{
     ViewData["Title"] = "Edit Country";
 }
 
-<form asp-action="UpdateCountry">
-@*     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
- *@    <div class="form-group"><input type="hidden" asp-for="Id" /></div>
-    <div class="form-group">
-        <label asp-for="Name" class="control-label"><span class="text-danger">*</span> Country Name</label>
-        <input style="width: 30%;" asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
-        <span id="errorMessage" class="text-danger"></span>
-    </div>
-    <div class="form-group " style="margin-top:10px;">
-        <input type="submit" class="btn btn-primary" value="Submit" />
-        <a class="btn btn-secondary" asp-action="GetCountries"> Back to list</a>
+<style>
+    .card-header {
+        color: white;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
 
-    </div>
-</form>
+    .btn-success {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        border: none;
+        color: white;
+    }
 
-<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+        .btn-success:hover {
+            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
+            color: white;
+            transition: background 0.3s ease;
+        }
+
+    .btn-secondary {
+        background-color: gray;
+        border-color: gray;
+    }
+
+        .btn-secondary:hover {
+            background-color: darkgray !important;
+            border-color: darkgray !important;
+        }
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 style="color:white !important;">Edit Country</h2>
+        </div>
+        <div class="card-body">
+            <form asp-action="UpdateCountry" class="needs-validation" novalidate id="editCountryForm">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <input type="hidden" asp-for="Id" />
+
+                <!-- Country Name -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="Name" class="form-label">
+                            <span class="text-danger">*</span> Country Name
+                        </label>
+                        <input asp-for="Name" class="form-control" id="Name" style="width: 50%;" />
+                        <div class="invalid-feedback">Country Name is required.</div>
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                        <span id="errorMessage" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Submit and Back to List Buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-success px-4">Submit</button>
+                    <a class="btn btn-secondary" asp-action="GetCountries">Back to List</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
     $(document).ready(function () {
-        $('form').submit(function (e) {
-            var name = $('#Name').val();
+        $('#editCountryForm').on('submit', function (e) {
+            var name = $('#Name').val().trim();
 
-            // Validate Name
-            if (!name.trim()) {
-                $('#errorMessage').text('Country Name is required.');
-                e.preventDefault(); // Prevent form submission
+            // Validate Country Name
+            if (!name) {
+                $('#Name').addClass('is-invalid'); 
+                e.preventDefault(); 
             } else {
+                $('#Name').removeClass('is-invalid').addClass('is-valid');
                 $('#errorMessage').text('');
             }
         });

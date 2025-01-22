@@ -1,496 +1,517 @@
 ﻿using CMS.Application.DTOs;
+using CMS.Application.Extensions;
+using CMS.Application.Helpers;
 using CMS.Domain;
+using CMS.Domain.Entities;
 using CMS.Repository.Interfaces;
 using CMS.Services.Interfaces;
-using Microsoft.AspNetCore.Http;
+using CMS.Services.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.Collections.Generic;
+using System.Drawing.Printing;
 using System.Linq;
-using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace CMS.Web.Controllers
+namespace CMS.Web.Controllers;
+
+[Route("dashboard")]
+public class DashboardController : Controller
 {
-    public class DashboardController : Controller
+    private readonly IReportingService _reportingService;
+    private readonly ApplicationDbContext _context;
+    private readonly ICountryService _countryService;
+    private readonly IStatusRepository _statusRepository;
+    private readonly ITrackService _trackService;
+    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly ICompanyService _companyService;
+    private readonly UserManager<IdentityUser> _userManager;
+    public DashboardController(
+        IReportingService reportingService,
+        ApplicationDbContext context,
+        ICountryService countryService,
+        IStatusRepository statusRepository,
+        ITrackService trackService,
+        ICompanyService companyService,
+        RoleManager<IdentityRole> roleManager,
+        UserManager<IdentityUser> userManager)
     {
-        private readonly IReportingService _reportingService;
-        private readonly ApplicationDbContext _context;
-        private readonly ICountryService _countryService;
-        private readonly IStatusRepository _statusRepository;
-        private readonly ITrackService _trackService;
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly UserManager<IdentityUser> _userManager;
-        public DashboardController(IReportingService reportingService,
-                                   ApplicationDbContext context,
-                                   ICountryService countryService,
-                                   IStatusRepository statusRepository,
-                                   ITrackService trackService,
-                                   RoleManager<IdentityRole> roleManager,
-                                   UserManager<IdentityUser> userManager)
-        {
-            _reportingService = reportingService;
-            _context = context;
-            _countryService = countryService;
-            _statusRepository = statusRepository;
-            _trackService = trackService;
-            _roleManager = roleManager;
-            _userManager = userManager;
-        }
+        _reportingService = reportingService;
+        _context = context;
+        _countryService = countryService;
+        _statusRepository = statusRepository;
+        _trackService = trackService;
+        _roleManager = roleManager;
+        _userManager = userManager;
+        _companyService = companyService;
+    }
 
-        public void LogException(string methodName, Exception ex, string additionalInfo = null) => _countryService.LogException(methodName, ex, additionalInfo);
 
-        public async Task<IActionResult> Index()
+    [Route("")]
+    public async Task<IActionResult> Index()
+    {
+        try
         {
-            try
+            if (User.IsInRole("Admin") || User.IsInRole("General Manager") || User.IsInRole("HR Manager"))
             {
-                if (User.IsInRole("Admin") || User.IsInRole("General Manager") || User.IsInRole("HR Manager"))
-                {
-                    var report = (await _reportingService.GetBusinessPerformanceReport()).Value;
-                    double percentageFloat = ((double)report.NumberOfAccepted / report.NumberOfCandidates) * 100;
-                    int acceptedPercentage = (int)percentageFloat;
-                    ViewBag.AcceptedPercentage = acceptedPercentage;
-                    double rejectedFloat = ((double)report.NumberOfRejected / report.NumberOfCandidates) * 100;
-                    int rejectedPercentage = (int)rejectedFloat;
-                    ViewBag.RejectedPercentage = rejectedPercentage;
-                    ViewBag.PendingCount = report.NumberOfPending;
+                PerformanceReportDTO report = (await _reportingService.GetBusinessPerformanceReport()).Value;
 
-                    double onHoldPercentageFloat = ((double)report.NumberOfOnHold / report.NumberOfCandidates) * 100;
-                    int onHoldPercentage = (int)onHoldPercentageFloat;
-                    ViewBag.OnHoldPercentage = onHoldPercentage;
+                double totalPercentage = 0;
 
-                    double StoppedCyclesFloat = ((double)report.NumberOfStoppedCycles / report.NumberOfCandidates) * 100;
-                    int StoppedCyclesPercentage = (int)StoppedCyclesFloat;
-                    ViewBag.StoppedCycles = StoppedCyclesPercentage;
+                double percentageFloat = ((double)report.NumberOfAccepted / report.NumberOfCandidates) * 100;
+                int acceptedPercentage = (int)Math.Round(percentageFloat);
+                totalPercentage += acceptedPercentage;
+                ViewBag.AcceptedPercentage = acceptedPercentage;
 
-                    double pendingPercentageFloat = ((double)report.NumberOfPending / report.NumberOfCandidates) * 100;
-                    int pendingPercentage = (int)pendingPercentageFloat;
-                    ViewBag.PendingPercentage = pendingPercentage;
+                double rejectedFloat = ((double)report.NumberOfRejected / report.NumberOfCandidates) * 100;
+                int rejectedPercentage = (int)Math.Round(rejectedFloat);
+                totalPercentage += rejectedPercentage;
+                ViewBag.RejectedPercentage = rejectedPercentage;
 
-                    var countries = await _countryService.GetAllCountriesAsync(); // Assuming you have a countryService instance
+                double onHoldPercentageFloat = ((double)report.NumberOfOnHold / report.NumberOfCandidates) * 100;
+                int onHoldPercentage = (int)Math.Round(onHoldPercentageFloat);
+                totalPercentage += onHoldPercentage;
+                ViewBag.OnHoldPercentage = onHoldPercentage;
 
-                    // Convert the list of countries to a JSON array for use in JavaScript
-                    var countriesJson = JsonSerializer.Serialize(countries.Select(c => c.Name).ToList());
+                double StoppedCyclesFloat = ((double)report.NumberOfStoppedCycles / report.NumberOfCandidates) * 100;
+                int StoppedCyclesPercentage = (int)Math.Round(StoppedCyclesFloat);
+                totalPercentage += StoppedCyclesPercentage;
+                ViewBag.StoppedCycles = StoppedCyclesPercentage;
 
-                    ViewBag.CountriesList = countriesJson; // Pass the JSON data to the view
+                int pendingPercentage = 100 - (int)totalPercentage;
+                ViewBag.PendingPercentage = pendingPercentage;
 
-                    var treeData = GetDataFromDatabase();
+                IEnumerable<Country> countries = await _countryService.GetAllCountriesAsync();
 
-                    ViewBag.TreeData = treeData;
+                string countriesJson = NetJSON.NetJSON.Serialize(countries.Select(c => c.Name).ToList());
 
-                    return View(report);
-                }
+                ViewBag.CountriesList = countriesJson;
+
+                List<PerformanceReportDTO> treeData = GetDataFromDatabase();
+                ViewBag.TreeData = treeData;
+
+                return View(report);
+            }
+            else
+            {
+                if (User.Identity.IsAuthenticated)
+                    return View("AccessDenied");
                 else
-                {
-                    // User is not in the Admin role, handle accordingly (redirect or show an error message)
-                    if (User.Identity.IsAuthenticated)
-                        return View("AccessDenied");
-
-                    else
-                        return RedirectToAction("Login", "Account");
-                }
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(Index), ex, "Index page for Dashboard not working");
-                throw;
+                    return RedirectToAction("Login", "Account");
             }
         }
-
-        private static string ArrayToString(string[] array)
+        catch (Exception)
         {
-            try
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.Append("[");
-                for (int i = 0; i < array.Length; i++)
-                {
-                    sb.Append("'");
-                    sb.Append(array[i]);
-                    sb.Append("'");
-
-                    if (i < array.Length - 1)
-                        sb.Append(",");
-                }
-                sb.Append("]");
-                return sb.ToString();
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
+            throw;
         }
+    }
 
-        public IActionResult IndexForTree()
+    private static string ArrayToString(string[] array)
+    {
+        if (array is null || array.Length == 0)
+            return "[]";
+
+        string joinedStrings = string.Join(",", array.Select(item => $"'{item}'"));
+
+        return $"[{joinedStrings}]";
+    }
+
+    [Route("indexForTree")]
+    public IActionResult IndexForTree()
+    {
+        try
         {
-            try
-            {
-                var treeData = GetDataFromDatabase(); // Retrieve data from the database
-                return View(treeData);
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(IndexForTree), ex, "IndexForTree not working");
-                throw;
-            }
+            List<PerformanceReportDTO> treeData = GetDataFromDatabase();
+            return View(treeData);
         }
-
-        private List<PerformanceReportDTO> GetDataFromDatabase()
+        catch (Exception)
         {
-            try
-            {
-                var candidateData = (from candidate in _context.Candidates
-                                     join interview in _context.Interviews on candidate.Id equals interview.CandidateId
-                                     orderby interview.ModifiedOn descending
-                                     select new
-                                     {
-                                         PositionId = interview.Position.Id,
-                                         PositionName = interview.Position.Name,
-                                         CountryId = candidate.Company.Country.Id,
-                                         CountryName = candidate.Company.Country.Name,
-                                         CandidateName = candidate.FullName,
-                                         StatusName = interview.Status.Name,
-                                         interview.Score,
-                                         interview.Date,
-                                         interview.ModifiedOn,
-                                         InterviewerName = interview.Interviewer.UserName // Include InterviewerName
-                                     }).ToList();
+            throw;
+        }
+    }
 
-                var latestInterviews = candidateData
-                    .GroupBy(x => new
-                    {
-                        x.PositionId,
-                        x.PositionName,
-                        x.CountryId,
-                        x.CountryName,
-                        x.CandidateName
-                    })
-                    .Select(group => group.FirstOrDefault()) // Select the first interview for each candidate
-                    .ToList();
+    private List<PerformanceReportDTO> GetDataFromDatabase()
+    {
+        try
+        {
+            var candidateData = (from candidate in _context.Candidates
+                                 join interview in _context.Interviews on candidate.Id equals interview.CandidateId
+                                 orderby interview.ModifiedOn descending
+                                 select new
+                                 {
+                                     PositionId = interview.Position.Id,
+                                     PositionName = interview.Position.Name,
+                                     CountryId = candidate.Company.Country.Id,
+                                     CountryName = candidate.Company.Country.Name,
+                                     CandidateName = candidate.FullName,
+                                     StatusName = interview.Status.Name,
+                                     InterviewerName = interview.Interviewer.UserName,
+                                     interview.Score,
+                                     interview.Date,
+                                     interview.ModifiedOn
+                                 }).ToList();
 
-                var positionsGroups = latestInterviews.GroupBy(x => new
-                                                                    {
-                                                                        x.PositionId,
-                                                                        x.PositionName,
-                                                                        x.CountryId,
-                                                                        x.CountryName
-                                                                    }
-                                                              )
-                                                      .Select(group => new PositionDTO
-                                                      {
-                                                          Id = group.Key.PositionId,
-                                                          Name = group.Key.PositionName,
-                                                          CountryId = group.Key.CountryId,
-                                                          CountryName = group.Key.CountryName,
-                                                          Candidates = group.Select(c => new CandidateDTO
-                                                                                            {
-                                                                                                Name = c.CandidateName,
-                                                                                                Status = c.StatusName,
-                                                                                                InterviewerName = c.InterviewerName,
-                                                                                                Score = c.Score,
-                                                                                            }
-                                                                                   )
-                                                                            .ToList()
-                                                      })
-                                                      .ToList();
-
-                var result = positionsGroups.GroupBy(g => new
+            List<PerformanceReportDTO> result = candidateData
+                .GroupBy(x => new
                 {
-                    g.CountryId,
-                    g.CountryName
+                    x.CountryId,
+                    x.CountryName
                 })
-                .Select(g => new PerformanceReportDTO()
+                .Select(countryGroup => new PerformanceReportDTO
                 {
-                    Name = g.Key.CountryName,
-                    Positions = g.ToList()
-                })
-                .ToList();
+                    Name = countryGroup.Key.CountryName,
+                    Positions = countryGroup
+                        .GroupBy(c => new
+                        {
+                            c.PositionId,
+                            c.PositionName
+                        })
+                        .Select(positionGroup => new PositionDTO
+                        {
+                            Id = positionGroup.Key.PositionId,
+                            Name = positionGroup.Key.PositionName,
+                            CountryId = countryGroup.Key.CountryId,
+                            CountryName = countryGroup.Key.CountryName,
+                            Candidates = positionGroup
+                                .GroupBy(p => p.CandidateName)
+                                .Select(g => g.OrderByDescending(i => i.ModifiedOn).First())
+                                .Select(c => new CandidateDTO
+                                {
+                                    Name = c.CandidateName,
+                                    Status = c.StatusName,
+                                    InterviewerName = c.InterviewerName,
+                                    Score = c.Score
+                                }).ToList()
+                        }).ToList()
+                }).ToList();
 
-                return result;
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(GetDataFromDatabase), ex, "GetDataFromDatabase not working");
-                throw;
-            }
+            return result;
         }
-
-        public IActionResult AccessDenied()
+        catch (Exception)
         {
-            try
-            {
-                return View();
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(AccessDenied), ex, "Faild to load AccessDenied page");
-                throw;
-            }
+            throw;
         }
+    }
 
-        // Modify the action to accept a candidateName parameter
-        public async Task<IActionResult> AcceptedCandidates(string candidateName, int? trackFilter, string companyName)
+    [Route("accessDenied")]
+    public IActionResult AccessDenied()
+    {
+        try
         {
-            try
+            return View();
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    [Route("acceptedCandidates")]
+    public async Task<IActionResult> AcceptedCandidates(string candidateName, int? companyFilter, int? trackFilter, int pageNumber = 1, int pageSize = 5)
+    {
+        try
+        {
+            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
             {
-                if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
+                string HrId = "";
+
+                IdentityRole Hr = await _roleManager.FindByNameAsync("HR Manager");
+
+                HrId = (await _userManager.GetUsersInRoleAsync(Hr.Name)).FirstOrDefault().Id;
+
+                List<CandidateDTO> acceptedCandidates = await _statusRepository.GetApprovedCandidatesByCode(Domain.Enums.StatusCode.Approved, HrId);
+
+                if (!string.IsNullOrEmpty(candidateName))
                 {
-                    var HrId = string.Empty;
-
-                    var Hr = await _roleManager.FindByNameAsync("HR Manager");
-
-                    HrId = (await _userManager.GetUsersInRoleAsync(Hr.Name)).FirstOrDefault().Id;
-
-                    var acceptedCandidates = await _statusRepository.GetApprovedCandidatesByCode(CMS.Domain.Enums.StatusCode.Approved, HrId);
-
-                    if (!string.IsNullOrEmpty(candidateName))
-                    {
-                        acceptedCandidates = acceptedCandidates
-                            .Where(c => c.Name.Contains(candidateName, StringComparison.OrdinalIgnoreCase))
-                            .ToList();
-                    }
-
-                    if (trackFilter > 0)
-                    {
-                        acceptedCandidates = acceptedCandidates
-                            .Where(i => i.TrackId == trackFilter.Value)
-                            .ToList();
-                    }
-
-                    if (!string.IsNullOrEmpty(companyName))
-                    {
-                        acceptedCandidates = acceptedCandidates
-                            .Where(c => c.CompanyName.Contains(companyName.Trim(), StringComparison.OrdinalIgnoreCase))
-                            .ToList();
-                    }
-
-                    acceptedCandidates = acceptedCandidates.OrderByDescending(c => c.CreatedOn)
-                                                           .ToList();
-
-                    var tracks = await _trackService.GetAll();
-                    ViewBag.TrackList = new SelectList(tracks.Value, "Id", "Name");
-
-                    ViewData["candidateName"] = candidateName;
-                    ViewData["companyName"] = companyName;
-                    ViewBag.selectedTrack = trackFilter;
-
-                    return View(acceptedCandidates);
+                    acceptedCandidates = acceptedCandidates
+                        .Where(c => c.Name.Contains(candidateName, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
                 }
-                else
-                    return View("AccessDenied");
+
+                if (companyFilter.HasValue && companyFilter > 0)
+                {
+                    acceptedCandidates = acceptedCandidates
+                        .Where(i => i.CompanyId == companyFilter.Value)
+                        .ToList();
+                }
+
+                if (trackFilter > 0)
+                {
+                    acceptedCandidates = acceptedCandidates
+                        .Where(i => i.TrackId == trackFilter.Value)
+                        .ToList();
+                }
+
+                acceptedCandidates = [.. acceptedCandidates.OrderByDescending(c => c.CreatedOn)];
+
+                PaginatedList<CandidateDTO> paginatedAcceptedCandidates = new(
+                                                                acceptedCandidates.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList(),
+                                                                acceptedCandidates.Count,
+                                                                pageNumber,
+                                                                pageSize
+                                                            );
+
+                Result<List<TrackDTO>> tracks = await _trackService.GetAll();
+                ViewBag.TrackList = new SelectList(tracks.Value, "Id", "Name");
+
+                ViewData["candidateName"] = candidateName;
+                ViewBag.selectedTrack = trackFilter;
+
+                Result<List<CompanyDTO>> allCompanies = await _companyService.GetAll();
+                List<CompanyDTO> companies = allCompanies.Value;
+                ViewBag.CompanyList = new SelectList(companies, "Id", "Name");
+
+                return View(paginatedAcceptedCandidates);
             }
-            catch (Exception ex)
+            else
+                return View("AccessDenied");
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    [Route("pendingCandidates")]
+    public async Task<IActionResult> PendingCandidates(string candidateName, int? companyFilter, int? trackFilter, int pageNumber = 1, int pageSize = 5)
+    {
+        try
+        {
+            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
             {
-                LogException(nameof(AcceptedCandidates), ex, "Failed to retrieve accepted candidates");
-                throw;
+                List<CandidateDTO> pendingCandidates = await _statusRepository.GetPendingCandidatesByCode(Domain.Enums.StatusCode.Pending);
+
+                if (!string.IsNullOrEmpty(candidateName))
+                {
+                    pendingCandidates = pendingCandidates
+                        .Where(c => c.Name.Contains(candidateName.Trim(), StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                }
+
+                if (companyFilter.HasValue && companyFilter > 0)
+                {
+                    pendingCandidates = pendingCandidates
+                        .Where(i => i.CompanyId == companyFilter.Value)
+                        .ToList();
+                }
+
+                if (trackFilter > 0)
+                {
+                    pendingCandidates = pendingCandidates
+                        .Where(i => i.TrackId == trackFilter.Value)
+                        .ToList();
+                }
+
+                pendingCandidates = [.. pendingCandidates.OrderByDescending(c => c.CreatedOn)];
+
+                PaginatedList<CandidateDTO> paginatedPendingCandidates = new(
+                                                                                pendingCandidates.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList(),
+                                                                                pendingCandidates.Count,
+                                                                                pageNumber,
+                                                                                pageSize
+                                                                            );
+
+                Result<List<TrackDTO>> tracks = await _trackService.GetAll();
+                ViewBag.TrackList = new SelectList(tracks.Value, "Id", "Name");
+
+                ViewData["candidateName"] = candidateName;
+                ViewBag.selectedTrack = trackFilter;
+
+                Result<List<CompanyDTO>> allCompanies = await _companyService.GetAll();
+                List<CompanyDTO> companies = allCompanies.Value;
+                ViewBag.CompanyList = new SelectList(companies, "Id", "Name");
+
+                return View(paginatedPendingCandidates);
             }
+            else
+                return View("AccessDenied");
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    [Route("rejectedCandidates")]
+    public async Task<IActionResult> RejectedCandidates(string candidateName, int? companyFilter, int? trackFilter, int pageNumber = 1, int pageSize = 5)
+    {
+        try
+        {
+            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
+            {
+                List<CandidateDTO> rejectedCandidates = await _statusRepository.GetCandidatesByCode(Domain.Enums.StatusCode.Rejected);
+                if (!string.IsNullOrEmpty(candidateName))
+                {
+                    rejectedCandidates = rejectedCandidates
+                        .Where(c => c.Name.Contains(candidateName, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                }
+
+                if (companyFilter.HasValue && companyFilter > 0)
+                {
+                    rejectedCandidates = rejectedCandidates
+                        .Where(i => i.CompanyId == companyFilter.Value)
+                        .ToList();
+                }
+
+                if (trackFilter > 0)
+                {
+                    rejectedCandidates = rejectedCandidates
+                        .Where(i => i.TrackId == trackFilter.Value)
+                        .ToList();
+                }
+
+                rejectedCandidates = [.. rejectedCandidates.OrderByDescending(c => c.CreatedOn)];
+
+
+                PaginatedList<CandidateDTO> paginatedRejectedCandidatess = new(
+                                                                rejectedCandidates.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList(),
+                                                                rejectedCandidates.Count,
+                                                                pageNumber,
+                                                                pageSize
+                                                            );
+
+                Result<List<TrackDTO>> tracks = await _trackService.GetAll();
+                ViewBag.TrackList = new SelectList(tracks.Value, "Id", "Name");
+
+                ViewData["candidateName"] = candidateName;
+                ViewBag.selectedTrack = trackFilter;
+
+                Result<List<CompanyDTO>> allCompanies = await _companyService.GetAll();
+                List<CompanyDTO> companies = allCompanies.Value;
+                ViewBag.CompanyList = new SelectList(companies, "Id", "Name");
+
+                return View(paginatedRejectedCandidatess);
+            }
+            else
+                return View("AccessDenied");
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    [Route("onHoldCandidates")]
+    public async Task<IActionResult> OnHoldCandidates(string candidateName, int? companyFilter, int? trackFilter, int pageNumber = 1, int pageSize = 5)
+    {
+        try
+        {
+            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
+            {
+                List<CandidateDTO> onHoldCandidates = await _statusRepository.GetCandidatesByCode(Domain.Enums.StatusCode.OnHold);
+
+                if (!string.IsNullOrEmpty(candidateName))
+                {
+                    onHoldCandidates = onHoldCandidates
+                        .Where(c => c.Name.Contains(candidateName, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                }
+
+                if (companyFilter.HasValue && companyFilter > 0)
+                {
+                    onHoldCandidates = onHoldCandidates
+                        .Where(i => i.CompanyId == companyFilter.Value)
+                        .ToList();
+                }
+
+                if (trackFilter > 0)
+                {
+                    onHoldCandidates = onHoldCandidates
+                        .Where(i => i.TrackId == trackFilter.Value)
+                        .ToList();
+                }
+
+                onHoldCandidates = [.. onHoldCandidates.OrderByDescending(c => c.CreatedOn)];
+
+                PaginatedList<CandidateDTO> paginatedOnHoldCandidatess = new(
+                                                onHoldCandidates.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList(),
+                                                onHoldCandidates.Count,
+                                                pageNumber,
+                                                pageSize
+                                            );
+
+                Result<List<TrackDTO>> tracks = await _trackService.GetAll();
+                ViewBag.TrackList = new SelectList(tracks.Value, "Id", "Name");
+
+                ViewData["candidateName"] = candidateName;
+                ViewBag.selectedTrack = trackFilter;
+
+                Result<List<CompanyDTO>> allCompanies = await _companyService.GetAll();
+                List<CompanyDTO> companies = allCompanies.Value;
+                ViewBag.CompanyList = new SelectList(companies, "Id", "Name");
+
+                return View(paginatedOnHoldCandidatess);
+            }
+            else
+                return View("AccessDenied");
+        }
+        catch (Exception)
+        {
+            throw;
         }
 
-        public async Task<IActionResult> PendingCandidates(string candidateName, int? trackFilter, string companyName)
+    }
+
+    [Route("stoppedCyclesCandidates")]
+    public async Task<IActionResult> StoppedCyclesCandidates(string candidateName, int? companyFilter, int? trackFilter, int pageNumber = 1, int pageSize = 5)
+    {
+        try
         {
-            try
+            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
             {
-                if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
+                List<CandidateDTO> stoppedCyclesCandidates = await _statusRepository.GetStoppedCyclesCandidatesByNote();
+
+                if (!string.IsNullOrEmpty(candidateName))
                 {
-                    var pendingCandidates = await _statusRepository.GetPendingCandidatesByCode(CMS.Domain.Enums.StatusCode.Pending);
-
-                    if (!string.IsNullOrEmpty(candidateName))
-                    {
-                        pendingCandidates = pendingCandidates
-                            .Where(c => c.Name.Contains(candidateName.Trim(), StringComparison.OrdinalIgnoreCase))
-                            .ToList();
-                    }
-
-                    if (trackFilter > 0)
-                    {
-                        pendingCandidates = pendingCandidates
-                            .Where(i => i.TrackId == trackFilter.Value)
-                            .ToList();
-                    }
-
-                    if (!string.IsNullOrEmpty(companyName))
-                    {
-                        pendingCandidates = pendingCandidates
-                            .Where(c => c.CompanyName.Contains(companyName.Trim(), StringComparison.OrdinalIgnoreCase))
-                            .ToList();
-                    }
-
-                    pendingCandidates = pendingCandidates.OrderByDescending(c => c.CreatedOn)
-                                                         .ToList();
-
-                    var tracks = await _trackService.GetAll();
-                    ViewBag.TrackList = new SelectList(tracks.Value, "Id", "Name");
-
-                    ViewData["candidateName"] = candidateName;
-                    ViewData["companyName"] = companyName;
-                    ViewBag.selectedTrack = trackFilter;
-
-                    return View(pendingCandidates);
+                    stoppedCyclesCandidates = stoppedCyclesCandidates
+                        .Where(c => c.Name.Contains(candidateName, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
                 }
-                else
-                    return View("AccessDenied");
+
+                if (companyFilter.HasValue && companyFilter > 0)
+                {
+                    stoppedCyclesCandidates = stoppedCyclesCandidates
+                        .Where(i => i.CompanyId == companyFilter.Value)
+                        .ToList();
+                }
+
+                if (trackFilter > 0)
+                {
+                    stoppedCyclesCandidates = stoppedCyclesCandidates
+                        .Where(i => i.TrackId == trackFilter.Value)
+                        .ToList();
+                }
+
+                stoppedCyclesCandidates = [.. stoppedCyclesCandidates.OrderByDescending(c => c.CreatedOn)];
+
+                PaginatedList<CandidateDTO> paginatedStoppedCyclesCandidates = new(
+                                                                                    stoppedCyclesCandidates.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList(),
+                                                                                    stoppedCyclesCandidates.Count,
+                                                                                    pageNumber,
+                                                                                    pageSize
+                                                                                  );
+
+                Result<List<TrackDTO>> tracks = await _trackService.GetAll();
+                ViewBag.TrackList = new SelectList(tracks.Value, "Id", "Name");
+
+                ViewData["candidateName"] = candidateName;
+                ViewBag.selectedTrack = trackFilter;
+
+                Result<List<CompanyDTO>> allCompanies = await _companyService.GetAll();
+                List<CompanyDTO> companies = allCompanies.Value;
+                ViewBag.CompanyList = new SelectList(companies, "Id", "Name");
+
+                return View(paginatedStoppedCyclesCandidates);
             }
-            catch (Exception ex)
-            {
-                LogException(nameof(PendingCandidates), ex, "Failed to retrieve pending candidates");
-                throw;
-            }
+            else
+                return View("AccessDenied");
         }
-
-        public async Task<IActionResult> RejectedCandidates(string candidateName, int? trackFilter, string companyName)
+        catch (Exception)
         {
-            try
-            {
-                if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
-                {
-                    var rejectedCandidates = await _statusRepository.GetCandidatesByCode(CMS.Domain.Enums.StatusCode.Rejected);
-                    if (!string.IsNullOrEmpty(candidateName))
-                    {
-                        rejectedCandidates = rejectedCandidates
-                            .Where(c => c.Name.Contains(candidateName, StringComparison.OrdinalIgnoreCase))
-                            .ToList();
-                    }
-
-                    if (trackFilter > 0)
-                    {
-                        rejectedCandidates = rejectedCandidates
-                            .Where(i => i.TrackId == trackFilter.Value)
-                            .ToList();
-                    }
-
-                    if (!string.IsNullOrEmpty(companyName))
-                    {
-                        rejectedCandidates = rejectedCandidates
-                            .Where(c => c.CompanyName.Contains(companyName.Trim(), StringComparison.OrdinalIgnoreCase))
-                            .ToList();
-                    }
-
-                    rejectedCandidates = rejectedCandidates.OrderByDescending(c => c.CreatedOn)
-                                                           .ToList();
-
-                    var tracks = await _trackService.GetAll();
-                    ViewBag.TrackList = new SelectList(tracks.Value, "Id", "Name");
-
-                    ViewData["candidateName"] = candidateName;
-                    ViewData["companyName"] = companyName;
-                    ViewBag.selectedTrack = trackFilter;
-
-                    return View(rejectedCandidates);
-                }
-                else
-                    return View("AccessDenied");
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(RejectedCandidates), ex, "Failed to retrieve rejected candidates");
-                throw;
-            }
-        }
-
-        public async Task<IActionResult> OnHoldCandidates(string candidateName, int? trackFilter, string companyName)
-        {
-            try
-            {
-                if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
-                {
-                    var onHoldCandidates = await _statusRepository.GetCandidatesByCode(CMS.Domain.Enums.StatusCode.OnHold);
-
-                    if (!string.IsNullOrEmpty(candidateName))
-                    {
-                        onHoldCandidates = onHoldCandidates
-                            .Where(c => c.Name.Contains(candidateName, StringComparison.OrdinalIgnoreCase))
-                            .ToList();
-                    }
-
-                    if (trackFilter > 0)
-                    {
-                        onHoldCandidates = onHoldCandidates
-                            .Where(i => i.TrackId == trackFilter.Value)
-                            .ToList();
-                    }
-
-                    if (!string.IsNullOrEmpty(companyName))
-                    {
-                        onHoldCandidates = onHoldCandidates
-                            .Where(c => c.CompanyName.Contains(companyName.Trim(), StringComparison.OrdinalIgnoreCase))
-                            .ToList();
-                    }
-
-                    onHoldCandidates = onHoldCandidates.OrderByDescending(c => c.CreatedOn)
-                                                       .ToList();
-
-                    var tracks = await _trackService.GetAll();
-                    ViewBag.TrackList = new SelectList(tracks.Value, "Id", "Name");
-
-                    ViewData["candidateName"] = candidateName;
-                    ViewData["companyName"] = companyName;
-                    ViewBag.selectedTrack = trackFilter;
-
-                    return View(onHoldCandidates);
-                }
-                else
-                    return View("AccessDenied");
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(OnHoldCandidates), ex, "Failed to retrieve on Hold candidates");
-                throw;
-            }
-
-        }
-
-        public async Task<IActionResult> StoppedCyclesCandidates(string candidateName, int? trackFilter, string companyName)
-        {
-            try
-            {
-                if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
-                {
-                    var stoppedCyclesCandidates = await _statusRepository.GetStoppedCyclesCandidatesByNote();
-
-                    if (!string.IsNullOrEmpty(candidateName))
-                    {
-                        stoppedCyclesCandidates = stoppedCyclesCandidates
-                            .Where(c => c.Name.Contains(candidateName, StringComparison.OrdinalIgnoreCase))
-                            .ToList();
-                    }
-
-                    if (trackFilter > 0)
-                    {
-                        stoppedCyclesCandidates = stoppedCyclesCandidates
-                            .Where(i => i.TrackId == trackFilter.Value)
-                            .ToList();
-                    }
-
-                    if (!string.IsNullOrEmpty(companyName))
-                    {
-                        stoppedCyclesCandidates = stoppedCyclesCandidates
-                            .Where(c => c.CompanyName.Contains(companyName.Trim(), StringComparison.OrdinalIgnoreCase))
-                            .ToList();
-                    }
-
-                    stoppedCyclesCandidates = stoppedCyclesCandidates.OrderByDescending(c => c.CreatedOn)
-                                                                     .ToList();
-
-                    var tracks = await _trackService.GetAll();
-                    ViewBag.TrackList = new SelectList(tracks.Value, "Id", "Name");
-
-                    ViewData["candidateName"] = candidateName;
-                    ViewData["companyName"] = companyName;
-                    ViewBag.selectedTrack = trackFilter;
-
-                    return View(stoppedCyclesCandidates);
-                }
-                else
-                    return View("AccessDenied");
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(OnHoldCandidates), ex, "Failed to retrieve on Hold candidates");
-                throw;
-            }
+            throw;
         }
     }
 }

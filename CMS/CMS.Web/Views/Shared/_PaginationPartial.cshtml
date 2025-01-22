@@ -1,0 +1,176 @@
+﻿@model dynamic
+
+<style>
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 10px;
+    }
+
+    .pagination {
+        list-style-type: none;
+        display: flex;
+        align-items: center;
+        padding: 0;
+        margin: 0;
+    }
+
+    .pagination .page-item {
+        margin: 0 5px;
+    }
+
+    .pagination .page-item .page-link {
+        padding: 10px 15px;
+        border-radius: 50%;
+        border: 2px solid #405189;
+        background-color: #f1f1f1;
+        color: #405189;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+
+    .pagination .page-item .page-link:hover {
+        background-color: #405189;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #405189;
+        color: white;
+        border-color: #405189;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #fff;
+        border-color: #dee2e6;
+        cursor: not-allowed;
+    }
+
+    .pagination-dropdown, .rows-per-page {
+        display: flex;
+        align-items: center;
+    }
+
+    .pagination-dropdown label, .rows-per-page label {
+        font-weight: bold;
+        color: #405189;
+        margin-right: 10px;
+    }
+
+    .pagination-dropdown select, .rows-per-page select {
+        padding: 8px 30px;
+        border-radius: 8px;
+        border: 1px solid #405189;
+        background-color: white;
+        font-weight: bold;
+        max-height: 150px;
+        overflow-y: auto;
+        transition: all 0.3s ease;
+        appearance: none;
+        background-image: url('data:image/svg+xml,%3Csvg width="10" height="5" viewBox="0 0 10 5" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M1 1l4 4 4-4" stroke="%23007bff" stroke-width="1.5" fill="none" fill-rule="evenodd"%3E%3C/path%3E%3C/svg%3E');
+        background-repeat: no-repeat;
+        background-position: right 10px top 50%;
+        background-size: 12px;
+        margin-right: 15px;
+    }
+
+    .pagination-dropdown select:hover, .rows-per-page select:hover {
+        background-color: #f1f1f1;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .pagination-dropdown select:focus, .rows-per-page select:focus {
+        outline: none;
+        border-color: #0056b3;
+        background-color: #e9f7ff;
+    }
+</style>
+
+@{
+    var queryParams = new List<string>();
+
+    foreach (var key in Context.Request.Query.Keys)
+    {
+        if (key != "pageNumber" && key != "pageSize")
+        {
+            var value = Context.Request.Query[key];
+            queryParams.Add($"{key}={value}");
+        }
+    }
+
+    var queryString = queryParams.Any() ? "&" + string.Join("&", queryParams) : "";
+}
+
+    <div class="pagination-container">
+        <!-- Rows per page dropdown -->
+        <div class="rows-per-page">
+            <label for="pageSize">Rows per page:</label>
+            <select id="pageSize" onchange="location.href='?pageSize=' + this.value + '&pageNumber=1@(queryString)'">
+                @for (int size = 5; size <= 50; size += 5)
+                {
+                    @if (Model.PageSize == size)
+                    {
+                        <option value="@size" selected>@size</option>
+                    }
+                    else
+                    {
+                        <option value="@size">@size</option>
+                    }
+                }
+            </select>
+        </div>
+        <ul class="pagination">
+            <!-- First Button -->
+            <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                <a data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="First" class="page-link" href="?pageNumber=1&pageSize=@Model.PageSize@(queryString)">&lt;&lt;</a>
+            </li>
+
+            <!-- Previous Button -->
+            <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Previous" class="page-link" href="?pageNumber=@(Model.PageIndex - 1)&pageSize=@Model.PageSize@(queryString)">&lt;</a>
+            </li>
+
+            <!-- Current Page -->
+            <li class="page-item active">
+                <span class="page-link">@Model.PageIndex</span>
+            </li>
+
+            <!-- Next Button -->
+            <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Next" class="page-link" href="?pageNumber=@(Model.PageIndex + 1)&pageSize=@Model.PageSize@(queryString)">&gt;</a>
+            </li>
+
+            <!-- Last Button -->
+            <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                <a data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Last" class="page-link" href="?pageNumber=@Model.TotalPages&pageSize=@Model.PageSize@(queryString)">&gt;&gt;</a>
+            </li>
+        </ul>
+
+        <!-- Pagination Dropdown -->
+        <div class="pagination-dropdown">
+            <label for="pageSelect">Go to page:</label>
+            <select id="pageSelect" onchange="location.href='?pageNumber=' + this.value + '&pageSize=@Model.PageSize@(queryString)'">
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    if (i == Model.PageIndex)
+                    {
+                        <option value="@i" selected="selected">@i</option>
+                    }
+                    else
+                    {
+                        <option value="@i">@i</option>
+                    }
+                }
+            </select>
+        </div>
+    </div>

@@ -1,25 +1,21 @@
-﻿using CMS.Domain.Entities;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
 
-namespace CMS.Application.DTOs
+namespace CMS.Application.DTOs;
+
+public class CarrerOfferDTO
 {
-    public class CarrerOfferDTO
-    {//Updated class
-        public int Id { get; set; }
-        [Required(ErrorMessage = "Position is required.")]
-        public int PositionId { get; set; }
-        public string PositionName { get; set; }
+    public int Id { get; set; }
+    [Required(ErrorMessage = "Position is required.")]
+    public int PositionId { get; set; }
+    public string PositionName { get; set; }
 
-        [Required(ErrorMessage = "YearsOfExperience is required.")]
-        public int YearsOfExperience { get; set; }
-        [Required(ErrorMessage = "LongDescription is required.")]
-        public string LongDescription { get; set; }
-        [Required(ErrorMessage = "CreatedBy is required.")]
-        public string CreatedBy { get; set; }
-        public DateTime CreatedDateTime { get; set; } = DateTime.Now;
+    [Required(ErrorMessage = "YearsOfExperience is required.")]
+    public int YearsOfExperience { get; set; }
+    [Required(ErrorMessage = "LongDescription is required.")]
+    public string LongDescription { get; set; }
+    [Required(ErrorMessage = "CreatedBy is required.")]
+    public string CreatedBy { get; set; }
+    public DateTime CreatedDateTime { get; set; } = DateTime.Now;
 
-    }
 }

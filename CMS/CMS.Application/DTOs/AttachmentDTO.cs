@@ -1,20 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace CMS.Application.DTOs
+namespace CMS.Application.DTOs;
+
+public class AttachmentDTO
 {
-    //Updated class
-    public class AttachmentDTO
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        public string FileName { get; set; }
+    public string FileName { get; set; }
 
-        public long FileSize { get; set; }
+    public long FileSize { get; set; }
 
-        public byte[] FileData { get; set; }
+    public byte[] FileData { get; set; }
 
-        public DateTime CreatedOn { get; set; }
-    }
+    public DateTime CreatedOn { get; set; }
 }

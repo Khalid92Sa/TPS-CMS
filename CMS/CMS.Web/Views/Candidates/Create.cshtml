@@ -1,100 +1,223 @@
-﻿    @model CMS.Application.DTOs.CandidateCreateDTO
+﻿@model CMS.Application.DTOs.CandidateCreateDTO
 
 @{
     ViewData["Title"] = "Create Candidate";
 }
 
-<form asp-action="Create" enctype="multipart/form-data">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <div class="form-group">
-        <label asp-for="FullName" class="control-label"><span class="text-danger">*</span> Full Name</label>
-        <input style="width: 30%;" asp-for="FullName" class="form-control" autocomplete="off" />
-        <span asp-validation-for="FullName" class="text-danger"></span>
-        <span id="fullNameError" class="text-danger"></span>
+<style>
+    .card-header {
+        color: white;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
 
-    </div>
-    <div class="form-group" style="margin-top: 15px;">
-        <label asp-for="Phone" class="control-label">Phone</label>
-        <input style="width: 30%;" asp-for="Phone" class="form-control" autocomplete="off" />
-        <span asp-validation-for="Phone" class="text-danger"></span>
-        <span id="phoneError" class="text-danger"></span>
+    .btn-success {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        border: none;
+        color: white;
+    }
 
-    </div>
-
-
-    <div class="form-group" style="margin-top: 15px;">
-
-        <label asp-for="CompanyId" class="control-label"><span class="text-danger">*</span> CV Provider name</label>
-        @if (ViewBag.CompaniesDTOs != null)
-        {
-            <select style="width: 30%;" asp-for="CompanyId" asp-items="@(ViewBag.CompaniesDTOs)" class="form-control">
-                <option value="">-- Select the provider --</option>
-
-            </select>
+        .btn-success:hover {
+            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
+            color: white;
+            transition: background 0.3s ease;
         }
 
-        <span asp-validation-for="CompanyId" class="text-danger"></span>
-        <span id="companyIdError" class="text-danger"></span>
+    .btn-secondary {
+        background-color: gray;
+        border-color: gray;
+    }
 
-    </div>
-
-    <div class="form-group" style="margin-top: 15px;">
-
-        <label asp-for="PositionId" class="control-label"><span class="text-danger">*</span> Level</label>
-        @if (ViewBag.positions != null)
-        {
-            <select style="width: 30%;" asp-for="PositionId" asp-items="@(ViewBag.positions)" class="form-control" >
-                <option value="">-- Select a Level --</option>
-
-            </select>
+        .btn-secondary:hover {
+            background-color: darkgray !important;
+            border-color: darkgray !important;
         }
+</style>
 
-        <span asp-validation-for="PositionId" class="text-danger"></span>
-        <span id="positionIdError" class="text-danger"></span>
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 style="color:white !important">Create Candidate</h2>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create" enctype="multipart/form-data" class="needs-validation" id="candidateForm">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
+                <!-- Full Name -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="FullName" class="form-label">
+                            <span class="text-danger">*</span> Full Name
+                        </label>
+                        <input asp-for="FullName" class="form-control" id="FullName" autocomplete="off" />
+                        <div class="invalid-feedback">Full Name is required.</div>
+                        <span asp-validation-for="FullName" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Phone -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Phone" class="form-label">Phone</label>
+                        <input asp-for="Phone" class="form-control" id="Phone" autocomplete="off" />
+                        <span asp-validation-for="Phone" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- CV Provider -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="CompanyId" class="form-label">
+                            <span class="text-danger">*</span> CV Provider
+                        </label>
+                        <select asp-for="CompanyId" id="CompanyId" asp-items="@(ViewBag.CompaniesDTOs)" class="form-control">
+                            <option value="">-- Select the provider --</option>
+                        </select>
+                        <div class="invalid-feedback">Please select a CV provider.</div>
+                        <span asp-validation-for="CompanyId" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Level -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="PositionId" class="form-label">
+                            <span class="text-danger">*</span> Level
+                        </label>
+                        <select asp-for="PositionId" id="PositionId" asp-items="@(ViewBag.positions)" class="form-control">
+                            <option value="">-- Select a Level --</option>
+                        </select>
+                        <div class="invalid-feedback">Please select a level.</div>
+                        <span asp-validation-for="PositionId" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Track -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="TrackId" class="form-label">
+                            <span class="text-danger">*</span> Track
+                        </label>
+                        <select asp-for="TrackId" id="TrackId" asp-items="@(ViewBag.Tracks)" class="form-control">
+                            <option value="">-- Select a track --</option>
+                        </select>
+                        <div class="invalid-feedback">Please select a track.</div>
+                        <span asp-validation-for="TrackId" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Experience -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Experience" class="form-label">
+                            <span class="text-danger">*</span> Experience
+                        </label>
+                        <input asp-for="Experience" class="form-control" id="Experience" autocomplete="off" />
+                        <div class="invalid-feedback">Experience is required.</div>
+                        <span asp-validation-for="Experience" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Upload CV -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="file" class="form-label">Upload CV:</label>
+                        <input type="file" id="file" name="file" class="form-control-file" onchange="validateFileFormat(this)" />
+                        <span id="fileError" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-success px-4" id="submitButton">Create</button>
+                    <a class="btn btn-secondary" asp-action="Index">Back to List</a>
+                </div>
+            </form>
+        </div>
     </div>
+</div>
 
-    <div class="form-group" style="margin-top: 15px;">
-        <label asp-for="TrackId" class="control-label"><span class="text-danger">*</span> Track</label>
-        @if (ViewBag.Tracks != null)
-        {
-            <select style="width: 30%;" asp-for="TrackId" asp-items="@(ViewBag.Tracks)" class="form-control">
-                <option value="">-- Select a track --</option>
-            </select>
-        }
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
-        <span asp-validation-for="TrackId" class="text-danger"></span>
-        <span id="trackIdError" class="text-danger"></span>
-    </div>
+<script>
+    $(document).ready(function () {
+        // Restrict invalid characters in Phone and Experience fields
+        $('#Phone').on('input', function () {
+            this.value = this.value.replace(/[^0-9+]/g, '');
+        });
+        $('#Experience').on('input', function () {
+            this.value = this.value.replace(/[^0-9.]/g, '');
+        });
 
+        // Form validation on submit
+        $('#candidateForm').on('submit', function (e) {
+            var isValid = true;
+            var fileInput = $('#file')[0];
 
-    <div class="form-group" style="margin-top: 15px;">
-        <label asp-for="Experience" class="control-label"><span class="text-danger">*</span> Experience</label>
-        <input style="width: 30%;" asp-for="Experience" class="form-control" autocomplete="off" />
-        <span asp-validation-for="Experience" class="text-danger"></span>
-        <span id="experienceError" class="text-danger"></span>
+            // Validate Full Name
+            if (!$('#FullName').val().trim()) {
+                $('#FullName').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $('#FullName').removeClass('is-invalid');
+            }
 
-    </div>
+            // Validate CV Provider
+            if (!$('#CompanyId').val()) {
+                $('#CompanyId').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $('#CompanyId').removeClass('is-invalid');
+            }
 
+            // Validate Level (Position)
+            if (!$('#PositionId').val()) {
+                $('#PositionId').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $('#PositionId').removeClass('is-invalid');
+            }
 
-    <div class="form-group" style="margin-top: 15px;">
-        <label for="file">Upload CV:</label>
-        <input type="file" id="file" name="file" class="form-control-file" onchange="validateFileFormat(this)" />
-        <br />
-        <span id="fileError" class="text-danger"></span>
-    </div>
+            // Validate Track
+            if (!$('#TrackId').val()) {
+                $('#TrackId').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $('#TrackId').removeClass('is-invalid');
+            }
 
-   
-    <div class="form-group" style="margin-top: 15px;">
-     <input type="submit" value="Create" class="btn btn-primary" />
-        <a class="btn btn-secondary" asp-action="Index">Back to List</a>
+            // Validate Experience
+            if (!$('#Experience').val().trim()) {
+                $('#Experience').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $('#Experience').removeClass('is-invalid');
+            }
 
-    </div>
-</form>
+            // Validate file if selected
+            if (fileInput.files.length > 0) {
+                var allowedExtensions = [".pdf", ".docx", ".png", ".jpg"];
+                var fileName = fileInput.files[0].name;
+                var fileSize = fileInput.files[0].size;
+                var fileExtension = '.' + fileName.split('.').pop().toLowerCase();
 
+                if (!allowedExtensions.includes(fileExtension)) {
+                    $('#fileError').text('Invalid file format. Allowed formats: PDF, DOCX, PNG, JPG.');
+                    isValid = false;
+                } else if (fileSize > 9 * 1024 * 1024) {
+                    $('#fileError').text('File size exceeds 9 MB.');
+                    isValid = false;
+                } else {
+                    $('#fileError').text('');
+                }
+            }
 
+            // If any validation failed, prevent form submission
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+    });
 
-@* <script>
     function validateFileFormat(input) {
         const allowedExtensions = [".pdf", ".docx", ".png", ".jpg"];
         const file = input.files[0];
@@ -102,126 +225,15 @@
         if (file) {
             const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
             if (!allowedExtensions.includes(fileExtension)) {
-                document.getElementById("fileError").textContent = "Invalid file format. Allowed formats are PDF, DOCX, PNG, and JPG.";
-            } else if (file.size > 4 * 1024 * 1024) { // Check if the file size is greater than 4MB
-                document.getElementById("fileError").textContent = "File size exceeds 4MB.";
-            } else {
-                document.getElementById("fileError").textContent = "";
-            }
-        }
-    }
-</script>
- *@
-<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-
-<script>
-    $(document).ready(function () {
-
-        // Prevent letters in the Phone field
-        $('#Phone').on('input', function () {
-            this.value = this.value.replace(/[^0-9+]/g, ''); // Allow only numeric characters
-        });
-
-        // Prevent letters in the Experience field
-        $('#Experience').on('input', function () {
-            this.value = this.value.replace(/[^0-9.]/g, ''); // Allow only numeric characters
-        });
-
-
-        $('form').submit(function (e) {
-            var fullName = $('#FullName').val();
-            var phone = $('#Phone').val();
-            var companyId = $('#CompanyId').val();
-            var positionId = $('#PositionId').val();
-            var trackId = $('#TrackId').val();
-            var experience = $('#Experience').val();
-            var fileInput = $('#file')[0];
-
-            // Validate Full Name
-            if (!fullName.trim()) {
-                $('#fullNameError').text('Full Name is required.');
-                e.preventDefault(); // Prevent form submission
-            } else {
-                $('#fullNameError').text('');
-            }
-
-            // Validate CV Provider name (CompanyId)
-            if (!companyId) {
-                $('#companyIdError').text('Please select a CV Provider name.');
-                e.preventDefault(); // Prevent form submission
-            } else {
-                $('#companyIdError').text('');
-            }
-
-            // Validate Position
-            if (!positionId) {
-                $('#positionIdError').text('Please select a Level.');
-                e.preventDefault(); // Prevent form submission
-            } else {
-                $('#positionIdError').text('');
-            }
-
-             // Validate Track
-            if (!trackId) {
-                $('#trackIdError').text('Please select a Track');
-                e.preventDefault(); // Prevent form submission
-            } else {
-                $('#trackIdError').text('');
-            }
-
-
-            // Validate Experience
-            if (!experience.trim()) {
-                $('#experienceError').text('Experience is required.');
-                e.preventDefault(); // Prevent form submission
-            } else {
-                $('#experienceError').text('');
-            }
-
-            // Validate File if a file is selected
-            if (fileInput.files.length > 0) {
-                var allowedExtensions = [".pdf", ".docx", ".png", ".jpg"];
-                var fileName = fileInput.files[0].name;
-                var fileSize = fileInput.files[0].size;
-
-                var fileExtension = fileName.substr((fileName.lastIndexOf('.') + 1));
-                if ($.inArray("." + fileExtension, allowedExtensions) === -1) {
-                    $('#fileError').text('Invalid file extension. Allowed extensions: ' + allowedExtensions.join(', '));
-                    e.preventDefault(); // Prevent form submission
-                } else {
-                    $('#fileError').text('');
-                }
-
-                if (fileSize > 9 * 1024 * 1024) {
-                    $('#fileError').text('File size exceeds 9 MB limit.');
-                    e.preventDefault(); // Prevent form submission
-                } else {
-                    $('#fileError').text('');
-                }
-            }
-        });
-    });
-
-    function validateFileFormat(fileInput) {
-        var allowedExtensions = [".pdf", ".docx", ".png", ".jpg"];
-        var fileName = fileInput.files[0] ? fileInput.files[0].name : null;
-
-        if (fileName) {
-            var fileExtension = fileName.substr((fileName.lastIndexOf('.') + 1));
-            if ($.inArray("." + fileExtension, allowedExtensions) === -1) {
-                $('#fileError').text('Invalid file extension. Allowed extensions: ' + allowedExtensions.join(', '));
-                fileInput.value = ''; // Clear the file input
-            } else {
-                $('#fileError').text('');
-            }
-
-            var fileSize = fileInput.files[0].size;
-            if (fileSize > 9 * 1024 * 1024) {
-                $('#fileError').text('File size exceeds 9 MB limit.');
-                fileInput.value = ''; // Clear the file input
+                $('#fileError').text('Invalid file format. Allowed formats: PDF, DOCX, PNG, JPG.');
+                input.value = '';
+            } else if (file.size > 9 * 1024 * 1024) {
+                $('#fileError').text('File size exceeds 9 MB.');
+                input.value = '';
             } else {
                 $('#fileError').text('');
             }
         }
     }
 </script>
+

@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Text;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace CMS.Application.DTOs
+namespace CMS.Application.DTOs;
+
+public class StatusDTO
 {
-    public class StatusDTO
-    {//Updated class
-        public int Id { set; get; }
-        [Required]
-        public string Name { set; get; }
-        [Required]
-        public string Code { set; get; }
-    }
+    public int Id { set; get; }
+    [Required]
+    public string Name { set; get; }
+    [Required]
+    public string Code { set; get; }
 }

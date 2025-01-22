@@ -5,47 +5,174 @@
     ViewData["Title"] = "Edit User";
 }
 
-<form asp-action="Edit" method="post">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <div class="form-group"><input type="hidden" asp-for="RegisterrId" /></div>
-    <div class="form-group" style="width:30%;">
-        <label asp-for="Email" class="control-label"><span style="color:red;">*</span> Email</label>
-        <input asp-for="Email" class="form-control" />
-        <span asp-validation-for="Email" class="text-danger"></span>
-    </div>
-    <div class="form-group" style="margin-top:15px;width:30%;">
-        <label asp-for="UserName" class="control-label"><span style="color:red;">*</span> Username</label>
-        <input asp-for="UserName" class="form-control" />
-        <span asp-validation-for="UserName" class="text-danger"></span>
-    </div>
-    <div class="form-group" style="margin-top:15px;width:30%;">
-        <label asp-for="Password" class="control-label"><span style="color:red;">*</span> Password</label>
-        <input asp-for="Password" type="password" class="form-control" />
-        <span asp-validation-for="Password" class="text-danger"></span>
-    </div>
-    <div class="form-group" style="margin-top:15px;width:30%;">
-        <label asp-for="ConfirmPassword" class="control-label"><span style="color:red;">*</span> Confirm Password</label>
-        <input asp-for="ConfirmPassword" type="password" class="form-control" />
-        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
-    </div>
+<style>
+    .card-header {
+        color: white;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
 
-@*     <div class="form-group">
-        <label asp-for="SelectedRole">Role</label>
-        <select asp-for="SelectedRole" class="form-control" asp-items="ViewBag.Roles">
-            <option value="">Select a Role</option>
-        </select>
-        <span asp-validation-for="SelectedRole" class="text-danger"></span>
-    </div> *@
+    .btn-success {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        border: none;
+        color: white;
+    }
 
-    <div class="form-group" style="margin-top:15px;width:30%;">
-        <label asp-for="SelectedRole" class="control-label"><span style="color:red;">*</span> Role:</label>
-        @Html.DropDownListFor(model => model.SelectedRole, (SelectList)ViewBag.Roles, new { @class = "form-control" })
-        <span asp-validation-for="SelectedRole" class="text-danger"></span>
+        .btn-success:hover {
+            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
+            color: white;
+            transition: background 0.3s ease;
+        }
+
+    .btn-secondary {
+        background-color: gray;
+        border-color: gray;
+    }
+
+        .btn-secondary:hover {
+            background-color: darkgray !important;
+            border-color: darkgray !important;
+        }
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 style="color:white !important;">Edit User</h2>
+        </div>
+        <div class="card-body">
+            <form asp-action="Edit" method="post" class="needs-validation" novalidate>
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <!-- Register ID -->
+                <input type="hidden" asp-for="RegisterrId" />
+
+                <!-- Email -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="Email" class="form-label">
+                            <span class="text-danger">*</span> Email
+                        </label>
+                        <input asp-for="Email" class="form-control" id="Email" />
+                        <div class="invalid-feedback">Please enter a valid email.</div>
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Username -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="UserName" class="form-label">
+                            <span class="text-danger">*</span> Username
+                        </label>
+                        <input asp-for="UserName" class="form-control" id="UserName" />
+                        <div class="invalid-feedback">Please enter a username.</div>
+                        <span asp-validation-for="UserName" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="Password" class="form-label">
+                            <span class="text-danger">*</span> Password
+                        </label>
+                        <input asp-for="Password" type="password" class="form-control" id="Password" />
+                        <div class="invalid-feedback">Please enter a password.</div>
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="ConfirmPassword" class="form-label">
+                            <span class="text-danger">*</span> Confirm Password
+                        </label>
+                        <input asp-for="ConfirmPassword" type="password" class="form-control" id="ConfirmPassword" />
+                        <div class="invalid-feedback">Passwords must match.</div>
+                        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Role Selection -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="SelectedRole" class="form-label">
+                            <span class="text-danger">*</span> Role
+                        </label>
+                        @Html.DropDownListFor(model => model.SelectedRole, (SelectList)ViewBag.Roles, new { @class = "form-control", id = "SelectedRole" })
+                        <div class="invalid-feedback">Please select a role.</div>
+                        <span asp-validation-for="SelectedRole" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Submit and Back Buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-success px-4">Submit</button>
+                    <a class="btn btn-secondary" asp-action="Index">Back to List</a>
+                </div>
+            </form>
+        </div>
     </div>
+</div>
 
-    <div class="form-group " style="margin-top: 30px;">
-        <input type="submit" value="Submit" class="btn btn-primary" />
-        <a class="btn btn-secondary" asp-action="Index">Back to List</a>
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
-    </div>
-</form>
+<script>
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+
+        $('form').submit(function (e) {
+            var isValid = true;
+
+            // Validate Email
+            var email = $('#Email').val().trim();
+            if (!email) {
+                $('#Email').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $('#Email').removeClass('is-invalid').addClass('is-valid');
+            }
+
+            // Validate Username
+            var userName = $('#UserName').val().trim();
+            if (!userName) {
+                $('#UserName').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $('#UserName').removeClass('is-invalid').addClass('is-valid');
+            }
+
+            // Validate Password
+            var password = $('#Password').val().trim();
+            if (!password) {
+                $('#Password').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $('#Password').removeClass('is-invalid').addClass('is-valid');
+            }
+
+            // Validate Confirm Password
+            var confirmPassword = $('#ConfirmPassword').val().trim();
+            if (!confirmPassword || password !== confirmPassword) {
+                $('#ConfirmPassword').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $('#ConfirmPassword').removeClass('is-invalid').addClass('is-valid');
+            }
+
+            // Validate Role
+            var selectedRole = $('#SelectedRole').val();
+            if (!selectedRole) {
+                $('#SelectedRole').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $('#SelectedRole').removeClass('is-invalid').addClass('is-valid');
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+    });
+</script>

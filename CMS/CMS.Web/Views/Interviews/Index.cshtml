@@ -17,10 +17,10 @@
     }
 
     a.disabled {
-        color: #6c757d; /* Adjust color to make it visually disabled */
-        pointer-events: none; /* Disable mouse interactions */
-        opacity: 0.5; /* Adjust opacity to visually indicate disabled state */
-        cursor: not-allowed; /* Change cursor to indicate not-allowed */
+        color: #6c757d;
+        pointer-events: none;
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 </style>
 
@@ -40,29 +40,22 @@
                 <input type="text" id="candidateFilter" name="candidateFilter" class="form-control" placeholder="Search by Candidate Name" value="@ViewBag.candidateFilter">
             </div>
 
-
             <div class="col-md-3">
                 @Html.Label("Filter by Track:")
                 @Html.DropDownList("trackFilter", ViewBag.TrackList as SelectList, "All Tracks", new { @class = "form-control" })
             </div>
 
-            <div class="col-md-3" style="margin-top: 27px;width:9%;">
+            <div class="col-md-1" style="margin-top: 27px;width:8%;">
                 <label>&nbsp;</label>
                 <button type="submit" class="btn btn-primary btn-block" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Filter Interviews">Filter</button>
             </div>
-@* 
-            <div class="col-md-3" style="margin-top: 27px;width:9%;">
-                <label>&nbsp;</label>
-                <button type="button" id="resetFilter" class="btn btn-secondary btn-block" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Reset Filters">Reset</button>
+
+            <div class="col-md-1" style="margin-top: 27px;width:6%;">
+                <button type="button" id="resetButton" class="btn btn-secondary btn-block" title="Reset Filters">Reset</button>
             </div>
- *@
-
-
-
         </div>
     </div>
 }
-
 
 <div class="row">
     <div class="col-lg-12">
@@ -75,7 +68,7 @@
 
             </div>
             <div class="card-body">
-                <table id="add-rows" class="table table-nowrap dt-responsive table-bordered display" style="width:100%">
+                <table id="add-rows" class="display nowrap" style="width:100%">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -187,7 +180,7 @@
                                         {
                                             <a class="ri-shut-down-line disabled" style="font-size: x-large" asp-action="StopCycle" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Stop Cycle"></a>
                                         }
-                                        else
+                                        else if(item.ParentId != null)
                                         {
                                             <a class="ri-shut-down-line" style="font-size: x-large" asp-action="StopCycle" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Stop Cycle"></a>
                                         }
@@ -200,7 +193,7 @@
                     </tbody>
                 </table>
 
-
+                @await Html.PartialAsync("_PaginationPartial", Model)
             </div>
         </div>
     </div><!--end col-->
@@ -208,31 +201,34 @@
 <script>
     $.noConflict();
     jQuery(document).ready(function ($) {
-        $('#add-rows').DataTable();
+        $('#add-rows').DataTable({
+            paging: false,
+            searching: false,
+            info: false,
+            ordering: false,
+            scrollCollapse: true,
+            scrollY: '50vh'
+        });
 
-        // Reset button click event
-        $('#resetFilter').on('click', function () {
-            // Reset the form fields
+        // Reset button functionality
+        $('#resetButton').on('click', function () {
             $('#statusFilter').val('');
             $('#candidateFilter').val('');
             $('#trackFilter').val('');
 
-            // Trigger the form submission to apply the reset
-            $('form').submit();
+            window.location.href = '@Url.Action("Index", "Interviews")';
         });
     });
 </script>
+
 <script>
-    // Function to remove trailing spaces from candidate name input field
     function removeTrailingSpaces() {
         var candidateFilter = document.getElementById("candidateFilter");
         candidateFilter.value = candidateFilter.value.trim(); // Remove trailing spaces
     }
 
-    // Validate form and remove trailing spaces before submission
     function validateForm() {
         removeTrailingSpaces(); // Remove trailing spaces from candidate name
-        // Return true to allow form submission
         return true;
     }
 </script>

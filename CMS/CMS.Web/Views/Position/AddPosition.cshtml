@@ -1,119 +1,128 @@
 ﻿@model CMS.Application.DTOs.PositionDTO
 
 @{
-    ViewData["Title"] = "Add a position";
+    ViewData["Title"] = "Add a Position";
 }
+<style>
+    .card-header {
+        color: white;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
 
-<h1></h1>
-<form asp-action="AddPosition" enctype="multipart/form-data">
-    @* <div asp-validation-summary="ModelOnly" class="text-danger"></div> *@
-        <div class="form-group">
-        <label asp-for="Name" class="control-label"><span class="text-danger">*</span> Position Name</label>
-        <input style="width: 30%;" asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
-        <span id="errorMessage" class="text-danger"></span>
+    .btn-success {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        border: none;
+        color: white;
+    }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
+            color: white;
+            transition: background 0.3s ease;
+        }
+
+    .btn-secondary {
+        background-color: gray;
+        border-color: gray;
+    }
+
+        .btn-secondary:hover {
+            background-color: darkgray !important;
+            border-color: darkgray !important;
+        }
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 style="color:white !important">Add a Position</h2>
+        </div>
+        <div class="card-body">
+            <form asp-action="AddPosition" enctype="multipart/form-data" class="needs-validation" id="positionForm" novalidate>
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <!-- Position Name -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Name" class="form-label">
+                            <span class="text-danger">*</span> Position Name
+                        </label>
+                        <input asp-for="Name" class="form-control" id="Name" required />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                        <span id="errorMessage" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Upload Evaluation Form -->
+                <div class="row">
+                     <div class="col-md-6 mb-3">
+                         <label for="file" class="form-label">Upload an Evaluation Form:</label>
+                         <input type="file" id="file" name="file" class="form-control-file" onchange="validateFileFormat(this)" />
+                         <br />
+                         <div class="invalid-feedback">Only DOCX, XLSX, PNG, and JPG files are allowed.</div>
+                         <span id="fileError" class="text-danger"></span>
+                     </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-success px-4" id="submitButton">Add</button>
+                    <a class="btn btn-secondary" asp-action="GetPositions">Back to List</a>
+                </div>
+            </form>
+        </div>
     </div>
-
-    <div class="form-group" style="margin-top: 15px;">
-        <label for="file">Upload An evaluation Form:</label>
-        <input type="file" id="file" name="file" class="form-control-file" onchange="validateFileFormat(this)"  />
-        <br />
-        <span id="fileError" class="text-danger"></span>
-    </div>
- 
-   
-    <div class="form-group " style="margin-top: 10px;">
-        <button type="submit" class="btn btn-primary">Add</button>
-        <a class="btn btn-secondary" asp-action="GetPositions"> Back to list</a>
-
-    </div>
-
-</form>
-
-
-
-<script>
-    $(document).ready(function () {
-        $("#Name").on("input", function () {
-            var name = $(this).val();
-
-
-            $.ajax({
-                url: '@Url.Action("CheckPositionName", "Position")',
-                data: { name: name },
-                type: "POST",
-                success: function (response) {
-                    if (response.exists) {
-                        $("#errorMessage").text("A position with the same name already exists.");
-                        //$("#addBookButton").prop("disabled", true);
-                    } else {
-                        // $("#addBookButton").prop("disabled", false);
-                        $("#errorMessage").hide();
-                    }
-                },
-                error: function () {
-                    $("#errorMessage").text("Error checking position name.");
-                }
-            });
-        });
-    });
-</script>
+</div>
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
+<!-- Script to handle Position Name and File Validation -->
 <script>
     $(document).ready(function () {
-        $('form').submit(function (e) {
+        // Form validation on submit
+        $('#positionForm').on('submit', function (e) {
             var name = $('#Name').val();
             var fileInput = $('#file');
+            var isValid = true;
 
-            // Validate Name
+            // Validate Position Name
             if (!name.trim()) {
+                $('#Name').addClass('is-invalid'); // Add Bootstrap class for invalid input
                 $('#errorMessage').text('Position Name is required.');
-                e.preventDefault(); // Prevent form submission
+                isValid = false;
             } else {
+                $('#Name').removeClass('is-invalid'); // Remove invalid class when input is valid
                 $('#errorMessage').text('');
             }
 
-            // Validate File
-            var allowedExtensions = /\.(pdf|docx|xlsx|png|jpg)$/i; // Allow DOCX, XLSX, PNG, and JPG
-            if (fileInput.val() && !allowedExtensions.exec(fileInput.val())) {
+            // Validate File Input
+            var allowedExtensions = /\.(docx|xlsx|png|jpg)$/i; // Allowed file formats
+            var fileVal = fileInput.val();
+            if (fileVal && !allowedExtensions.exec(fileVal)) {
                 $('#fileError').text('Only DOCX, XLSX, PNG, and JPG files are allowed.');
-                e.preventDefault(); // Prevent form submission
+                isValid = false;
             } else {
                 $('#fileError').text('');
+            }
+
+            // Prevent form submission if validation fails
+            if (!isValid) {
+                e.preventDefault();
             }
         });
 
-        // Additional function to validate file format on change
-        function validateFileFormat(input) {
+        // Validate file format when user selects a file
+        window.validateFileFormat = function (input) {
             var fileInput = $(input);
-            var allowedExtensions = /\.(pdf|docx|xlsx|png|jpg)$/i; // Allow DOCX, XLSX, PNG, and JPG
+            var allowedExtensions = /\.(docx|xlsx|png|jpg)$/i; // Allowed file formats
+            var fileVal = fileInput.val();
 
-            if (!allowedExtensions.exec(fileInput.val())) {
+            if (fileVal && !allowedExtensions.exec(fileVal)) {
                 $('#fileError').text('Only DOCX, XLSX, PNG, and JPG files are allowed.');
-                fileInput.val(''); // Clear the file input
+                fileInput.val('');
             } else {
                 $('#fileError').text('');
             }
-        }
+        };
     });
 </script>
 
-@* <script>
-    function validateFileFormat(input) {
-        const allowedExtensions = [".pdf", ".docx", ".png", ".jpg", ".xlsx"];
-        const file = input.files[0];
-
-        if (file) {
-            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-            if (!allowedExtensions.includes(fileExtension)) {
-                document.getElementById("fileError").textContent = "Invalid file format. Allowed formats are PDF, DOCX, xlsx, PNG, and JPG.";
-            } else if (file.size > 4 * 1024 * 1024) { // Check if the file size is greater than 4MB
-                document.getElementById("fileError").textContent = "File size exceeds 4MB.";
-            } else {
-                document.getElementById("fileError").textContent = "";
-            }
-        }
-    }
-</script>
- *@

@@ -5,122 +5,61 @@ using CMS.Repository.Interfaces;
 using CMS.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 
-namespace CMS.Services.Services
+namespace CMS.Services.Services;
+
+public class CountryService : ICountryService
 {
-    public class CountryService:ICountryService
+    ICountryRepository _repository;
+    private readonly UserManager<IdentityUser> _userManager;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    public CountryService(
+        ICountryRepository repository,
+        IHttpContextAccessor httpContextAccessor,
+        UserManager<IdentityUser> userManager)
     {
-        ICountryRepository _repository;
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        public CountryService(ICountryRepository repository,
-            IHttpContextAccessor httpContextAccessor,UserManager<IdentityUser> userManager)
+        _repository = repository;
+        _userManager = userManager;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+
+    public Result<CountryDTO> Delete(int id)
+    {
+        try
         {
-            _repository = repository;
-            _userManager = userManager;
-            _httpContextAccessor = httpContextAccessor;
+            _repository.Delete(id);
+            return Result<CountryDTO>.Success(null);
         }
-
-
-        public void LogException(string methodName, Exception ex = null, string additionalInfo = null)
+        catch (Exception ex)
         {
-            _repository.LogException(methodName, ex,  additionalInfo);
+            return Result<CountryDTO>.Failure(null, $"An error occurred while deleting the country: {ex.Message}");
         }
+    }
 
-    
+    public async Task<Result<List<CountryDTO>>> GetAll()
+    {
+        List<Country> countries = await _repository.GetAll();
 
-        public Result<CountryDTO> Delete(int id)
+        if (countries is null)
+            return Result<List<CountryDTO>>.Failure(null, "no countries found");
+
+        try
         {
-            try
-            {
-                
+            List<CountryDTO> countryDTOS = new List<CountryDTO>();
 
-                _repository.Delete(id);
-                return Result<CountryDTO>.Success(null);
-            }
-            catch (Exception ex)
+            foreach (Country co in countries)
             {
-                LogException(nameof(Delete), ex,  "An error occurred while deleting the country");
-                return Result<CountryDTO>.Failure(null, $"An error occurred while deleting the country: {ex.Message}");
-            }
-        }
-
-        //public async Task<Result<CountryDTO>> Delete(int id)
-        //{
-        //    try
-        //    {
-        //        await _repository.Delete(id);
-        //        return Result<CountryDTO>.Success(null);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return Result<CountryDTO>.Failure(null, $"An error occurred while deleting the country{ex.InnerException.Message}");
-        //    }
-        //}
-
-        public async Task<Result<List<CountryDTO>>> GetAll()
-        {
-            var countries=await _repository.GetAll();
-
-            if (countries == null)
-            {
-                return Result<List<CountryDTO>>.Failure(null,"no countries found");
-            }
-            try
-            {
-                var countryDTOS = new List<CountryDTO>();
-                foreach (var co in countries)
+                countryDTOS.Add(new CountryDTO
                 {
-                    countryDTOS.Add(new CountryDTO
-                    {
-                        Id = co.Id,
-                        Name = co.Name,
-                        companyDTOs = co.Companies.Select(com => new CompanyDTO
-                        {
-                            Id = com.Id,
-                            Name = com.Name,
-                            Email = com.Email,
-                            PersonName = com.PersonName,
-                            CountryId = com.CountryId,
-                            PhoneNumber = com.PhoneNumber,
-                            CountryName=com.Country.Name
-
-                        }).ToList()
-                    });
-                    
-                }
-                return Result< List < CountryDTO >>.Success(countryDTOS);
-            }
-            catch(Exception ex)
-            {
-                LogException(nameof(GetAll), ex,  "unable to get countries");
-                return Result<List<CountryDTO>>.Failure(null, $"unable to get countries{ex.InnerException.Message}");
-            }
-
-        }
-
-        public async Task<Result<CountryDTO>> GetById(int id)
-        {
-            if (id <= 0)
-            {
-                return Result<CountryDTO>.Failure(null, "Invalid company id");
-            }
-            try
-            {
-                
-                var country =await _repository.GetById(id);
-                var countryDTOS = new CountryDTO
-                {
-                    Id = country.Id,
-                    Name = country.Name,
-                    companyDTOs = country.Companies.Select(com => new CompanyDTO
+                    Id = co.Id,
+                    Name = co.Name,
+                    CreatedOn = co.CreatedOn,
+                    companyDTOs = co.Companies.Select(com => new CompanyDTO
                     {
                         Id = com.Id,
                         Name = com.Name,
@@ -128,107 +67,126 @@ namespace CMS.Services.Services
                         PersonName = com.PersonName,
                         CountryId = com.CountryId,
                         PhoneNumber = com.PhoneNumber,
+                        CountryName = com.Country.Name
 
                     }).ToList()
+                });
 
-                };
-                return Result<CountryDTO>.Success(countryDTOS);
             }
-            catch (Exception ex)
-            {
-                LogException(nameof(GetById), ex,  "unable to retrieve the country from the repository");
-                return Result<CountryDTO>.Failure(null, $"unable to retrieve the country from the repository{ex.InnerException.Message}");
-            }
+            return Result<List<CountryDTO>>.Success(countryDTOS);
         }
-
-        public async Task<Result<CountryDTO>> Insert(CountryDTO data)
+        catch (Exception ex)
         {
-            if(data == null)
+            return Result<List<CountryDTO>>.Failure(null, $"unable to get countries{ex.InnerException.Message}");
+        }
+    }
+
+    public async Task<Result<CountryDTO>> GetById(int id)
+    {
+        if (id <= 0)
+            return Result<CountryDTO>.Failure(null, "Invalid company id");
+
+        try
+        {
+
+            Country country = await _repository.GetById(id);
+            CountryDTO countryDTOS = new CountryDTO
             {
-                return Result<CountryDTO>.Failure(data,"the country dto is null");
-            }
-            var currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
-            var country = new Country
-            {
-                Name = data.Name,
-                CreatedBy= currentUser.Id,
-                CreatedOn=DateTime.Now,
+                Id = country.Id,
+                Name = country.Name,
+                CreatedOn= country.CreatedOn,
+                companyDTOs = country.Companies.Select(com => new CompanyDTO
+                {
+                    Id = com.Id,
+                    Name = com.Name,
+                    Email = com.Email,
+                    PersonName = com.PersonName,
+                    CountryId = com.CountryId,
+                    PhoneNumber = com.PhoneNumber,
+
+                }).ToList()
+
             };
-            try
-            {
-                
-                await _repository.Insert(country);
-                return Result<CountryDTO>.Success(data);
-
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(Insert), ex,  "unable to insert a country");
-                return Result<CountryDTO>.Failure(data, $"unable to insert a country: {ex.InnerException.Message}");
-            }
+            return Result<CountryDTO>.Success(countryDTOS);
         }
-
-        public async Task<Result<CountryDTO>> Update(CountryDTO data)
+        catch (Exception ex)
         {
-            try
-            {
-                
+            return Result<CountryDTO>.Failure(null, $"unable to retrieve the country from the repository{ex.InnerException.Message}");
+        }
+    }
 
+    public async Task<Result<CountryDTO>> Insert(CountryDTO data)
+    {
+        if (data is null)
+            return Result<CountryDTO>.Failure(data, "the country dto is null");
 
-                if (data == null)
-            {
+        IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+        Country country = new()
+        {
+            Name = data.Name,
+            CreatedBy = currentUser.Id,
+            CreatedOn = DateTime.Now,
+        };
+        try
+        {
+            await _repository.Insert(country);
+            return Result<CountryDTO>.Success(data);
+        }
+        catch (Exception ex)
+        {
+            return Result<CountryDTO>.Failure(data, $"unable to insert a country: {ex.InnerException.Message}");
+        }
+    }
+
+    public async Task<Result<CountryDTO>> Update(CountryDTO data)
+    {
+        try
+        {
+            if (data is null)
                 return Result<CountryDTO>.Failure(null, "can not update a null object");
-            }
-            var currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
-            var previousCountry=await _repository.GetById(data.Id);
-            var country=new Country { 
+
+            IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+            Country previousCountry = await _repository.GetById(data.Id);
+            Country country = new Country
+            {
                 Name = data.Name,
-                Id=data.Id,
-                ModifiedBy= currentUser.Id,
-                ModifiedOn=DateTime.Now,
-                CreatedBy=previousCountry.CreatedBy,
-                CreatedOn=previousCountry.CreatedOn,
-            
+                Id = data.Id,
+                ModifiedBy = currentUser.Id,
+                ModifiedOn = DateTime.Now,
+                CreatedBy = previousCountry.CreatedBy,
+                CreatedOn = previousCountry.CreatedOn,
             };
-            
 
-                await _repository.Update(country);
-                return Result<CountryDTO>.Success(data);
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(Update), ex,  "unable to update the country");
-                return Result<CountryDTO>.Failure(data, $"unable to update the country: {ex.InnerException.Message}");
-            }
+            await _repository.Update(country);
+            return Result<CountryDTO>.Success(data);
         }
-
-        public bool DoesCountryNameExist(string name)
+        catch (Exception ex)
         {
-            try
-            {
-                return _repository.DoesCountryNameExist(name);
-
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(DoesCountryNameExist), ex,null);
-                throw;
-            }
+            return Result<CountryDTO>.Failure(data, $"unable to update the country: {ex.InnerException.Message}");
         }
+    }
 
-        public async Task<IEnumerable<Country>> GetAllCountriesAsync()
+    public bool DoesCountryNameExist(string name)
+    {
+        try
         {
-            try
-            {
-                return await _repository.GetAllCountriesAsync();
-
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(GetAllCountriesAsync), ex,  "unable to get all countries");
-                throw;
-            }
+            return _repository.DoesCountryNameExist(name);
         }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
 
+    public async Task<IEnumerable<Country>> GetAllCountriesAsync()
+    {
+        try
+        {
+            return await _repository.GetAllCountriesAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
     }
 }

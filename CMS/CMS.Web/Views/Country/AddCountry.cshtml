@@ -3,67 +3,121 @@
 @{
     ViewData["Title"] = "Add a country";
 }
-<form asp-action="AddCountry">
-@*     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
- *@        <div class="form-group">
-        <label asp-for="Name" class="control-label"><span class="text-danger">*</span> Country Name</label>
-        <input style="width: 30%;" asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
-        <span id="errorMessage" class="text-danger"></span>
+
+<style>
+    .card-header {
+        color: white;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        border: none;
+        color: white;
+    }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
+            color: white;
+            transition: background 0.3s ease;
+        }
+
+    .btn-secondary {
+        background-color: gray;
+        border-color: gray;
+    }
+
+        .btn-secondary:hover {
+            background-color: darkgray !important;
+            border-color: darkgray !important;
+        }
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 style="color:white !important">Add a Country</h2>
+        </div>
+        <div class="card-body">
+            <form asp-action="AddCountry" class="needs-validation" novalidate id="countryForm">
+                <div class="row">
+                    <!-- Country Name -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Name" class="form-label">
+                            <span class="text-danger">*</span> Country Name
+                            <i class="fas fa-info-circle" data-toggle="tooltip" title="Enter the full country name."></i>
+                        </label>
+                        <input asp-for="Name" class="form-control" id="Name" placeholder="Enter country name" autocomplete="off">
+                        <div class="invalid-feedback">Country name is required.</div>
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                        <span id="errorMessage" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-success px-4">Add Country</button>
+                    <a class="btn btn-secondary" asp-action="GetCountries">Back to list</a>
+                </div>
+            </form>
+        </div>
     </div>
- 
-    <div class="form-group " style="margin-top: 10px;">
-        <button type="submit" class="btn btn-primary">Add</button>
-        <a class="btn btn-secondary" asp-action="GetCountries"> Back to list</a>
+</div>
 
-    </div>
-
-</form>
-
-
-
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-    $(document).ready(function () {
-        $("#Name").on("input", function () {
-            var name = $(this).val();
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip();
 
+        var isNameValid = false; // To track if the name check was successful
 
-            $.ajax({
-                url: '@Url.Action("CheckCountryName", "Country")',
-                data: { name: name },
-                type: "POST",
-                success: function (response) {
-                    if (response.exists) {
-                        $("#errorMessage").text("A country with the same name already exists.");
-                        //$("#addBookButton").prop("disabled", true);
-                    } else {
-                        // $("#addBookButton").prop("disabled", false);
-                        $("#errorMessage").hide();
-                    }
-                },
-                error: function () {
-                    $("#errorMessage").text("Error checking country name.");
+        // AJAX check to verify if the country name exists
+       $("#Name").on("input", function () {
+    var name = $(this).val();
+
+    if (name.trim()) {
+        $.ajax({
+            url: '@Url.Action("CheckCountryName", "Country")',
+            data: { name: name },  // Form data format
+            type: "POST",
+            success: function (response) {
+                if (response.exists) {
+                    $("#errorMessage").text("A country with the same name already exists.").show();
+                    isNameValid = false;
+                } else {
+                    $("#errorMessage").hide();
+                    isNameValid = true;
                 }
-            });
+            },
+            error: function (xhr, status, error) {
+                console.log("AJAX error: " + xhr.status + " " + xhr.responseText);
+                $("#errorMessage").text("Error checking country name.").show();
+                isNameValid = false;
+            }
         });
-    });
-</script>
+    } else {
+        $("#errorMessage").hide();
+        isNameValid = false;
+    }
+});
 
-<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
-<script>
-    $(document).ready(function () {
-        $('form').submit(function (e) {
-            var name = $('#Name').val();
+        // Form submit validation
+        $('#countryForm').submit(function (e) {
+            var name = $('#Name').val().trim();
 
             // Validate Name
-            if (!name.trim()) {
-                $('#errorMessage').text('Country Name is required.');
-                e.preventDefault(); // Prevent form submission
+            if (!name) {
+                $('#Name').addClass('is-invalid');
+                e.preventDefault();
             } else {
-                $('#errorMessage').text('');
+                $('#Name').removeClass('is-invalid').addClass('is-valid');
+            }
+
+            // If AJAX check determines name already exists, prevent submission
+            if (!isNameValid) {
+                e.preventDefault();
             }
         });
     });

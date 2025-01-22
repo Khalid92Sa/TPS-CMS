@@ -4,65 +4,144 @@
     ViewData["Title"] = "Edit Position";
 }
 
-<form asp-action="UpdatePosition">
-    @* <div asp-validation-summary="ModelOnly" class="text-danger"></div> *@
-    <div class="form-group"><input type="hidden" asp-for="Id" /></div>
-    <div class="form-group">
-        <label asp-for="Name" class="control-label"><span class="text-danger">*</span> Position Name</label>
-        <input style="width: 30%;" asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
-    </div>
+<style>
+    .card-header {
+        color: white;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
 
-    <div class="form-group" style="margin-top: 15px;">
-        <input asp-for="EvaluationId" type="hidden" />
-    </div>
+    .btn-success {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        border: none;
+        color: white;
+    }
 
-    <div class="form-group text-end" style="margin-top:4px;">
-        <input type="submit" class="btn btn-primary" value="Submit" />
-        <a class="btn btn-secondary" asp-action="GetPositions"> Back to list</a>
-    </div>
-</form>
+        .btn-success:hover {
+            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
+            color: white;
+            transition: background 0.3s ease;
+        }
 
-<form asp-action="UpdateAttachment" asp-route-id="@Model.Id" enctype="multipart/form-data">
-    <div class="form-group">
-        <label for="file">Upload Eavluation Form:</label>
-        <input type="file" id="file" name="file" class="form-control-file" onchange="validateFileFormat(this)" required  />
-        <br />
-        <span id="fileError" class="text-danger"></span>
-    </div>
+    .btn-secondary {
+        background-color: gray;
+        border-color: gray;
+    }
 
-    <div class="form-group" style="margin-top:19px;">
-        <input type="submit" value="Upload" class="btn btn-primary" id="uploadButton" disabled />
-    </div>
+        .btn-secondary:hover {
+            background-color: darkgray !important;
+            border-color: darkgray !important;
+        }
+</style>
 
-</form>
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 style="color:white !important;">Edit Position</h2>
+        </div>
+        <div class="card-body">
+            <form asp-action="UpdatePosition" id="positionForm" class="needs-validation" novalidate>
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <!-- Position Name -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <input type="hidden" asp-for="Id" />
+                        <label asp-for="Name" class="form-label">
+                            <span class="text-danger">*</span> Position Name
+                        </label>
+                        <input asp-for="Name" class="form-control" id="positionName" style="width: 50%;" required />
+                        <div class="invalid-feedback">Position Name is required.</div>
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <input asp-for="EvaluationId" type="hidden" />
+
+                <!-- Submit Button -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-success px-4">Submit</button>
+                </div>
+            </form>
+
+            <!-- Upload Evaluation Form -->
+            <form asp-action="UpdateAttachment" asp-route-id="@Model.Id" enctype="multipart/form-data" class="mt-5">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="file" class="form-label">Upload Evaluation Form</label>
+                        <input type="file" id="file" name="file" class="form-control-file" onchange="validateFileFormat()" required />
+                        <br />
+                        <span id="fileError" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Upload Button -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-primary" id="uploadButton" disabled>Upload</button>
+                    <a class="btn btn-secondary" asp-action="GetPositions">Back to List</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Fetch the form we want to apply custom Bootstrap validation styles to
+        var form = document.getElementById('positionForm');
+        var positionNameInput = document.getElementById('positionName');
+
+        form.addEventListener('submit', function (event) {
+            // Check if the form is valid
+            if (!form.checkValidity()) {
+                event.preventDefault(); // Prevent the form from being submitted if invalid
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated'); // Add Bootstrap validation class
+        });
+
+        // Optionally, you can add real-time validation on input change
+        positionNameInput.addEventListener('input', function () {
+            if (positionNameInput.value.trim() === '') {
+                positionNameInput.setCustomValidity('Position Name is required.');
+                positionNameInput.classList.add('is-invalid');
+            } else {
+                positionNameInput.setCustomValidity('');
+                positionNameInput.classList.remove('is-invalid');
+            }
+        });
+    });
+
+    // Function to validate file format as mentioned earlier
     function validateFileFormat() {
         const allowedExtensions = [".pdf", ".docx", ".png", ".jpg", ".xlsx"];
         const fileInput = document.getElementById("file");
         const file = fileInput.files[0];
+        const fileError = document.getElementById("fileError");
+        const uploadButton = document.getElementById("uploadButton");
 
         if (file) {
             const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            const fileSizeLimit = 4 * 1024 * 1024; // 4MB limit
+
             if (!allowedExtensions.includes(fileExtension)) {
-                document.getElementById("fileError").textContent = "Invalid file format. Allowed formats are PDF, DOCX, xlsx, PNG, and JPG.";
-                document.getElementById("uploadButton").disabled = true; // Disable the button
-                return false; // Prevent form submission
-            } else if (file.size > 4 * 1024 * 1024) { // Check if the file size is greater than 4MB
-                document.getElementById("fileError").textContent = "File size exceeds 4MB.";
-                document.getElementById("uploadButton").disabled = true; // Disable the button
-                return false; // Prevent form submission
+                fileError.textContent = "Invalid file format. Allowed formats are PDF, DOCX, XLSX, PNG, and JPG.";
+                uploadButton.disabled = true;
+                return false;
+            } else if (file.size > fileSizeLimit) {
+                fileError.textContent = "File size exceeds 4MB.";
+                uploadButton.disabled = true;
+                return false;
             } else {
-                document.getElementById("fileError").textContent = "";
-                document.getElementById("uploadButton").disabled = false; // Enable the button
-                return true; // Allow form submission
+                fileError.textContent = "";
+                uploadButton.disabled = false;
+                return true;
             }
         } else {
-            // No file selected, show a message or handle it as needed
-            return false; // Prevent form submission
+            fileError.textContent = "Please select a file.";
+            uploadButton.disabled = true;
+            return false;
         }
     }
 </script>
-<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>

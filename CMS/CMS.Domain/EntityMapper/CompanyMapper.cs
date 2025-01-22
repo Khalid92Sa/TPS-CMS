@@ -1,23 +1,19 @@
 ﻿using CMS.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace CMS.Domain.EntityMapper
+namespace CMS.Domain.EntityMapper;
+
+public class CompanyMapper : IEntityTypeConfiguration<Company>
 {
-    public class CompanyMapper : IEntityTypeConfiguration<Company>
+    public void Configure(EntityTypeBuilder<Company> builder)
     {
-        public void Configure(EntityTypeBuilder<Company> builder)
-        {
-            builder
-                .HasOne(p => p.Country)
-                .WithMany(p => p.Companies)
-                .HasForeignKey(p => p.CountryId);
+        builder
+            .HasOne(p => p.Country)
+            .WithMany(p => p.Companies)
+            .HasForeignKey(p => p.CountryId);
 
-            builder.HasMany(p => p.Candidates)
-                .WithOne(p => p.Company);
-        }
+        builder.HasMany(p => p.Candidates)
+            .WithOne(p => p.Company);
     }
 }

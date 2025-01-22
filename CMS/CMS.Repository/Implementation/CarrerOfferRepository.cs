@@ -4,97 +4,81 @@ using CMS.Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace CMS.Repository.Implementation
+namespace CMS.Repository.Implementation;
+
+public class CarrerOfferRepository : ICarrerOfferRepository
 {
-    public class CarrerOfferRepository : ICarrerOfferRepository
+    private readonly ApplicationDbContext _context;
+
+    public CarrerOfferRepository(ApplicationDbContext dbContext) => _context = dbContext;
+
+    public async Task DeleteCarrerOfferAsync(int id)
     {
-        private readonly ApplicationDbContext _context;
-
-        public CarrerOfferRepository(ApplicationDbContext dbContext)
+        try
         {
-            _context = dbContext;
-        }
+            CarrerOffer careerOffer = await _context.CarrerOffers.FindAsync(id);
+            _context.CarrerOffers.Remove(careerOffer);
+            await _context.SaveChangesAsync();
 
-        public async Task DeleteCarrerOfferAsync(int id)
+        }
+        catch (Exception)
         {
-            try
-            {
-                var careerOffer = await _context.CarrerOffers.FindAsync(id);
-                _context.CarrerOffers.Remove(careerOffer);
-                await _context.SaveChangesAsync();
-
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            throw;
         }
+    }
 
-        public async Task<IEnumerable<CarrerOffer>> GetAllCarrerOffersAsync()
+    public async Task<IEnumerable<CarrerOffer>> GetAllCarrerOffersAsync()
+    {
+        try
         {
-            try
-            {
-
-                return await _context.CarrerOffers.ToListAsync();
-
-
-
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            return await _context.CarrerOffers.ToListAsync();
         }
-
-        public async Task<CarrerOffer> GetCarrerOfferByIdAsync(int id)
+        catch (Exception)
         {
-            try
-            {
-                var carrerOffer = await _context.CarrerOffers.FirstOrDefaultAsync(c => c.Id == id);
-                return carrerOffer;
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            throw;
         }
+    }
 
-        public async Task<int> CreateCarrerOfferAsync(CarrerOffer entity)
+    public async Task<CarrerOffer> GetCarrerOfferByIdAsync(int id)
+    {
+        try
         {
-            try
-            {
-
-                _context.Add(entity);
-                return await _context.SaveChangesAsync();
-
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            CarrerOffer carrerOffer = await _context.CarrerOffers.FirstOrDefaultAsync(c => c.Id == id);
+            return carrerOffer;
         }
-        public async Task<int> CountAllAsync()
+        catch (Exception)
         {
-            return await _context.CarrerOffers.CountAsync();
+            throw;
         }
+    }
 
-        public async Task UpdateCarrerOfferAsync(CarrerOffer entity)
+    public async Task<int> CreateCarrerOfferAsync(CarrerOffer entity)
+    {
+        try
         {
-            try
-            {
-                _context.Update(entity);
-
-                await _context.SaveChangesAsync();
-
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            _context.Add(entity);
+            return await _context.SaveChangesAsync();
         }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
 
+    public async Task<int> CountAllAsync() => await _context.CarrerOffers.CountAsync();
+
+    public async Task UpdateCarrerOfferAsync(CarrerOffer entity)
+    {
+        try
+        {
+            _context.Update(entity);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception)
+        {
+            throw;
+        }
     }
 }

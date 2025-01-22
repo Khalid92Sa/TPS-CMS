@@ -21,7 +21,6 @@
 {
     <div class="form-group" style="margin-bottom: 23px;">
         <div class="row">
-
             <div class="col-md-3">
                 @Html.Label("Filter by Candidate Name:")
                 <input type="text" id="FullName" name="FullName" class="form-control" placeholder="Search by Candidate Name" value="@ViewBag.candidateFilter">
@@ -30,21 +29,21 @@
                 @Html.Label("Filter by Phone Number (Partial):")
                 @Html.TextBox("Phone", null, new { @class = "form-control phonenumber", placeholder = "Enter partial phone number" })
             </div>
-
             <div class="col-md-3">
                 @Html.Label("Filter by Track:")
                 @Html.DropDownList("trackFilter", ViewBag.TrackList as SelectList, "All Tracks", new { @class = "form-control" })
             </div>
-            <div class="col-md-3" style="margin-top: 27px;">
+            <div class="col-md-1" style="margin-top: 27px;">
                 <label>&nbsp;</label>
-                <button type="submit" class="btn btn-primary btn-block" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Filter Candidates">Filter</button>
+                <button type="submit" class="btn btn-primary btn-block" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Filter Candidates">Filter</button>
+            </div>
+            <div class="col-md-1" style="margin-top: 27px;">
+                <label>&nbsp;</label>
+                <button type="button" id="resetButton" class="btn btn-secondary btn-block" title="Reset Filters">Reset</button>
             </div>
         </div>
     </div>
 }
-
-
-
 
 
 <div class="row">
@@ -57,7 +56,7 @@
 
             </div>
             <div class="card-body">
-                <table id="candidateTable" class="table table-nowrap dt-responsive table-bordered display" style="width:100%">
+                <table id="candidateTable" class="display nowrap" style="width:100%">
 
                     <thead>
                         <tr>
@@ -127,7 +126,7 @@
                     </tbody>
 
                 </table>
-
+                @await Html.PartialAsync("_PaginationPartial", Model)
             </div>
         </div>
 
@@ -137,8 +136,12 @@
 <script>
     $(document).ready(function () {
         $('#candidateTable').DataTable({
-            searching: false
-
+            paging: false,
+            searching: false,
+            info: false,
+            scrollCollapse: true,
+            scrollY: '50vh',
+            ordering: false,
         });
     });
 </script>
@@ -146,9 +149,8 @@
 <script>
     $(document).ready(function () {
 
-        // Prevent letters in the Phone field
         $('.phonenumber').on('input', function () {
-            this.value = this.value.replace(/[^0-9+]/g, ''); // Allow only numeric characters
+            this.value = this.value.replace(/[^0-9+]/g, '');
         });
 
         $('.hidden-file-input').change(function () {
@@ -160,32 +162,33 @@
             if (selectedFile) {
                 cvColumn.html('Uploading...');
 
-                // Trigger the form submission to upload the file
                 fileInput.closest('form').submit();
 
-                // Assuming the file upload is successful, update the CV column dynamically
-                // For example, set the "Download CV" link when the upload is complete
                 setTimeout(function () {
                     cvColumn.html('<a asp-controller="Attachments" asp-action="Download" asp-route-id="' + candidateId + '">Download CV</a>');
-                }, 3000); // Adjust the delay as needed
+                }, 3000);
             } else {
                 cvColumn.html('No CV Available');
             }
+        });
+
+        $('#resetButton').on('click', function () {
+            $('#FullName').val('');
+            $('#Phone').val('');
+            $('#trackFilter').val(''); 
+            window.location.href = '@Url.Action("Index", "Candidates")';
         });
     });
 </script>
 
 <script>
-    // Function to remove trailing spaces from candidate name input field
     function removeTrailingSpaces() {
         var fullName = document.getElementById("FullName");
-        fullName.value = fullName.value.trim(); // Remove trailing spaces
+        fullName.value = fullName.value.trim();
     }
 
-    // Validate form and remove trailing spaces before submission
     function validateForm() {
-        removeTrailingSpaces(); // Remove trailing spaces from candidate name
-        // Return true to allow form submission
+        removeTrailingSpaces(); 
         return true;
     }
 </script>

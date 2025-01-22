@@ -1,383 +1,328 @@
 ﻿using CMS.Application.DTOs;
-using CMS.Domain.Entities;
 using CMS.Repository.Interfaces;
 using CMS.Services.Interfaces;
+using Hangfire;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Net.Mail;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using System.Linq;
-using Hangfire;
-using Newtonsoft.Json;
-namespace CMS.Services.Services
+using System.Net;
+using System.Net.Mail;
+using System.Threading.Tasks;
+namespace CMS.Services.Services;
+
+public class EmailService : IEmailService
 {
-    public class EmailService : IEmailService
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly UserManager<IdentityUser> _userManager;
+    private readonly IInterviewsRepository _interviewsRepository;
+    private readonly ICandidateService _candidateService;
+    private readonly IInterviewsService _interviewsService;
+
+    public EmailService(
+        IHttpContextAccessor httpContextAccessor,
+        UserManager<IdentityUser> userManager,
+        IInterviewsRepository interviewsRepository,
+        ICandidateService candidateService,
+        IInterviewsService interviewsService)
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly IInterviewsRepository _interviewsRepository;
-        private readonly ICandidateService _candidateService;
-        private readonly IInterviewsService _interviewsService;
+        _httpContextAccessor = httpContextAccessor;
+        _userManager = userManager;
+        _interviewsRepository = interviewsRepository;
+        _candidateService = candidateService;
+        _interviewsService = interviewsService;
+    }
 
-        public EmailService(
-            IHttpContextAccessor httpContextAccessor,
-            UserManager<IdentityUser> userManager,
-            IInterviewsRepository interviewsRepository,
-            ICandidateService candidateService,IInterviewsService interviewsService)
+
+    public async Task<string> GetArchiEmail()
+    {
+        try
         {
-            _httpContextAccessor = httpContextAccessor;
-            _userManager = userManager;
-            _interviewsRepository = interviewsRepository;
-            _candidateService = candidateService;
-            _interviewsService = interviewsService;
+            string email = await _interviewsRepository.GetArchiEmail();
+
+            if (email != null)
+                return email;
+            else
+                return null;
         }
-
-        public void LogException(string methodName, Exception ex, string additionalInfo = null)
+        catch (Exception)
         {
-
-            _interviewsService.LogException(methodName, ex, additionalInfo);
+            throw;
         }
+    }
 
-
-        public async Task<string> GetArchiEmail()
+    public async Task<string> GetGMEmail()
+    {
+        try
         {
-            try
-            {
+            string email = await _interviewsRepository.GetGeneralManagerEmail();
 
-
-
-                var email = await _interviewsRepository.GetArchiEmail();
-
-                if (email != null)
-                {
-                    return email;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(GetHREmail), ex, "Faild to get archi email");
-                throw ex;
-            }
-
+            if (email != null)
+                return email;
+            else
+                return null;
         }
-        public async Task<string> GetGMEmail()
+        catch (Exception)
         {
-            try
-            {
-
-
-
-                var email = await _interviewsRepository.GetGeneralManagerEmail();
-
-                if (email != null)
-                {
-                    return email;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(GetGMEmail), ex, "Faild to get genetal manager email");
-                throw ex;
-            }
+            throw;
         }
-        public async Task<string> GetHREmail()
+    }
+
+    public async Task<string> GetHREmail()
+    {
+        try
         {
-            try
-            {
+            string email = await _interviewsRepository.GetHREmail();
 
-
-
-                var email = await _interviewsRepository.GetHREmail();
-
-                if (email != null)
-                {
-                    return email;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(GetHREmail), ex, "Faild to get hr email");
-                throw ex;
-            }
+            if (email != null)
+                return email;
+            else
+                return null;
         }
-        public async Task<string> GetInterviewerEmail(string interviewerId)
+        catch (Exception)
         {
-            try
-            {
-
-
-
-                var email = await _interviewsRepository.GetInterviewerEmail(interviewerId);
-
-                if (email != null)
-                {
-                    return email;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(GetInterviewerEmail), ex, "Faild to get interviewer email");
-                throw ex;
-            }
+            throw;
         }
-        public  string GetLoggedInUserName()
+    }
+
+    public async Task<string> GetInterviewerEmail(string interviewerId)
+    {
+        try
         {
-            try
-            {
-                return _httpContextAccessor.HttpContext.User.Identity.Name;
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(GetLoggedInUserName), ex, "Faild to get Logged In UserName");
-                throw ex;
-            }
+            string email = await _interviewsRepository.GetInterviewerEmail(interviewerId);
+
+            if (email != null)
+                return email;
+            else
+                return null;
         }
-
-        public async Task ReminderJobAsync(string interviewerId, InterviewsDTO collection)
+        catch (Exception)
         {
-            try
-            {
-                // Check if the interviewer has given a score, and if not, send a reminder email
-                bool hasGivenScore = await _interviewsRepository.HasGivenStatusAsync(interviewerId, collection.InterviewsId);
-
-                if (!hasGivenScore)
-                {
-                    var interviewerEmail2 = await GetInterviewerEmail(collection.InterviewerId);
-                    EmailDTOs emailModel = new EmailDTOs
-                    {
-                        EmailTo = new List<string> { interviewerEmail2 },
-                        EmailBody = "You haven't provided a score for the interview. Please provide a score.",
-                        Subject = "Interview Score Reminder"
-                    };
-
-                    await SendEmailToInterviewer(interviewerEmail2, collection, emailModel);
-                }
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(ReminderJobAsync), ex, "Faild to send a reminder email");
-                throw ex;
-            }
+            throw;
         }
+    }
 
-        public async Task ResendFailedEmail(EmailDTOs emailToResend)
+    public string GetLoggedInUserName()
+    {
+        try
         {
-            try
-            {
-                SmtpClient smtp = new SmtpClient();
-                smtp.Host = "mail.sssprocess.com";
-                smtp.Port = 587;
-                smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
-                smtp.EnableSsl = false;
-                smtp.UseDefaultCredentials = true;
-                string UserName = "CMS@sss-process.org";
-                string Password = "P@ssw0rd2023";
-                smtp.Credentials = new NetworkCredential(UserName, Password);
-
-                using (var message = new MailMessage())
-                {
-                    message.From = new MailAddress("cms@techprocess.net");
-
-                    if (emailToResend.EmailTo != null && emailToResend.EmailTo.Any())
-                    {
-                        foreach (var to in emailToResend.EmailTo)
-                        {
-                            message.To.Add(to);
-                        }
-                    }
-
-                    message.Body = emailToResend.EmailBody;
-                    message.Subject = emailToResend.Subject;
-                    message.IsBodyHtml = true;
-
-                    await smtp.SendMailAsync(message);
-
-                }
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(ResendFailedEmail), ex, "Failed to resend an email");
-            }
+            return _httpContextAccessor.HttpContext.User.Identity.Name;
         }
-
-        public async void RetryFailedEmails(EmailDTOs emailmodel)
+        catch (Exception)
         {
-            try
-            {
-                List<EmailDTOs> failedEmails = new List<EmailDTOs>();
-
-                failedEmails.Add(emailmodel);
-
-                var emailsToResend = failedEmails.Take(10).ToList();
-                foreach (var emailToResend in emailsToResend)
-                {
-                    BackgroundJob.Schedule(() => ResendFailedEmail(emailToResend), TimeSpan.FromMinutes(20));
-
-
-                    // Remove the resent email from the list of failed emails
-                    failedEmails.Remove(emailToResend);
-                }
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(RetryFailedEmails), ex, "Failed to Retry Failed Emails");
-            }
+            throw;
         }
+    }
 
-        public async void ScheduleInterviewReminder(InterviewsDTO collection)
+    public async Task ReminderJobAsync(string interviewerId, InterviewsDTO collection)
+    {
+        try
         {
-            try
-            {
-                var reminderTime = collection.Date.AddMinutes(-15);
+            bool hasGivenScore = await _interviewsRepository.HasGivenStatusAsync(interviewerId, collection.InterviewsId);
 
-                if (DateTime.UtcNow < reminderTime)
+            if (!hasGivenScore)
+            {
+                string interviewerEmail2 = await GetInterviewerEmail(collection.InterviewerId);
+                EmailDTOs emailModel = new EmailDTOs
                 {
-                    var interviewReminderJobId = BackgroundJob.Schedule(
-                        () => SendInterviewReminderEmail(collection),
-                        reminderTime
-                    );
-                }
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(ScheduleInterviewReminder), ex, $"Faild to Schedule Interview Reminder {JsonConvert.SerializeObject(collection)}");
-                throw ex;
-            }
-        }
-
-        public async Task SendEmailToInterviewer(string interviewerEmail, InterviewsDTO interview, EmailDTOs emailModel)
-        {
-            try
-            {
-                SmtpClient smtp = new SmtpClient();
-                smtp.Host = "mail.sssprocess.com";
-                smtp.Port = 587;
-                smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
-                smtp.EnableSsl = false;
-                smtp.UseDefaultCredentials = true;
-                string UserName = "CMS@sss-process.org";
-                string Password = "P@ssw0rd2023";
-                smtp.Credentials = new NetworkCredential(UserName, Password);
-
-                using (var message = new MailMessage())
-                {
-                    message.From = new MailAddress("cms@techprocess.net");
-
-                    if (emailModel.EmailTo != null && emailModel.EmailTo.Any())
-                    {
-                        foreach (var to in emailModel.EmailTo)
-                        {
-                                message.To.Add(to);
-                        }
-                    }
-
-
-                    message.Body = emailModel.EmailBody;
-                    message.Subject = emailModel.Subject;
-                    message.IsBodyHtml = true;
-
-                    smtp.Send(message);
-                }
-            }
-            catch (Exception ex)
-            {
-                var emailLogInfo = new
-                {
-                    To = string.Join(",", emailModel.EmailTo),
-                    Subject = emailModel.Subject,
-                    Body = emailModel.EmailBody
+                    EmailTo = new List<string> { interviewerEmail2 },
+                    EmailBody = "You haven't provided a score for the interview. Please provide a score.",
+                    Subject = "Interview Score Reminder"
                 };
 
-                LogException(nameof(SendEmailToInterviewer), ex, $"Failed to send an email {JsonConvert.SerializeObject(emailLogInfo)}");
-                RetryFailedEmails(emailModel);
-
+                await SendEmailToInterviewer(interviewerEmail2, collection, emailModel);
             }
         }
-
-        public async Task SendEmailToInterviewers(List<string> interviewersEmails, InterviewsDTO interview, EmailDTOs emailModel)
+        catch (Exception)
         {
-            try
+            throw;
+        }
+    }
+
+    public async Task ResendFailedEmail(EmailDTOs emailToResend)
+    {
+        try
+        {
+            SmtpClient smtp = new SmtpClient
             {
-                SmtpClient smtp = new SmtpClient();
-                smtp.Host = "mail.sssprocess.com";
-                smtp.Port = 587;
-                smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
-                smtp.EnableSsl = false;
-                smtp.UseDefaultCredentials = true;
-                string UserName = "CMS@sss-process.org";
-                string Password = "P@ssw0rd2023";
-                smtp.Credentials = new NetworkCredential(UserName, Password);
+                Host = "mail.sssprocess.com",
+                Port = 587,
+                DeliveryMethod = SmtpDeliveryMethod.Network,
+                EnableSsl = false,
+                UseDefaultCredentials = true
+            };
 
-                using (var message = new MailMessage())
-                {
-                    message.From = new MailAddress("cms@techprocess.net");
+            string UserName = "CMS@sss-process.org";
+            string Password = "P@ssw0rd2023";
+            smtp.Credentials = new NetworkCredential(UserName, Password);
 
-                    if (emailModel.EmailTo != null && emailModel.EmailTo.Any())
-                    {
-                        foreach (var to in interviewersEmails)
-                        {
-                            message.To.Add(to);
-                        }
-                    }
+            using MailMessage message = new MailMessage();
+            message.From = new MailAddress("cms@techprocess.net");
 
-                    message.Body = emailModel.EmailBody;
-                    message.Subject = emailModel.Subject;
-                    message.IsBodyHtml = true;
-
-                    smtp.Send(message);
-                }
+            if (emailToResend.EmailTo != null && emailToResend.EmailTo.Any())
+            {
+                foreach (string to in emailToResend.EmailTo)
+                    message.To.Add(to);
             }
-            catch (Exception ex)
-            {
-                var emailLogInfo = new
-                {
-                    To = string.Join(",", emailModel.EmailTo),
-                    Subject = emailModel.Subject,
-                    Body = emailModel.EmailBody
-                };
 
-                LogException(nameof(SendEmailToInterviewers), ex, $"Failed to send an email {JsonConvert.SerializeObject(emailLogInfo)}");
-                RetryFailedEmails(emailModel);
+            message.Body = emailToResend.EmailBody;
+            message.Subject = emailToResend.Subject;
+            message.IsBodyHtml = true;
+
+            await smtp.SendMailAsync(message);
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    public async Task RetryFailedEmails(EmailDTOs emailmodel)
+    {
+        try
+        {
+            List<EmailDTOs> failedEmails = new List<EmailDTOs> { emailmodel };
+
+            List<EmailDTOs> emailsToResend = failedEmails.Take(10).ToList();
+
+            foreach (EmailDTOs emailToResend in emailsToResend)
+            {
+                BackgroundJob.Schedule(() => ResendFailedEmail(emailToResend), TimeSpan.FromMinutes(20));
+                failedEmails.Remove(emailToResend);
+            }
+
+            await Task.CompletedTask;
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+
+    public async Task ScheduleInterviewReminder(InterviewsDTO collection)
+    {
+        try
+        {
+            DateTime reminderTime = collection.Date.AddMinutes(-15);
+
+            if (DateTime.UtcNow < reminderTime)
+            {
+                string interviewReminderJobId = await Task.Run(() =>
+                    BackgroundJob.Schedule(() => SendInterviewReminderEmail(collection), reminderTime)
+                );
             }
         }
-
-        public async Task SendInterviewReminderEmail(InterviewsDTO collection)
+        catch (Exception)
         {
-            try
+            throw;
+        }
+    }
+
+
+    public async Task SendEmailToInterviewer(string interviewerEmail, InterviewsDTO interview, EmailDTOs emailModel)
+    {
+        try
+        {
+            SmtpClient smtp = new SmtpClient
             {
-                string interviewerEmail = await GetInterviewerEmail(collection.InterviewerId);
-                var userInterviewer = await _userManager.FindByEmailAsync(interviewerEmail);
-                var candidateName = await _candidateService.GetCandidateByIdAsync(collection.CandidateId);
-                var candidateNameresult = candidateName.FullName;
+                Host = "mail.sssprocess.com",
+                Port = 587,
+                DeliveryMethod = SmtpDeliveryMethod.Network,
+                EnableSsl = false,
+                UseDefaultCredentials = true
+            };
 
+            string UserName = "CMS@sss-process.org";
+            string Password = "P@ssw0rd2023";
+            smtp.Credentials = new NetworkCredential(UserName, Password);
 
-                if (!string.IsNullOrEmpty(interviewerEmail))
+            using MailMessage message = new MailMessage();
+            message.From = new MailAddress("cms@techprocess.net");
+
+            if (emailModel.EmailTo != null && emailModel.EmailTo.Any())
+            {
+                foreach (string to in emailModel.EmailTo)
+                    message.To.Add(to);
+            }
+
+            message.Body = emailModel.EmailBody;
+            message.Subject = emailModel.Subject;
+            message.IsBodyHtml = true;
+
+            await smtp.SendMailAsync(message);
+        }
+        catch (Exception)
+        {
+            (string To, string Subject, string Body) emailLogInfo = (
+                To: string.Join(",", emailModel.EmailTo),
+                Subject: emailModel.Subject,
+                Body: emailModel.EmailBody
+            );
+
+            await RetryFailedEmails(emailModel);
+        }
+    }
+
+    public async Task SendEmailToMultiInterviewer(List<string> interviewersEmails, InterviewsDTO interview, EmailDTOs emailModel)
+    {
+        try
+        {
+            SmtpClient smtp = new SmtpClient
+            {
+                Host = "mail.sssprocess.com",
+                Port = 587,
+                DeliveryMethod = SmtpDeliveryMethod.Network,
+                EnableSsl = false,
+                UseDefaultCredentials = true
+            };
+            string UserName = "CMS@sss-process.org";
+            string Password = "P@ssw0rd2023";
+            smtp.Credentials = new NetworkCredential(UserName, Password);
+
+            using MailMessage message = new MailMessage();
+            message.From = new MailAddress("cms@techprocess.net");
+
+            if (emailModel.EmailTo != null && emailModel.EmailTo.Any())
+            {
+                foreach (string to in interviewersEmails)
+                    message.To.Add(to);
+            }
+
+            message.Body = emailModel.EmailBody;
+            message.Subject = emailModel.Subject;
+            message.IsBodyHtml = true;
+
+            await smtp.SendMailAsync(message);
+        }
+        catch (Exception)
+        {
+            (string To, string Subject, string Body) emailLogInfo = (
+                To: string.Join(",", emailModel.EmailTo),
+                Subject: emailModel.Subject,
+                Body: emailModel.EmailBody
+            );
+
+            await RetryFailedEmails(emailModel);
+        }
+    }
+
+    public async Task SendInterviewReminderEmail(InterviewsDTO collection)
+    {
+        try
+        {
+            string interviewerEmail = await GetInterviewerEmail(collection.InterviewerId);
+            IdentityUser userInterviewer = await _userManager.FindByEmailAsync(interviewerEmail);
+            CandidateDTO candidateName = await _candidateService.GetCandidateByIdAsync(collection.CandidateId);
+            string candidateNameresult = candidateName.FullName;
+
+            if (!string.IsNullOrEmpty(interviewerEmail))
+            {
+                EmailDTOs emailModel = new EmailDTOs
                 {
-                    EmailDTOs emailModel = new EmailDTOs
-                    {
-                        EmailTo = new List<string> { interviewerEmail },
-                        Subject = $"Interview Reminder ( {candidateNameresult} )",
-                        EmailBody = $@"<html>
+                    EmailTo = new List<string> { interviewerEmail },
+                    Subject = $"Interview Reminder ( {candidateNameresult} )",
+                    EmailBody = $@"<html>
                     <body style='font-family: Arial, sans-serif;'>
                         <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
                             <p style='font-size: 18px; color: #333;'>
@@ -394,16 +339,14 @@ namespace CMS.Services.Services
                         </div>
                     </body>
                  </html>"
-                    };
+                };
 
-                    await SendEmailToInterviewer(interviewerEmail, collection, emailModel);
-                }
+                await SendEmailToInterviewer(interviewerEmail, collection, emailModel);
             }
-            catch (Exception ex)
-            {
-                LogException(nameof(ScheduleInterviewReminder), ex, "Faild to Send Interview Reminder Email");
-                throw ex;
-            }
+        }
+        catch (Exception)
+        {
+            throw;
         }
     }
 }

@@ -1,101 +1,104 @@
 ﻿using CMS.Domain;
 using CMS.Domain.Entities;
 using CMS.Repository.Interfaces;
+using Hellang.Middleware.ProblemDetails;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.Net.Mail;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace CMS.Repository.Implementation
+namespace CMS.Repository.Implementation;
+
+public class AttachmentRepository : IAttachmentRepository
 {
-    public class AttachmentRepository : IAttachmentRepository
+    private readonly ApplicationDbContext _dbContext;
+    private readonly UserManager<IdentityUser> _userManager;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public AttachmentRepository(
+        ApplicationDbContext dbContext,
+        UserManager<IdentityUser> userManager,
+        IHttpContextAccessor httpContextAccessor)
     {
-        private readonly ApplicationDbContext _dbContext;
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        _dbContext = dbContext;
+        _userManager = userManager;
+        _httpContextAccessor = httpContextAccessor;
+    }
 
-        public AttachmentRepository(ApplicationDbContext dbContext, UserManager<IdentityUser> userManager, IHttpContextAccessor httpContextAccessor)
+
+    public async Task<IEnumerable<Attachment>> GetAllAttachmentsAsync()
+    {
+        try
         {
-            _dbContext = dbContext;
-            _userManager = userManager;
-            _httpContextAccessor = httpContextAccessor;
+            return await _dbContext.Attachments.ToListAsync();
         }
-
-        public async void LogException(string methodName, Exception ex, string additionalInfo)
+        catch (Exception ex)
         {
-            var currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
-            var userId = currentUser?.Id;
-            _dbContext.Logs.Add(new Log
+            throw new ProblemDetailsException(new ProblemDetails
             {
-                MethodName = methodName,
-                ExceptionMessage = ex.Message,
-                StackTrace = ex.StackTrace,CreatedByUserId = userId,
-                LogTime = DateTime.Now,
-                
-                AdditionalInfo = additionalInfo
+                Title = "Error retrieving attachments",
+                Detail = ex.Message,
+                Status = StatusCodes.Status500InternalServerError
             });
-            _dbContext.SaveChanges();
         }
+    }
+    public async Task<Attachment> GetAttachmentByIdAsync(int id)
+    {
+        try
+        {
+            return await _dbContext.Attachments.FindAsync(id);
+        }
+        catch (Exception ex)
+        {
+            throw new ProblemDetailsException(new ProblemDetails
+            {
+                Title = "Error retrieving attachment",
+                Detail = ex.Message,
+                Status = StatusCodes.Status500InternalServerError
+            });
+        }
+    }
 
-        public async Task<IEnumerable<CMS.Domain.Entities.Attachment>> GetAllAttachmentsAsync()
+    public async Task<int> CreateAttachmentAsync(Attachment attachment)
+    {
+        try
         {
-            try
-            {
-                return await _dbContext.Attachments.ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(GetAllAttachmentsAsync), ex,"Enable to get all attachments");
-                throw ex;
-            }
+            await _dbContext.Attachments.AddAsync(attachment);
+            await _dbContext.SaveChangesAsync();
+            return attachment.Id;
         }
-        public async Task<CMS.Domain.Entities.Attachment> GetAttachmentByIdAsync(int id)
+        catch (Exception ex)
         {
-            try
+            throw new ProblemDetailsException(new ProblemDetails
             {
-                return await _dbContext.Attachments.FindAsync(id);
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(GetAttachmentByIdAsync), ex, $"Attachment ID: {id}");
-                throw ex;
-            }
+                Title = "Error creating attachment",
+                Detail = ex.Message,
+                Status = StatusCodes.Status500InternalServerError
+            });
         }
-
-        public async Task<int> CreateAttachmentAsync(CMS.Domain.Entities.Attachment attachment)
+    }
+    public async Task DeleteAttachmentAsync(int id)
+    {
+        try
         {
-            try
+            Attachment attachment = await _dbContext.Attachments.FindAsync(id);
+            if (attachment != null)
             {
-                _dbContext.Attachments.Add(attachment);
+                _dbContext.Attachments.Remove(attachment);
                 await _dbContext.SaveChangesAsync();
-                return attachment.Id;
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(CreateAttachmentAsync), ex,"Enable to create attachment");
-                throw ex;
             }
         }
-        public async Task DeleteAttachmentAsync(int id)
+        catch (Exception ex)
         {
-            try
+            throw new ProblemDetailsException(new ProblemDetails
             {
-                var attachment = await _dbContext.Attachments.FindAsync(id);
-                if (attachment != null)
-                {
-                    _dbContext.Attachments.Remove(attachment);
-                    await _dbContext.SaveChangesAsync();
-                }
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(DeleteAttachmentAsync), ex, $"Attachment ID: {id}");
-                throw ex;
-            }
+                Title = "Error deleting attachment",
+                Detail = ex.Message,
+                Status = StatusCodes.Status500InternalServerError
+            });
         }
     }
 }

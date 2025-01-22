@@ -1,7 +1,40 @@
 ﻿@model IEnumerable<CMS.Application.DTOs.Register>
+
 @{
     ViewData["Title"] = "Registered Users";
 }
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet" />
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+<style>
+    .card-body {
+        width: 100%;
+        max-width: 100%;
+        overflow-y: hidden;
+    }
+</style>
+
+@using (Html.BeginForm("Index", "Account", FormMethod.Get, new { id = "filterForm" }))
+{
+    <div class="form-group" style="margin-bottom: 23px;">
+        <div class="row">
+            <div class="col-md-3">
+                @Html.Label("Filter by Username:")
+                <input type="text" id="userName" name="userName" class="form-control" placeholder="Search by Username" value="@ViewBag.userNameFilter">
+            </div>
+            <div class="col-md-1" style="margin-top: 27px;">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn-primary btn-block" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Filter Users">Filter</button>
+            </div>
+            <div class="col-md-1" style="margin-top: 27px;">
+                <button type="button" id="resetButton" class="btn btn-secondary btn-block" title="Reset Filters">Reset</button>
+            </div>
+        </div>
+    </div>
+}
+
 
 
 <div class="row">
@@ -13,8 +46,7 @@
                 </div>
             </div>
             <div class="card-body">
-
-                <table id="add-rows" class="table table-nowrap dt-responsive table-bordered display" style="width:100%">
+                <table id="registeredUsersTable" class="display nowrap" style="width:100%">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -34,16 +66,35 @@
                                 <td>@user.UserName</td>
                                 <td>@user.SelectedRole</td>
                                 <td>
-                                    <a class="bx bxs-edit-alt" style="font-size:x-large" asp-action="Edit" asp-route-id="@user.RegisterrId" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="Edit"></a> |
-                                    <a class="bx bx-detail" style="font-size:x-large" asp-action="Details" asp-route-id="@user.RegisterrId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Details"></a> |
-                                    <a class="ri-delete-bin-2-line text-danger" style="font-size:x-large" asp-action="Delete" asp-route-id="@user.RegisterrId" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Delete"></a>
+                                    <a class="bx bxs-edit-alt" style="font-size:x-large" asp-action="Edit" asp-route-id="@user.RegisterrId" data-bs-toggle="tooltip" data-bs-placement="left" title="Edit"></a> |
+                                    <a class="bx bx-detail" style="font-size:x-large" asp-action="Details" asp-route-id="@user.RegisterrId" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Details"></a> |
+                                    <a class="ri-delete-bin-2-line text-danger" style="font-size:x-large" asp-action="Delete" asp-route-id="@user.RegisterrId" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete"></a>
                                 </td>
                             </tr>
                         }
                     </tbody>
                 </table>
+                @await Html.PartialAsync("_PaginationPartial", Model)
+
             </div>
         </div>
-    </div><!--end col-->
-</div><!--end row-->
+    </div>
+</div>
 
+<script>
+    $.noConflict();
+    jQuery(document).ready(function ($) {
+        $('#registeredUsersTable').DataTable({
+            paging: false,
+            info: false,
+            scrollCollapse: true,
+            scrollY: '50vh',
+            ordering: false,
+        });
+
+            $('#resetButton').on('click', function () {
+                $('#userName').val('');
+                window.location.href = '@Url.Action("Index", "Account")';
+            });
+        });
+</script>

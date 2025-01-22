@@ -1,231 +1,181 @@
 ﻿using CMS.Application.DTOs;
 using CMS.Application.Extensions;
 using CMS.Domain.Entities;
-using CMS.Repository.Implementation;
 using CMS.Repository.Interfaces;
 using CMS.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.FileProviders;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
 using System.Threading.Tasks;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
-namespace CMS.Services.Services
+namespace CMS.Services.Services;
+
+public class CompanyService : ICompanyService
 {
-    public class CompanyService: ICompanyService
+    ICompanyRepository _repository;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly UserManager<IdentityUser> _userManager;
+
+    public CompanyService(
+        ICompanyRepository repository,
+        IHttpContextAccessor httpContextAccessor,
+        UserManager<IdentityUser> userManager)
     {
-        ICompanyRepository _repository;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly UserManager<IdentityUser> _userManager;
+        _repository = repository;
+        _httpContextAccessor = httpContextAccessor;
+        _userManager = userManager;
+    }
 
-        public CompanyService(ICompanyRepository repository,
-            IHttpContextAccessor httpContextAccessor,UserManager<IdentityUser> userManager)
+
+    public async Task<Result<CompanyDTO>> Delete(int id)
+    {
+        try
         {
-           _repository = repository;
-            _httpContextAccessor = httpContextAccessor;
-            _userManager = userManager;
-         
+            await _repository.Delete(id);
+            return Result<CompanyDTO>.Success(null);
         }
 
-        public void LogException(string methodName, Exception ex = null, string additionalInfo = null)
+        catch (Exception ex)
         {
-            _repository.LogException(methodName, ex, additionalInfo);
+            return Result<CompanyDTO>.Failure(null, $"An error occurred while deleting the company{ex.InnerException.Message}");
         }
+    }
 
-   
-
-        public async Task<Result<CompanyDTO>> Delete(int id)
+    public async Task<Result<List<CompanyDTO>>> GetAll()
+    {
+        try
         {
-         
-            try
-            {
-                
+            List<Company> companies = await _repository.GetAll();
 
-                await _repository.Delete(id);
-                return Result<CompanyDTO>.Success(null);
-            }
-
-            catch (Exception ex)
-            {
-                LogException(nameof(Delete), ex, "An error occurred while deleting the company");
-                return Result<CompanyDTO>.Failure(null, $"An error occurred while deleting the company{ex.InnerException.Message}");
-            }
-        }
-
-        public async Task<Result<List<CompanyDTO>>> GetAll()
-        {
-            try
-            {
-                var companies=await _repository.GetAll();
-            if(companies == null)
-            {
+            if (companies is null)
                 return Result<List<CompanyDTO>>.Failure(null, "No companies found");
-            }
-                
-                var companyDTOs=new List<CompanyDTO>();
-                foreach(var c in companies)
-                {
-                
-                    var com = new CompanyDTO
-                    {
-                        Id = c.Id,
-                        Name = c.Name,
-                        PersonName = c.PersonName,
-                        Email = c.Email,
-                        PhoneNumber = c.PhoneNumber,
-                        CountryId = c.CountryId,
-                        CountryName = c.Country.Name,
-                       
-                    };
-                    companyDTOs.Add(com);
 
-                }
-                return Result<List<CompanyDTO>>.Success(companyDTOs);
-           
-
-            }
-            catch(Exception ex)
+            List<CompanyDTO> companyDTOs = new();
+            foreach (Company c in companies)
             {
-                LogException(nameof(GetAll), ex,   "Unable to get companies");
-                return Result<List<CompanyDTO>>.Failure(null, $"Unable to get companies: {ex.InnerException.Message}");
-            }
-
-        }
-
-        public async  Task<Result<CompanyDTO>> GetById(int id)
-        {
-            if (id <= 0)
-            {
-                return Result<CompanyDTO>.Failure(null, "Invalid company id");
-            }
-            try {
-                
-
-                var company = await _repository.GetById(id);
-                var companyDTO = new CompanyDTO
+                CompanyDTO com = new CompanyDTO
                 {
-                    Id= company.Id,
-                    Name = company.Name,
-                    PersonName = company.PersonName,
-                    Email = company.Email,
-                    PhoneNumber = company.PhoneNumber,
-                  //  CountryId = company.CountryId,
-                    CountryId=company.CountryId,
-                    CountryName= company.Country.Name,
-                    
+                    Id = c.Id,
+                    Name = c.Name,
+                    PersonName = c.PersonName,
+                    Email = c.Email,
+                    PhoneNumber = c.PhoneNumber,
+                    CountryId = c.CountryId,
+                    CountryName = c.Country.Name,
+                    CreatedOn = c.CreatedOn,
                 };
-                return Result<CompanyDTO>.Success(companyDTO);
+
+                companyDTOs.Add(com);
             }
-            catch (Exception ex)
-            {
-                LogException(nameof(GetById), ex,  "unable to retrieve the company from the repository");
-                return Result<CompanyDTO>.Failure(null, $"unable to retrieve the company from the repository{ex.InnerException.Message}");
-            }
-            
+            return Result<List<CompanyDTO>>.Success(companyDTOs);
+        }
+        catch (Exception ex)
+        {
+            return Result<List<CompanyDTO>>.Failure(null, $"Unable to get companies: {ex.InnerException.Message}");
         }
 
-        public async Task<Result<CompanyDTO>> Insert(CompanyDTO data)
-        {
-            try
-            {
-                if (data == null)
-            {
-                 return Result<CompanyDTO>.Failure(data, "the company DTO is null");
-            }
-            var currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+    }
 
-            var company = new Company {
+    public async Task<Result<CompanyDTO>> GetById(int id)
+    {
+        if (id <= 0)
+            return Result<CompanyDTO>.Failure(null, "Invalid company id");
+
+        try
+        {
+            Company company = await _repository.GetById(id);
+            CompanyDTO companyDTO = new()
+            {
+                Id = company.Id,
+                Name = company.Name,
+                PersonName = company.PersonName,
+                Email = company.Email,
+                PhoneNumber = company.PhoneNumber,
+                CountryId = company.CountryId,
+                CountryName = company.Country.Name,
+                CreatedOn = company.CreatedOn,
+            };
+
+            return Result<CompanyDTO>.Success(companyDTO);
+        }
+        catch (Exception ex)
+        {
+            return Result<CompanyDTO>.Failure(null, $"unable to retrieve the company from the repository{ex.InnerException.Message}");
+        }
+    }
+
+    public async Task<Result<CompanyDTO>> Insert(CompanyDTO data)
+    {
+        try
+        {
+            if (data is null)
+                return Result<CompanyDTO>.Failure(data, "the company DTO is null");
+
+            IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+
+            Company company = new Company
+            {
                 Name = data.Name,
                 Email = data.Email,
                 PersonName = data.PersonName,
                 PhoneNumber = data.PhoneNumber,
-                CountryId= data.CountryId,
-                CreatedBy= currentUser.Id,
-                CreatedOn=DateTime.Now,
-               
+                CountryId = data.CountryId,
+                CreatedBy = currentUser.Id,
+                CreatedOn = DateTime.Now,
             };
 
-            
-                
-
-                await _repository.Insert(company);
-                
-                return Result<CompanyDTO>.Success(data); 
-
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(Insert), ex,  "unable to insert a company");
-                return Result<CompanyDTO>.Failure(data,$"unable to insert a company: {ex.InnerException.Message}");
-
-            }
-          
+            await _repository.Insert(company);
+            return Result<CompanyDTO>.Success(data);
         }
-
-        public async Task<Result<CompanyDTO>> Update(CompanyDTO data)
+        catch (Exception ex)
         {
-            try
-            {
-                
+            return Result<CompanyDTO>.Failure(data, $"unable to insert a company: {ex.InnerException.Message}");
+        }
+    }
 
-                if (data == null)
-            {
+    public async Task<Result<CompanyDTO>> Update(CompanyDTO data)
+    {
+        try
+        {
+            if (data is null)
                 return Result<CompanyDTO>.Failure(data, "can not update a null object");
-            }
-            var currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
-            var previousCompany = await _repository.GetById(data.Id);
-            var company = new Company
+
+            IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+            Company previousCompany = await _repository.GetById(data.Id);
+            Company company = new Company
             {
                 Id = data.Id,
                 Name = data.Name,
                 PersonName = data.PersonName,
                 Email = data.Email,
-                PhoneNumber= data.PhoneNumber,
-                CountryId= data.CountryId,
-                ModifiedOn= DateTime.Now,
+                PhoneNumber = data.PhoneNumber,
+                CountryId = data.CountryId,
+                ModifiedOn = DateTime.Now,
                 ModifiedBy = currentUser.Id,
-                CreatedOn =previousCompany.CreatedOn,
-                CreatedBy=previousCompany.CreatedBy
-               
+                CreatedOn = previousCompany.CreatedOn,
+                CreatedBy = previousCompany.CreatedBy
             };
-          
-           
-                await _repository.Update(company);
-                return Result<CompanyDTO>.Success(data);
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(Update), ex,  "error updating the company");
-                return Result<CompanyDTO>.Failure(data, $"error updating the company {ex.Message}");
-            }
+
+            await _repository.Update(company);
+            return Result<CompanyDTO>.Success(data);
         }
-
-
-
-        public bool DoesCompanyNameExist(string name , int countryId)
+        catch (Exception ex)
         {
-            try
-            {
-                return _repository.DoesCompanyNameExist(name, countryId);
+            return Result<CompanyDTO>.Failure(data, $"error updating the company {ex.Message}");
+        }
+    }
 
-            }
-
-            catch (Exception ex)
-            {
-                LogException(nameof(DoesCompanyNameExist), ex,null);
-                throw ex;
-            }
+    public bool DoesCompanyNameExist(string name, int countryId)
+    {
+        try
+        {
+            return _repository.DoesCompanyNameExist(name, countryId);
         }
 
-
-     
-
-
-
+        catch (Exception ex)
+        {
+            throw;
+        }
     }
 }

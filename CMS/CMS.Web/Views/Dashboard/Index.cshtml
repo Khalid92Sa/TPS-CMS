@@ -16,347 +16,215 @@
     };
 }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
 
 <div class="row">
-
-    
     <div class="col-md-4">
         <div class="card card-animate">
-            <div class="card-body">
-
+            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
                 <div class="d-flex justify-content-between">
                     <div>
                         <p class="fw-medium text-muted mb-0">Candidates</p>
-                        <h2 class="mt-4 ff-secondary fw-semibold"><span class="counter-value" data-target="@Model.NumberOfCandidates">@Model.NumberOfCandidates</span></h2>
+                        <h2 class="mt-4 ff-secondary fw-semibold">
+                            <span class="counter-value" data-target="@Model.NumberOfCandidates">@Model.NumberOfCandidates</span>
+                        </h2>
                     </div>
-                  @*   <div style="margin-left:36%;">
-                        <div class="avatar-sm flex-shrink-0" >
-                            <span class="avatar-title bg-info-subtle rounded-circle fs-2">
-                                <span style="color:#36a2dd;font-size: 17px;">100%</span>
-                            </span>
-                        </div>  
-                    </div> *@
-                    
-                    <div>
-                        <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-info-subtle rounded-circle fs-2">
-                                <span class="ri-user-star-fill" style="color:#36a2dd;"></span>
-                            </span>
-                        </div>
+                    <div class="avatar-sm flex-shrink-0">
+                        <span class="avatar-title bg-info-subtle rounded-circle fs-2">
+                            <i class="ri-user-star-fill" style="color:#36a2dd;"></i>
+                        </span>
                     </div>
                 </div>
-
-            </div><!-- end card body -->
-        </div> <!-- end card-->
-    </div>
-    
-
-
-    <div class="col-xl-4 col-md-4">
-        <div class="card card-animate overflow-hidden">
-            <div class="position-absolute start-0" style="z-index: 0;">
-                <svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120">
-                    <style>
-                        .s0 {
-                            opacity: .05;
-                            fill: var(--vz-success)
-                        }
-                    </style>
-                    <path id="Shape 8" class="s0" d="m189.5-25.8c0 0 20.1 46.2-26.7 71.4 0 0-60 15.4-62.3 65.3-2.2 49.8-50.6 59.3-57.8 61.5-7.2 2.3-60.8 0-60.8 0l-11.9-199.4z"></path>
-                </svg>
             </div>
-            <div class="card-body" style="z-index:1 ;">
-                <a asp-action="AcceptedCandidates">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1 overflow-hidden">
-                        <p class="text-uppercase fw-medium text-muted text-truncate mb-3"> Accepted</p>
-                        <h4 class="fs-22 fw-semibold ff-secondary mb-0"><span class="counter-value" data-target="@Model.NumberOfAccepted">0</span></h4>
-                    </div>
-                    <div id="accepted-chart" data-percent="@ViewBag.AcceptedPercentage"></div>
-                </div>
-
-                </a>
-            </div><!-- end card body -->
-        </div><!-- end card -->
-    </div>
-
-
-
-    <div class="col-xl-4 col-md-4">
-        <div class="card card-animate overflow-hidden">
-            <div class="position-absolute start-0" style="z-index: 0;">
-                <svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120">
-                    <style>
-                        .s0 {
-                            opacity: .05;
-                            fill: var(--vz-success)
-                        }
-                    </style>
-                    <path id="Shape 8" class="s0" d="m189.5-25.8c0 0 20.1 46.2-26.7 71.4 0 0-60 15.4-62.3 65.3-2.2 49.8-50.6 59.3-57.8 61.5-7.2 2.3-60.8 0-60.8 0l-11.9-199.4z"></path>
-                </svg>
-            </div>
-            <div class="card-body" style="z-index:1 ;">
-                <a asp-action="PendingCandidates">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1 overflow-hidden">
-                        <p class="text-uppercase fw-medium text-muted text-truncate mb-3"> Pending</p>
-                        <h4 class="fs-22 fw-semibold ff-secondary mb-0"><span class="counter-value" data-target="@Model.NumberOfPending">0</span></h4>
-                    </div>
-                    <div id="pending-chart" data-percent="@ViewBag.PendingPercentage"></div>
-                </div>
-                </a>
-            </div><!-- end card body -->
-        </div><!-- end card -->
-    </div>
-
-
-
-
-    <div class="col-xl-4 col-md-4">
-        <div class="card card-animate overflow-hidden">
-            <div class="position-absolute start-0" style="z-index: 0;">
-                <svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120">
-                    <style>
-                        .s0 {
-                            opacity: .05;
-                            fill: var(--vz-success)
-                        }
-                    </style>
-                    <path id="Shape 8" class="s0" d="m189.5-25.8c0 0 20.1 46.2-26.7 71.4 0 0-60 15.4-62.3 65.3-2.2 49.8-50.6 59.3-57.8 61.5-7.2 2.3-60.8 0-60.8 0l-11.9-199.4z"></path>
-                </svg>
-            </div>
-            <div class="card-body" style="z-index:1 ;">
-                <a asp-action="RejectedCandidates">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1 overflow-hidden">
-                        <p class="text-uppercase fw-medium text-muted text-truncate mb-3"> Rejected</p>
-                        <h4 class="fs-22 fw-semibold ff-secondary mb-0"><span class="counter-value" data-target="@Model.NumberOfRejected">0</span></h4>
-                    </div>
-                    <div id="rejected-chart" data-percent="@ViewBag.RejectedPercentage"></div>
-                </div>
-                </a>
-            </div><!-- end card body -->
-        </div><!-- end card -->
-    </div>
-
-
-    <div class="col-xl-4 col-md-4">
-        <div class="card card-animate overflow-hidden">
-            <div class="position-absolute start-0" style="z-index: 0;">
-                <svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120">
-                    <style>
-                        .s0 {
-                            opacity: .05;
-                            fill: var(--vz-success)
-                        }
-                    </style>
-                    <path id="Shape 8" class="s0" d="m189.5-25.8c0 0 20.1 46.2-26.7 71.4 0 0-60 15.4-62.3 65.3-2.2 49.8-50.6 59.3-57.8 61.5-7.2 2.3-60.8 0-60.8 0l-11.9-199.4z"></path>
-                </svg>
-            </div>
-            <div class="card-body" style="z-index:1 ;">
-                <a asp-action="OnHoldCandidates">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1 overflow-hidden">
-                        <p class="text-uppercase fw-medium text-muted text-truncate mb-3"> On Hold</p>
-                        <h4 class="fs-22 fw-semibold ff-secondary mb-0"><span class="counter-value" data-target="@Model.NumberOfOnHold">0</span></h4>
-                    </div>
-                    <div id="onhold-chart" data-percent="@ViewBag.OnHoldPercentage"></div>
-                </div>
-                </a>
-            </div><!-- end card body -->
-        </div><!-- end card -->
-    </div>
-
-
-    <div class="col-xl-4 col-md-4">
-        <div class="card card-animate overflow-hidden">
-            <div class="position-absolute start-0" style="z-index: 0;">
-                <svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120">
-                    <style>
-                        .s0 {
-                            opacity: .05;
-                            fill: var(--vz-success)
-                        }
-                    </style>
-                    <path id="Shape 8" class="s0" d="m189.5-25.8c0 0 20.1 46.2-26.7 71.4 0 0-60 15.4-62.3 65.3-2.2 49.8-50.6 59.3-57.8 61.5-7.2 2.3-60.8 0-60.8 0l-11.9-199.4z"></path>
-                </svg>
-            </div>
-            <div class="card-body" style="z-index:1 ;">
-                <a asp-action="StoppedCyclesCandidates">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1 overflow-hidden">
-                        <p class="text-uppercase fw-medium text-muted text-truncate mb-3"> Stopped Cycles</p>
-                        <h4 class="fs-22 fw-semibold ff-secondary mb-0"><span class="counter-value" data-target="@Model.NumberOfStoppedCycles">0</span></h4>
-                    </div>
-                        <div id="stoppedCycles-chart" data-percent="@ViewBag.StoppedCycles"></div>
-                </div>
-                </a>
-            </div><!-- end card body -->
-        </div><!-- end card -->
-    </div>
-
-
-@*     <canvas id="myChart" style="width:100%;max-width:600px"></canvas>
- *@
-</div>
-<div class="row">
-    <div class="col-xxl-4">
-        <!-- card -->
-        <div class="card card-height-100">
-            <div class="card-header align-items-center d-flex">
-                <h4 class="card-title mb-0 flex-grow-1">Jobs Views Location</h4>
-
-            </div><!-- end card header -->
-            <!-- card body -->
-            <div class="card-body">
-                <div id="candidate-sources-map"
-                     data-locations="@ViewBag.CountriesList"></div>
-            </div>
-            <!-- end card body -->
         </div>
-        <!-- end card -->
     </div>
 
+    <div class="col-md-4">
+        <div class="card card-animate">
+            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
+                <a asp-action="AcceptedCandidates">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-uppercase fw-medium text-muted mb-0">Accepted</p>
+                            <h4 class="fs-22 fw-semibold ff-secondary mb-0">
+                                <span class="counter-value" data-target="@Model.NumberOfAccepted">0</span>
+                            </h4>
+                        </div>
+                        <div id="accepted-chart" data-percent="@ViewBag.AcceptedPercentage"></div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card card-animate">
+            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
+                <a asp-action="PendingCandidates">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-uppercase fw-medium text-muted mb-0">Pending</p>
+                            <h4 class="fs-22 fw-semibold ff-secondary mb-0">
+                                <span class="counter-value" data-target="@Model.NumberOfPending">0</span>
+                            </h4>
+                        </div>
+                        <div id="pending-chart" data-percent="@ViewBag.PendingPercentage"></div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card card-animate">
+            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
+                <a asp-action="RejectedCandidates">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-uppercase fw-medium text-muted mb-0">Rejected</p>
+                            <h4 class="fs-22 fw-semibold ff-secondary mb-0">
+                                <span class="counter-value" data-target="@Model.NumberOfRejected">0</span>
+                            </h4>
+                        </div>
+                        <div id="rejected-chart" data-percent="@ViewBag.RejectedPercentage"></div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card card-animate">
+            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
+                <a asp-action="OnHoldCandidates">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-uppercase fw-medium text-muted mb-0">On Hold</p>
+                            <h4 class="fs-22 fw-semibold ff-secondary mb-0">
+                                <span class="counter-value" data-target="@Model.NumberOfOnHold">0</span>
+                            </h4>
+                        </div>
+                        <div id="onhold-chart" data-percent="@ViewBag.OnHoldPercentage"></div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card card-animate">
+            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
+                <a asp-action="StoppedCyclesCandidates">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-uppercase fw-medium text-muted mb-0">Stopped Cycles</p>
+                            <h4 class="fs-22 fw-semibold ff-secondary mb-0">
+                                <span class="counter-value" data-target="@Model.NumberOfStoppedCycles">0</span>
+                            </h4>
+                        </div>
+                        <div id="stoppedCycles-chart" data-percent="@ViewBag.StoppedCycles"></div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
 
 
+<!-- Jobs Views Location Map -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-animate">
+            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
+                <h4 class="card-title mb-0">Jobs Views Location</h4>
+                <div style="background-color:#dfe1e2;" id="candidate-sources-map" data-locations="@ViewBag.CountriesList"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-
-    <div class="card card-height-100">
-        <div class="card">
+<!--Tree Chart -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-animate">
             <div class="card-header">
                 <h4 class="card-title mb-0">Tree Chart</h4>
             </div>
-
-            <div class="card-body">
-                <div class="container">
-                    <div class="accordion" id="countryAccordion">
-                        @{
-                            int i = 1;
-                        }
-                        @foreach (var country in ViewBag.TreeData)
+            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
+                <div class="accordion accordion-flush" id="countryAccordion">
+                    @{
+                        int i = 1;
+                    }
+                    @foreach (var country in ViewBag.TreeData)
+                    {
+                        @if (country.Positions != null && country.Positions.Count > 0)
                         {
-                            @if (country.Positions != null && country.Positions.Count > 0)
-                            {
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header" id="countryheading-@i">
-                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#countrycollapse-@i">
-                                            @country.Name
-                                        </button>
-                                    </h2>
-                                    <div id="countrycollapse-@i" class="accordion-collapse collapse">
-                                        <div class="accordion-body">
-                                            <ul class="list-group">
-                                                @{
-                                                    int j = 1;
-                                                }
-                                                @foreach (var position in country.Positions)
-                                                {
-                                                    <li class="list-group-item">
-                                                        <div class="d-flex justify-content-between align-items-center">
-                                                            <div>
-                                                                <button class="btn btn-link" data-bs-toggle="collapse" data-bs-target="#positioncollapse-@i-@j">
-                                                                    @position.Name
-                                                                </button>
-                                                            </div>
-                                                            <div>
-                                                                <span class="badge bg-primary rounded-pill">@position.Candidates.Count</span>
-                                                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="countryheading-@i">
+                                    <button class="accordion-button collapsed d-flex align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#countrycollapse-@i">
+                                        <i class="ri-earth-line me-2 text-primary"></i> @country.Name
+                                    </button>
+                                </h2>
+                                <div id="countrycollapse-@i" class="accordion-collapse collapse" data-bs-parent="#countryAccordion">
+                                    <div class="accordion-body">
+                                        <ul class="list-group list-group-flush">
+                                            @{
+                                                int j = 1;
+                                            }
+                                            @foreach (var position in country.Positions)
+                                            {
+                                                <li class="list-group-item">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <i class="ri-briefcase-line me-2 text-info"></i>
+                                                            <button class="btn btn-link p-0" data-bs-toggle="collapse" data-bs-target="#positioncollapse-@i-@j">
+                                                                @position.Name
+                                                            </button>
                                                         </div>
-                                                        <div id="positioncollapse-@i-@j" class="collapse">
-                                                            <ul class="list-group">
-                                                                @{
-                                                                    int k = 1;
-                                                                }
-                                                                @foreach (var candidate in position.Candidates)
-                                                                {
-                                                                    <li class="list-group-item">
-                                                                        <div class="d-flex justify-content-between align-items-center">
-                                                                            <div>
-                                                                                @candidate.Name
-                                                                            </div>
-                                                                            <div>
-                                                                                <span class="badge bg-success">@candidate.Status</span>
-                                                                                <span class="badge bg-info">
-                                                                                    @(candidate.Status == "Pending" ? "for" : "by") @candidate.InterviewerName
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </li>
-                                                                    k++;
-                                                                }
-                                                            </ul>
-                                                        </div>
-                                                    </li>
-                                                    j++;
-                                                }
-                                            </ul>
-                                        </div>
+                                                        <span class="badge bg-primary">@position.Candidates.Count candidates</span>
+                                                    </div>
+                                                    <div id="positioncollapse-@i-@j" class="collapse mt-2">
+                                                        <ul class="list-group">
+                                                            @{
+                                                                int k = 1;
+                                                            }
+                                                            @foreach (var candidate in position.Candidates)
+                                                            {
+                                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                                    <div>
+                                                                        <i class="ri-user-line me-2 text-success"></i> @candidate.Name
+                                                                    </div>
+                                                                    <div>
+                                                                        <span class="badge bg-success">@candidate.Status</span>
+                                                                        <span class="badge bg-info">
+                                                                            @(candidate.Status == "Pending" ? "for" : "by") @candidate.InterviewerName
+                                                                        </span>
+                                                                    </div>
+                                                                </li>
+                                                                k++;
+                                                            }
+                                                        </ul>
+                                                    </div>
+                                                </li>
+                                                j++;
+                                            }
+                                        </ul>
                                     </div>
                                 </div>
-                                i++;
-                            }
+                            </div>
+                            i++;
                         }
-                    </div>
+                    }
                 </div>
             </div>
         </div>
     </div>
-
-
-
-
-
 </div>
 
-
+<!-- AOS Init Script -->
 <script>
-    var countries = @Html.Raw(ViewBag.CountriesList);
-    var totalCandidates = @Model.NumberOfCandidates;
-    var acceptedData = @Model.NumberOfAccepted;
-    var pendingData = @Model.NumberOfPending;
-    var rejectedData = @Model.NumberOfRejected;
-    var onHoldData = @Model.NumberOfOnHold;
-
-    // Calculate percentages
-    var acceptedPercentage2 = (acceptedData / totalCandidates) * 100;
-    var pendingPercentage2 = (pendingData / totalCandidates) * 100;
-    var rejectedPercentage2 = (rejectedData / totalCandidates) * 100;
-    var onHoldPercentage2 = (onHoldData / totalCandidates) * 100;
-
-    var xValues = ["Accepted", "Pending", "Rejected", "On Hold"];
-    var yValues = [acceptedPercentage2, pendingPercentage2, rejectedPercentage2, onHoldPercentage2];
-    var barColors = ["green", "orange", "red", "blue"];
-
-    new Chart("myChart", {
-        type: "bar",
-        data: {
-            labels: xValues,
-            datasets: [{
-                backgroundColor: barColors,
-                data: yValues
-            }]
-        },
-        options: {
-            legend: { display: false },
-            title: {
-                display: true,
-                text: "Performance Report"
-            },
-            scales: {
-                yAxes: [{
-                    ticks: {
-                        beginAtZero: true,
-                        max: 100,
-                        callback: function (value) {
-                            return value + '%';
-                        }
-                    },
-                    scaleLabel: {
-                        display: true,
-                        labelString: 'Percentage'
-                    }
-                }]
-            }
-        }
-    });
+    AOS.init();
 </script>
+

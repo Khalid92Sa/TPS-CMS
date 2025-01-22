@@ -1,19 +1,13 @@
-﻿using CMS.Application.Extensions;
-using CMS.Domain.Entities;
-using Microsoft.AspNetCore.Identity;
-using System;
+﻿using Microsoft.AspNetCore.Identity;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace CMS.Repository.Interfaces
-{
-    public interface IUserRepository
-    {
-        List<IdentityUser> GetAllUsersWithRoles();
-        List<string> GetUserRoles(IdentityUser user);
-        Task<bool> Delete(string id);
+namespace CMS.Repository.Interfaces;
 
-        IdentityUser GetUserById(string userId);
-    }
+public interface IUserRepository
+{
+    Task<List<IdentityUser>> GetAllUsersWithRoles();
+    List<string> GetUserRoles(IdentityUser user);
+    Task<bool> Delete(string id);
+    Task<IdentityUser> GetUserById(string userId);
 }

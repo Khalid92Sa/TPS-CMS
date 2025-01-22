@@ -4,119 +4,170 @@
     ViewData["Title"] = "Notifications";
 }
 
+<style>
+    body {
+        font-family: 'Roboto', sans-serif;
+        background: #f0f2f5;
+        margin: 0;
+        padding: 0;
+    }
 
-<div class="row">
-    <div class="col-lg-12">
-        <div class="card">
-            <div class="card-body">
-                <ul class="nav nav-tabs" id="myTab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="unread-tab" data-bs-toggle="tab" data-bs-target="#unread" type="button" role="tab" aria-controls="unread" aria-selected="true">UnRead</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="read-tab" data-bs-toggle="tab" data-bs-target="#read" type="button" role="tab" aria-controls="read" aria-selected="false">Read</button>
-                    </li>
-                </ul>
-                <div class="tab-content" id="myTabContent">
-                    <div class="tab-pane fade show active" id="unread" role="tabpanel" aria-labelledby="unread-tab">
-              
-                        <table id="add-rows" class="table" style="width:100%">
-                            <thead>
-                                <tr>
+    .container {
+        margin: 20px auto;
+        max-width: 1200px;
+    }
 
-                                    <th>
-                                        @Html.DisplayNameFor(model => model.Title)
-                                    </th>
+    .card {
+        background: #ffffff;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+    }
 
-                                    <th>Sent Date</th>
+    /* Tabs Styling */
+    .nav-tabs-notification {
+        display: flex;
+        border: none;
+        margin-bottom: 20px;
+        justify-content: center;
+    }
 
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if (Model.Count() == 0)
-                                {
-                                    <tr>
-                                        <td colspan="2" class="text-center">No notifications found</td>
-                                    </tr>
-                                }
-                                else
-                                {
-                                @foreach (var notification in Model.Reverse())
-                                {
-                                    <tr>
+        .nav-tabs-notification .nav-link-tabs {
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #495057;
+            border: none;
+            border-radius: 50px;
+            background: #e9ecef;
+            margin: 0 5px;
+            transition: all 0.3s ease-in-out;
+        }
 
+            .nav-tabs-notification .nav-link-tabs.active {
+                background: linear-gradient(to right, #6a11cb, #2575fc);
+                color: #ffffff;
+                box-shadow: 0px 4px 10px rgba(106, 17, 203, 0.4);
+            }
 
-                                        <td>
-                                            <a href="@Url.Action("Details", "Notifications", new { id = notification.NotificationsId })">
-                                                <span style="@(notification.IsRead ? "color: blue;" : "font-weight: bold; color: black;")">
-                                                    @Html.Raw(notification.Title)
-                                                </span>
-                                            </a>
+            .nav-tabs-notification .nav-link-tabs:hover {
+                background: #dfe4ea;
+            }
 
-                                        </td>
+    /* Notification Section */
+    .notifications-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        padding-top: 10px;
+    }
 
-                                        <td>@notification.SendDate</td>
+    .notification-card {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 15px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        cursor: pointer;
+    }
 
+        .notification-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
 
-                                    </tr>
-                                }}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="tab-pane fade" id="read" role="tabpanel" aria-labelledby="read-tab">
-                        <table id="add-rows" class="table" style="width:100%">
-                            <thead>
-                                <tr>
+    .notification-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #333333;
+        line-height: 1.4;
+    }
 
-                                    <th>
-                                        @Html.DisplayNameFor(model => model.Title)
-                                    </th>
+        .notification-title a {
+            text-decoration: none;
+            color: inherit;
+            transition: color 0.3s;
+        }
 
-                                    <th>Sent Date</th>
+            .notification-title a:hover {
+                color: #6a11cb;
+            }
 
-                                </tr>
-                            </thead>
-                            <tbody id="read-notifications-content">
-                                @if (Model.Count() == 0)
-                                {
-                                    <tr>
-                                        <td colspan="2" class="text-center">No notifications found</td>
-                                    </tr>
-                                }
-                                else
-                                {
-                                @foreach (var notification in Model.Reverse())
-                                {
-                                    <tr>
+    .notification-date {
+        font-size: 14px;
+        color: #888888;
+        margin-top: 5px;
+    }
 
+    .empty-state {
+        text-align: center;
+        color: #adb5bd;
+        font-size: 18px;
+        margin-top: 50px;
+        font-weight: 500;
+    }
 
-                                        <td>
-                                            <a href="@Url.Action("Details", "Notifications", new { id = notification.NotificationsId })">
-                                                <span style="@(notification.IsRead ? "color: blue;" : "font-weight: bold; color: black;")">
-                                                    @Html.Raw(notification.Title)
-                                                </span>
-                                            </a>
+    /* Buttons */
+    .btn-primary {
+        background: linear-gradient(to right, #6a11cb, #2575fc);
+        border: none;
+        padding: 10px 25px;
+        font-size: 14px;
+        font-weight: bold;
+        color: white;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
 
-                                        </td>
+        .btn-primary:hover {
+            background: linear-gradient(to right, #5a0fb5, #1b64e3);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+</style>
 
-                                        <td>@notification.SendDate</td>
+<div class="container">
+    <div class="card">
+        <!-- Tabs -->
+        <ul class="nav nav-tabs-notification" id="myTab" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link-tabs active" id="unread-tab" data-bs-toggle="tab" data-bs-target="#unread" type="button" role="tab" aria-controls="unread" aria-selected="true">
+                    Unread Notifications
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link-tabs" id="read-tab" data-bs-toggle="tab" data-bs-target="#read" type="button" role="tab" aria-controls="read" aria-selected="false">
+                    Read Notifications
+                </button>
+            </li>
+        </ul>
 
-
-                                    </tr>
-                                }}
-                            </tbody>
-                        </table>
-
-                    </div>
+        <div class="tab-content">
+            <!-- Unread Notifications -->
+            <div class="tab-pane fade show active" id="unread" role="tabpanel" aria-labelledby="unread-tab">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>Unread Notifications</h5>
+                    <button class="btn-primary" id="readAllButton">Mark All as Read</button>
                 </div>
+                <div id="unread-notifications-content" class="notifications-section">
+                    <!-- Unread notifications will be loaded dynamically -->
+                </div>
+            </div>
 
-
-
+            <!-- Read Notifications -->
+            <div class="tab-pane fade" id="read" role="tabpanel" aria-labelledby="read-tab">
+                <h5>Read Notifications</h5>
+                <div id="read-notifications-content" class="notifications-section">
+                    <!-- Read notifications will be loaded dynamically -->
+                </div>
             </div>
         </div>
     </div>
 </div>
-
 
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
@@ -128,54 +179,115 @@
 
 <script>
     $(document).ready(function () {
+        // Load unread notifications on page load
+        loadUnreadNotifications();
 
-        $("#read-tab").click(function () {
+        // Mark all notifications as read
+        $("#readAllButton").click(function () {
             $.ajax({
-                url: '@Url.Action("AllNotifications", "Notifications")',
-                type: 'GET',
+                url: '@Url.Action("MarkAllAsRead", "Notifications")',
+                type: 'POST',
                 success: function (response) {
-                    var tBodyContent = "";
-                    $('#read-notifications-content').html("");
-                    // Delay the reload for 2 seconds (adjust as needed)
-                    response.reverse();
-                    response.forEach(notification => {
-                        var fontStyle = notification.isRead ? "color: blue;" : "font-weight: bold; color: black;";
-                        var sendDate = new Date(notification.sendDate);
-                        var formattedDate = sendDate.toLocaleDateString();
-                        var formattedTime = sendDate.toLocaleTimeString();
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: 'All notifications marked as read successfully.',
+                            icon: 'success',
+                            confirmButtonText: 'OK',
+                        });
 
-                        // Prepare the read notifications grid body content
-                        var htmlCode = tBodyContent;
-                        tBodyContent = htmlCode.concat(`<tr>
-                                                      <td>
-                                                          <a href="/Notifications/Details/`+ notification.notificationsId + `">
-                                                                  <span style="`+ fontStyle + `">
-                                                                      `+ notification.title + `
-                                                              </span>
-                                                          </a>
-                                                      </td>
-                                                          <td>${formattedDate} ${formattedTime}</td>
-                                                  </tr>`)
-                    })
-
-                    $('#read-notifications-content').html(tBodyContent);
-
+                        // Refresh both unread and read notifications
+                        loadUnreadNotifications();
+                        loadReadNotifications();
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: response.message || 'Failed to mark all notifications as read.',
+                            icon: 'error',
+                            confirmButtonText: 'OK',
+                        });
+                    }
                 },
                 error: function (xhr, status, error) {
-                    console.error("Error to load read notifications: " + error);
-
-                    // Show SweetAlert2 error notification
+                    console.error("Error marking all as read: " + error);
                     Swal.fire({
                         title: 'Error!',
-                        text: 'Failed to load read notifications.',
+                        text: 'An error occurred while marking notifications as read.',
                         icon: 'error',
-                        confirmButtonText: 'OK'
+                        confirmButtonText: 'OK',
                     });
                 }
             });
         });
 
+        // Load unread notifications
+        $("#unread-tab").click(function () {
+            loadUnreadNotifications();
+        });
+
+        // Load read notifications
+        $("#read-tab").click(function () {
+            loadReadNotifications();
+        });
+
+        function loadUnreadNotifications() {
+            $.ajax({
+                url: '@Url.Action("GetUnreadNotificationsForGmAndArchi", "Notifications")',
+                type: 'GET',
+                success: function (response) {
+                    var unreadNotificationsHtml = "";
+
+                    if (response.length === 0) {
+                        unreadNotificationsHtml = '<div class="empty-state">No unread notifications found.</div>';
+                    } else {
+                        response.reverse();
+                        response.forEach(notification => {
+                            unreadNotificationsHtml += `
+                                <div class="notification-card" onclick="location.href='/Notifications/Details/${notification.notificationsId}'">
+                                    <div class="notification-title" style="font-weight: bold; color: black;">
+                                        ${notification.title}
+                                    </div>
+                                    <div class="notification-date">${new Date(notification.sendDate).toLocaleDateString()} ${new Date(notification.sendDate).toLocaleTimeString()}</div>
+                                </div>`;
+                        });
+                    }
+
+                    $("#unread-notifications-content").html(unreadNotificationsHtml);
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error loading unread notifications: " + error);
+                }
+            });
+        }
+
+        function loadReadNotifications() {
+            $.ajax({
+                url: '@Url.Action("GetReadNotifications", "Notifications")',
+                type: 'GET',
+                success: function (response) {
+                    var readNotificationsHtml = "";
+
+                    if (response.length === 0) {
+                        readNotificationsHtml = '<div class="empty-state">No read notifications found.</div>';
+                    } else {
+                        response.reverse();
+                        response.forEach(notification => {
+                            readNotificationsHtml += `
+                                <div class="notification-card" onclick="location.href='/Notifications/Details/${notification.notificationsId}'">
+                                    <div class="notification-title" style="color: blue;">
+                                        ${notification.title}
+                                    </div>
+                                    <div class="notification-date">${new Date(notification.sendDate).toLocaleDateString()} ${new Date(notification.sendDate).toLocaleTimeString()}</div>
+                                </div>`;
+                        });
+                    }
+
+                    $("#read-notifications-content").html(readNotificationsHtml);
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error loading read notifications: " + error);
+                }
+            });
+        }
     });
 </script>
-
-

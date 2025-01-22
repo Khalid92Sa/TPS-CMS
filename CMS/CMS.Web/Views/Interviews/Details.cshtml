@@ -1,208 +1,339 @@
 ﻿@using CMS.Domain.Enums
 @model CMS.Application.DTOs.InterviewsDTO
 
+<style>
+    .card-header {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        border-radius: 10px 10px 0 0;
+    }
+
+    .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    dt {
+        font-weight: bold;
+        font-size: 1rem;
+        color: #333;
+    }
+
+    dd {
+        font-size: 0.95rem;
+        color: #555;
+    }
+
+    .text-muted {
+        font-size: 0.9rem;
+    }
+
+    .btn-link {
+        font-size: 13px;
+        color: white;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
+
+    .btn-link:hover {
+        color: white;
+        text-decoration: underline;
+    }
+
+    .mt-15 {
+        margin-top: 15px;
+    }
+
+    .container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+
+    .row {
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-secondary {
+        background-color: gray;
+        border-color: gray;
+    }
+
+        .btn-secondary:hover {
+            background-color: darkgray !important;
+            border-color: darkgray !important;
+        }
+
+    .card-body hr {
+        border-top: 1px solid #eee;
+    }
+
+    .bg-light.p-3 {
+        background-color: #f8f9fa !important;
+        border-radius: 5px;
+    }
+
+    .border.rounded {
+        border: 1px solid #dee2e6 !important;
+    }
+
+    .more-text {
+        display: none;
+    }
+
+    .more-link {
+        cursor: pointer;
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    .more-link:hover {
+        text-decoration: underline;
+    }
+
+    .card-title{
+        color:white !important;
+    }
+</style>
+
 <div class="container">
     <div class="row">
 
         <!-- Main Details Card -->
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card">
-                <div class="card-header" style="background-color: #79cd79;">
-                    <h5 class="card-title" style="color:white;">Main Details</h5>
+                <div class="card-header">
+                    <h5 class="card-title">Main Details</h5>
                 </div>
                 <div class="card-body">
                     <hr />
                     <dl class="row">
-                        <div class="col-sm-12">
-                            <dt>Candidate Name:</dt>
-                            <dd>@Model.FullName</dd>
-                            <dt style="margin-top: 15px;">Level:</dt>
-                            <dd>@Model.Name</dd>
-                            <dt style="margin-top: 15px;">Track:</dt>
-                            <dd>@Model.TrackName</dd>
-                            <dt style="margin-top: 15px;">Score:</dt>
-                            <dd>@Model.FirstInterviewScore</dd>
-                            <dt style="margin-top: 15px;">Status:</dt>
-                            <dd>@Model.StatusName</dd>
-                            @if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
-                            {
-                                <dt style="margin-top: 15px;">Stop Cycle Note:</dt>
-                                <dd>
-                                    @if (Model.StopCycleNote != null)
-                                    {
-                                        @Model.StopCycleNote
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">No stop cycle happened yet</span>
-                                    }
-                                </dd>
-                            }
-                            <dt style="margin-top: 15px;">Evaluation:</dt>
+                        <dt>Candidate Name:</dt>
+                        <dd>@Model.FullName</dd>
+
+                        <dt class="mt-15">Level:</dt>
+                        <dd>@Model.Name</dd>
+
+                        <dt class="mt-15">Track:</dt>
+                        <dd>@Model.TrackName</dd>
+
+                        <dt class="mt-15">Score:</dt>
+                        <dd>@Model.FirstInterviewScore</dd>
+
+                        <dt class="mt-15">Status:</dt>
+                        <dd>@Model.StatusName</dd>
+
+                        @if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
+                        {
+                            <dt class="mt-15">Stop Cycle Note:</dt>
                             <dd>
-                                @if (Model.AttachmentId != null)
+                                @if (Model.StopCycleNote != null)
                                 {
-                                    <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.AttachmentId" class="btn btn-link">Download evaluation</a>
+                                    @Html.Raw(ShowMore(Model.StopCycleNote, 100))
                                 }
                                 else
                                 {
-                                    <span class="text-muted">There is no Evaluation for this interview</span>
+                                    <span class="text-muted">No stop cycle happened yet</span>
                                 }
                             </dd>
-                        </div>
+                        }
+
+                        <dt class="mt-15">Evaluation:</dt>
+                        <dd>
+                            @if (Model.AttachmentId != null)
+                            {
+                                <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.AttachmentId" class="btn btn-link">Download evaluation</a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">There is no evaluation for this interview</span>
+                            }
+                        </dd>
                     </dl>
                 </div>
             </div>
         </div>
 
         <!-- First Interview Card -->
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card">
-                <div class="card-header" style="background-color: #79cd79;">
-                    <h5 class="card-title" style="color:white;">First Interview</h5>
+                <div class="card-header">
+                    <h5 class="card-title">First Interview</h5>
                 </div>
                 <div class="card-body">
                     <hr />
                     <dl class="row">
-                        <div class="col-sm-12">
-                            <dt>First Interviewer Name:</dt>
-                            <dd>@Model.InterviewerName</dd>
-                            @if (@Model.SecondInterviewerId == null)
+                        <dt>First Interviewer Name:</dt>
+                        <dd>@Model.InterviewerName</dd>
+
+                        @if (@Model.SecondInterviewerId == null)
+                        {
+                            <dt class="mt-15">Second Interviewer Name:</dt>
+                            <dd class="text-muted">There is no second interviewer</dd>
+                        }
+                        else
+                        {
+                            <dt class="mt-15">Second Interviewer Name:</dt>
+                            <dd>@Model.SecondInterviewerName</dd>
+                        }
+
+                        <dt class="mt-15">Actual Experience:</dt>
+                        <dd>
+                            @if (Model.SecondInterviewActualExperience != null)
                             {
-                                <dt style="margin-top: 15px;">Second Interviewer Name:</dt>
-                                <dd class="text-muted">
-                                    There is no second interviewer
-                                </dd>
+                                @Model.SecondInterviewActualExperience
                             }
                             else
                             {
-                                <dt style="margin-top: 15px;">Second Interviewer Name:</dt>
-                                <dd>
-                                    @Model.SecondInterviewerName
-                                </dd>
+                                <span class="text-muted">No actual experience for the second interview</span>
                             }
+                        </dd>
 
-                            <dt style="margin-top: 15px;">Actual Experience:</dt>
-                            <dd>
-                                @if (Model.ActualExperience != null)
-                                {
-                                    <span style="margin-top: 15px;">@Model.ActualExperience</span>
-                                }
-                                else
-                                {
-                                    <span style="margin-top: 15px;" class="text-muted">No Actual Experience added</span>
-                                }
-                            </dd>
-                            <dt style="margin-top: 15px;">Notes:</dt>
-                            <dd>
-                                @if (Model.Notes != null)
-                                {
-                                    <span style="margin-top: 15px;">@Model.Notes</span>
-                                }
-                                else
-                                {
-                                    <span style="margin-top: 15px;" class="text-muted">No Note added here</span>
-                                }
-                            </dd>
-                        </div>
+                        <dt class="mt-15">Notes:</dt>
+                        <dd>
+                            @if (Model.Notes != null)
+                            {
+                                @Html.Raw(ShowMore(Model.Notes, 100))
+                            }
+                            else
+                            {
+                                <span class="text-muted">No note added here</span>
+                            }
+                        </dd>
                     </dl>
                 </div>
             </div>
         </div>
 
+
+         <!-- Second Interview Card -->
         @if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
         {
-            <!-- Second Interview Card -->
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header" style="background-color: #79cd79;">
-                        <h5 class="card-title" style="color:white;">Second Interview</h5>
-                    </div>
-                    <div class="card-body">
-                        <hr />
-                        <dl class="row">
-                            <div class="col-sm-12">
-                                <dt>Interviewer Name:</dt>
-                                <dd>
-                                    @if (Model.SecondInterviewInterviewerName != null)
-                                    {
-                                        @Model.SecondInterviewInterviewerName
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">There are no interview for the second interview</span>
-                                    }
-                                </dd>
-                                <dt style="margin-top: 15px;">Architecture Interviewer Name:</dt>
-                                <dd>
-                                    @if (Model.ArchitectureInterviewerId != null)
-                                    {
-                                        @Model.ArchitectureInterviewerName
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">There are no architecture interview for the second interview</span>
-                                    }
-                                </dd>
-                                <dt style="margin-top: 15px;">Actual Experience:</dt>
-                                <dd>
-                                    @if (Model.SecondInterviewActualExperience != null)
-                                    {
-                                        @Model.SecondInterviewActualExperience
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">There are no Actual Experience for the second interview</span>
-                                    }
-                                </dd>
-                                <dt style="margin-top: 15px;">Notes:</dt>
-                                <dd>
-                                    @if (Model.SecondInterviewNotes != null)
-                                    {
-                                        @Model.SecondInterviewNotes
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">There are no notes for the second interview</span>
-                                    }
-                                </dd>
-                            </div>
-                        </dl>
-                    </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Second Interview</h5>
+                </div>
+                <div class="card-body">
+                    <hr />
+                    <dl class="row">
+                        <dt>Interviewer Name:</dt>
+                        <dd>
+                            @if (Model.SecondInterviewInterviewerName != null)
+                            {
+                                @Model.SecondInterviewInterviewerName
+                            }
+                            else
+                            {
+                                <span class="text-muted">No second interview yet</span>
+                            }
+                        </dd>
+
+                        <dt class="mt-15">Architecture Interviewer Name:</dt>
+                        <dd>
+                            @if (Model.ArchitectureInterviewerId != null)
+                            {
+                                @Model.ArchitectureInterviewerName
+                            }
+                            else
+                            {
+                                <span class="text-muted">No architecture interview</span>
+                            }
+                        </dd>
+
+                        <dt class="mt-15">Actual Experience:</dt>
+                        <dd>
+                            @if (Model.SecondInterviewActualExperience != null)
+                            {
+                                @Model.SecondInterviewActualExperience
+                            }
+                            else
+                            {
+                                <span class="text-muted">No actual experience for the second interview</span>
+                            }
+                        </dd>
+
+                        <dt class="mt-15">Notes:</dt>
+                        <dd>
+                            @if (Model.SecondInterviewNotes != null)
+                            {
+                               @Html.Raw(ShowMore(Model.SecondInterviewNotes, 100))
+                            }
+                            else
+                            {
+                                <span class="text-muted">No notes for the second interview</span>
+                            }
+                        </dd>
+                    </dl>
                 </div>
             </div>
+        </div>
         }
+        <!-- HR Interview Card -->
         @if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
         {
-            <!-- HR Interview Card -->
-            <div class="col-md-4 offset-md-4">
-                <div class="card">
-                    <div class="card-header" style="background-color: #79cd79;">
-                        <h5 class="card-title" style="color:white;">HR Interview</h5>
-                    </div>
-                    <div class="card-body">
-                        <dl class="row">
-                            <div class="col-sm-12">
-                                <dt style="margin-top: 15px;">HR Note:</dt>
-                                <dd>
-                                    @if (Model.HRNotes != null)
-                                    {
-                                        <p class="bg-light p-3 border rounded">@Model.HRNotes</p>
-                                    }
-                                    else
-                                    {
-                                        <span style="margin-top: 15px;" class="text-muted">No Note added here</span>
-                                    }
-                                </dd>
-                            </div>
-                        </dl>
-                    </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">HR Interview</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt>HR Note:</dt>
+                        <dd>
+                            @if (Model.HRNotes != null)
+                            {
+                                @Html.Raw(ShowMore(Model.HRNotes, 100))
+                            }
+                            else
+                            {
+                                <span class="text-muted">No note added here</span>
+                            }
+                        </dd>
+                    </dl>
                 </div>
             </div>
+        </div>
         }
     </div>
 </div>
 
-<div class="mt-3">
+<!-- Back Button -->
+<div class="mt-3 text-center">
     <a class="btn btn-secondary" asp-action="@ViewBag.PreviousAction">Back to List</a>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $(".more-link").click(function () {
+            var moreContent = $(this).siblings(".more-text");
+            var moreLink = $(this);
+
+            moreContent.toggle();
+            moreLink.text(moreContent.is(":visible") ? "Less" : "More");
+        });
+    });
+</script>
+
+@functions {
+    public string ShowMore(string text, int maxLength)
+    {
+        if (text.Length <= maxLength)
+        {
+            return text;
+        }
+
+        var shortText = text.Substring(0, maxLength);
+        var moreText = text.Substring(maxLength);
+
+        return $"{shortText}<span class=\"more-text\">{moreText}</span> <a class=\"more-link\">More</a>";
+    }
+}

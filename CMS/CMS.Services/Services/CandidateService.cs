@@ -1,5 +1,4 @@
 ﻿using CMS.Application.DTOs;
-using CMS.Application.Extensions;
 using CMS.Domain.Entities;
 using CMS.Repository.Interfaces;
 using CMS.Services.Interfaces;
@@ -9,259 +8,212 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Claims;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace CMS.Services.Services
+namespace CMS.Services.Services;
+
+public class CandidateService : ICandidateService
 {
-    public class CandidateService : ICandidateService
+    private readonly ICandidateRepository _candidateRepository;
+    private readonly IAttachmentService _attachmentService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly UserManager<IdentityUser> _userManager;
+
+    public CandidateService(
+        ICandidateRepository candidateRepository,
+        IAttachmentService attachmentService,
+        UserManager<IdentityUser> userManager,
+        IHttpContextAccessor httpContextAccessor)
     {
-        private readonly ICandidateRepository _candidateRepository;
-        private readonly IAttachmentService _attachmentService;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly UserManager<IdentityUser> _userManager;
+        _candidateRepository = candidateRepository;
+        _attachmentService = attachmentService;
+        _httpContextAccessor = httpContextAccessor;
+        _userManager = userManager;
+    }
 
-        public CandidateService(ICandidateRepository candidateRepository,
-            IAttachmentService attachmentService,
-            UserManager<IdentityUser> userManager, IHttpContextAccessor httpContextAccessor
-            )
+
+    public async Task<IEnumerable<CandidateDTO>> GetAllCandidatesAsync()
+    {
+        try
         {
-            _candidateRepository = candidateRepository;
-            _attachmentService = attachmentService;
-            _httpContextAccessor = httpContextAccessor;
-            _userManager = userManager;
+            IEnumerable<Candidate> candidates = await _candidateRepository.GetAllCandidatesAsync();
+            IEnumerable<CandidateDTO> data = candidates.Select(c => new CandidateDTO
+            {
+                Id = c.Id,
+                FullName = c.FullName,
+                Phone = c.Phone,
+                PositionId = c.PositionId,
+                PositionName = c.Position.Name,
+                Name = c.Position.Name,
+                TrackId = c.TrackId,
+                TrackName = c.Track.Name,
+                CompanyId = c.CompanyId,
+                CompanyName = c.Company.Name,
+                Experience = c.Experience,
+                CVAttachmentId = c.CVAttachmentId,
+                CreatedOn = c.CreatedOn,
+            });
+            return data;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public async Task<CandidateDTO> GetCandidateByIdAsync(int id)
+    {
+        try
+        {
+            Candidate candidate = await _candidateRepository.GetCandidateByIdAsync(id);
+
+            if (candidate is null)
+                return null;
+
+            return new CandidateDTO
+            {
+                Id = candidate.Id,
+                FullName = candidate.FullName,
+                Phone = candidate.Phone,
+                PositionId = candidate.PositionId,
+                PositionName = candidate.Position.Name,
+                Name = candidate.Position.Name,
+                TrackId = candidate.TrackId,
+                TrackName = candidate.Track.Name,
+                CompanyId = candidate.CompanyId,
+                CompanyName = candidate.Company.Name,
+                Experience = candidate.Experience,
+                CVAttachmentId = candidate.CVAttachmentId,
+                CreatedOn = candidate.CreatedOn,
+            };
         }
 
-
-
-        public void LogException(string methodName, Exception ex = null, string additionalInfo = null)
+        catch (Exception)
         {
-            _candidateRepository.LogException(methodName, ex, additionalInfo);
+            throw;
+        }
+    }
+
+    public async Task CreateCandidateAsync(CandidateCreateDTO candidateDTO)
+    {
+        try
+        {
+            if (candidateDTO.FileData != null)
+            {
+                int attachmentId = await _attachmentService.CreateAttachmentAsync(candidateDTO.FileName, candidateDTO.FileSize, candidateDTO.FileData);
+                candidateDTO.CVAttachmentId = attachmentId;
+            }
+
+            IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+
+            Candidate candidate = new Candidate
+            {
+                FullName = candidateDTO.FullName,
+                Phone = candidateDTO.Phone,
+                PositionId = candidateDTO.PositionId,
+                CompanyId = candidateDTO.CompanyId,
+                Experience = candidateDTO.Experience,
+                CVAttachmentId = candidateDTO.CVAttachmentId,
+                CreatedBy = currentUser.Id,
+                CreatedOn = DateTime.Now,
+                TrackId = candidateDTO.TrackId,
+            };
+            await _candidateRepository.CreateCandidateAsync(candidate);
         }
 
-
-
-        public async Task<IEnumerable<CandidateDTO>> GetAllCandidatesAsync()
+        catch (Exception)
         {
-            try
-            {
-                var candidates = await _candidateRepository.GetAllCandidatesAsync();
-                var data = candidates.Select(c => new CandidateDTO
-                {
-                    Id = c.Id,
-                    FullName = c.FullName,
-                    Phone = c.Phone,
-                    PositionId = c.PositionId,
-                    PositionName = c.Position.Name,
-                    Name = c.Position.Name,
-                    TrackId=c.TrackId,
-                    TrackName=c.Track.Name,
-                    CompanyId = c.CompanyId,
-                    CompanyName = c.Company.Name,
-                    Experience = c.Experience,
-                    CVAttachmentId = c.CVAttachmentId,
-                    CreatedOn = c.CreatedOn,
-                    //CountryId = c.CountryId,
-                    //CountryName=c.Country.Name
-                });
-                return data;
-            }
-          catch (Exception ex)
-            {
-                LogException(nameof(GetAllCandidatesAsync), ex,null);
-                throw ex;
-            }
+            throw;
+        }
+    }
+
+    public async Task UpdateCandidateAsync(int id, CandidateDTO candidateDTO)
+    {
+        try
+        {
+            Candidate existingCandidate = await _candidateRepository.GetCandidateByIdAsync(id);
+
+            if (existingCandidate is null)
+                throw new Exception("Candidate not found");
+
+            IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+
+            existingCandidate.FullName = candidateDTO.FullName;
+            existingCandidate.Phone = candidateDTO.Phone;
+            existingCandidate.PositionId = candidateDTO.PositionId;
+            existingCandidate.TrackId = candidateDTO.TrackId;
+            existingCandidate.CompanyId = candidateDTO.CompanyId;
+            existingCandidate.Experience = candidateDTO.Experience;
+            existingCandidate.CVAttachmentId = candidateDTO.CVAttachmentId;
+            existingCandidate.ModifiedOn = DateTime.Now;
+            existingCandidate.ModifiedBy = currentUser.Id;
+
+            await _candidateRepository.UpdateCandidateAsync(existingCandidate);
         }
 
-        public async Task<CandidateDTO> GetCandidateByIdAsync(int id)
+        catch (Exception)
         {
-            try
-            {
-                
-
-                var candidate = await _candidateRepository.GetCandidateByIdAsync(id);
-
-
-                if (candidate == null)
-                    return null;
-
-                return new CandidateDTO
-                {
-                    Id = candidate.Id,
-                    FullName = candidate.FullName,
-                    Phone = candidate.Phone,
-                    PositionId = candidate.PositionId,
-                    PositionName = candidate.Position.Name,
-                    Name = candidate.Position.Name,
-                    TrackId = candidate.TrackId,
-                    TrackName = candidate.Track.Name,
-                    CompanyId = candidate.CompanyId,
-                    CompanyName = candidate.Company.Name,
-                    Experience = candidate.Experience,
-                    CVAttachmentId = candidate.CVAttachmentId,
-                    CreatedOn = candidate.CreatedOn,
-                    //CountryId = candidate.CountryId,
-                    //CountryName = candidate.Country.Name
-
-                };
-            }
-          
-            catch (Exception ex)
-            {
-                LogException(nameof(GetCandidateByIdAsync), ex, "GetCandidateByIdAsync not working");
-                throw ex;
-            }
+            throw;
         }
+    }
 
-        public async Task CreateCandidateAsync(CandidateCreateDTO candidateDTO)
+
+    public async Task DeleteCandidateAsync(int id)
+    {
+        try
         {
-            try
+            Candidate candidate = await _candidateRepository.GetCandidateByIdAsync(id);
+            if (candidate != null)
             {
-                
+                int? attachmentToRemove = (int?)candidate.CVAttachmentId;
+                await _candidateRepository.DeleteCandidateAsync(candidate);
 
-                if (candidateDTO.FileData != null)
-                {
-                    int attachmentId = await _attachmentService.CreateAttachmentAsync(candidateDTO.FileName, candidateDTO.FileSize, candidateDTO.FileData);
-                    candidateDTO.CVAttachmentId = attachmentId;
-                }
-                var currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
-
-                var candidate = new Candidate
-                {
-                    FullName = candidateDTO.FullName,
-                    Phone = candidateDTO.Phone,
-                    PositionId = candidateDTO.PositionId,
-                    CompanyId = candidateDTO.CompanyId,
-                    Experience = candidateDTO.Experience,
-                    CVAttachmentId = candidateDTO.CVAttachmentId,
-                    //CountryId = candidateDTO.CountryId,
-                    CreatedBy = currentUser.Id,
-                    CreatedOn = DateTime.Now,
-                    TrackId = candidateDTO.TrackId,
-                };
-                await _candidateRepository.CreateCandidateAsync(candidate);
-
-            }
-
-            catch (Exception ex)
-            {
-                LogException(nameof(CreateCandidateAsync), ex, "CreateCandidateAsync not working");
-                throw ex;
-            }
-        }
-
-        public async Task UpdateCandidateAsync(int id, CandidateDTO candidateDTO)
-        {
-            try
-            {
-                
-
-                var existingCandidate = await _candidateRepository.GetCandidateByIdAsync(id);
-                if (existingCandidate == null)
-                    throw new Exception("Candidate not found");
-                var currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
-
-                existingCandidate.FullName = candidateDTO.FullName;
-                existingCandidate.Phone = candidateDTO.Phone;
-                existingCandidate.PositionId = candidateDTO.PositionId;
-                existingCandidate.TrackId = candidateDTO.TrackId;
-                existingCandidate.CompanyId = candidateDTO.CompanyId;
-                existingCandidate.Experience = candidateDTO.Experience;
-                existingCandidate.CVAttachmentId = candidateDTO.CVAttachmentId;
-                //existingCandidate.CountryId = candidateDTO.CountryId;
-                existingCandidate.ModifiedOn = DateTime.Now;
-                existingCandidate.ModifiedBy = currentUser.Id;
-
-                await _candidateRepository.UpdateCandidateAsync(existingCandidate);
-
-            }
-
-            catch (Exception ex)
-            {
-                LogException(nameof(UpdateCandidateAsync), ex, "UpdateCandidateAsync not working");
-                throw ex;
+                if (attachmentToRemove.HasValue)
+                    await _attachmentService.DeleteAttachmentAsync(attachmentToRemove.Value);
             }
         }
 
-
-        public async Task DeleteCandidateAsync(int id)
+        catch (Exception)
         {
-            try
-            {
-                
-
-                var candidate = await _candidateRepository.GetCandidateByIdAsync(id);
-
-                if (candidate != null)
-                {
-                    int? attachmentToRemove = (int?)candidate.CVAttachmentId;
-                    await _candidateRepository.DeleteCandidateAsync(candidate);
-
-                    if (attachmentToRemove.HasValue)
-                    {
-                        await _attachmentService.DeleteAttachmentAsync(attachmentToRemove.Value);
-                    }
-                }
-
-            }
-
-            catch (Exception ex)
-            {
-                LogException(nameof(DeleteCandidateAsync), ex, " DeleteCandidateAsync not working");
-                throw ex;
-            }
+            throw;
         }
+    }
 
-
-        public async Task UpdateCandidateCVAsync(int id, string fileName, long fileSize, Stream fileStream)
+    public async Task UpdateCandidateCVAsync(int id, string fileName, long fileSize, Stream fileStream)
+    {
+        try
         {
-            try
-            {
-                
+            Candidate candidate = await _candidateRepository.GetCandidateByIdAsync(id);
+            int attachmentId = await _attachmentService.CreateAttachmentAsync(fileName, fileSize, fileStream);
 
-                var candidate = await _candidateRepository.GetCandidateByIdAsync(id);
-                int attachmentId = await _attachmentService.CreateAttachmentAsync(fileName, fileSize, fileStream);
-
-                int attachmentToRemove = 0;
-                if (candidate.CVAttachmentId != null)
-                {
-                    attachmentToRemove = (int)candidate.CVAttachmentId;
-
-
-                }
-
-                candidate.CVAttachmentId = attachmentId;
-                await _candidateRepository.UpdateCandidateAsync(candidate);
-                if (attachmentToRemove != 0)
-                {
-                    await _attachmentService.DeleteAttachmentAsync(attachmentToRemove);
-                }
-            }
+            int attachmentToRemove = 0;
             
-              catch (Exception ex)
-            {
-                LogException(nameof(UpdateCandidateCVAsync), ex, "UpdateCandidateCVAsync not working");
-                throw ex;
-            }
+            if (candidate.CVAttachmentId != null)
+                attachmentToRemove = (int)candidate.CVAttachmentId;
 
+            candidate.CVAttachmentId = attachmentId;
+            
+            await _candidateRepository.UpdateCandidateAsync(candidate);
+            
+            if (attachmentToRemove != 0)
+                await _attachmentService.DeleteAttachmentAsync(attachmentToRemove);
         }
 
-
-
-        public async Task<int?> GetCVAttachmentIdByCandidateId(int candidateId)
+        catch (Exception)
         {
-            try
-            {
-                return await _candidateRepository.GetCVAttachmentIdByCandidateId(candidateId);
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(GetCVAttachmentIdByCandidateId), ex, "GetCVAttachmentIdByCandidateId not working");
-                throw ex;
-            }
+            throw;
         }
+    }
 
-
+    public async Task<int?> GetCVAttachmentIdByCandidateId(int candidateId)
+    {
+        try
+        {
+            return await _candidateRepository.GetCVAttachmentIdByCandidateId(candidateId);
+        }
+        catch (Exception)
+        {
+            throw;
+        }
     }
 }

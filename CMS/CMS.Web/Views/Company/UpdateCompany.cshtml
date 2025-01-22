@@ -1,96 +1,145 @@
 ﻿@model CMS.Application.DTOs.CompanyDTO
+
 @{
     ViewData["Title"] = "Edit Company";
 }
 
+<style>
+    .card-header {
+        color: white;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
 
-<form asp-action="UpdateCompany">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <div class="form-group"><input type="hidden" asp-for="Id" /></div>
+    .btn-success {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        border: none;
+        color: white;
+    }
 
-    <div class="form-group">
-        <label asp-for="Name" class="control-label"><span class="text-danger">*</span>  Company Name</label>
-        <input style="width: 30%;" asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
-        <span id="NameError" class="text-danger"></span>
-    </div>
-
-    <div class="form-group" style="margin-top: 15px;">
-        <label asp-for="CountryId" class="control-label"><span class="text-danger">*</span>  Country</label>
-        @if (ViewBag.CountriesDTOs != null)
-        {
-            <select style="width: 30%;" asp-for="CountryId" class="form-control">
-                <option value="">Select a country</option>
-                @foreach (var country in ViewBag.CountriesDTOs)
-                {
-                    <option value="@country.Value" selected="@(country.Value == Model.CountryId.ToString())">@country.Text</option>
-                }
-            </select>
+        .btn-success:hover {
+            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
+            color: white;
+            transition: background 0.3s ease;
         }
-        else
-        {
-            <p>No countries available.</p>
+
+    .btn-secondary {
+        background-color: gray;
+        border-color: gray;
+    }
+
+        .btn-secondary:hover {
+            background-color: darkgray !important;
+            border-color: darkgray !important;
         }
-        <span asp-validation-for="CountryId" class="text-danger"></span>
-        <span id="CountryError" class="text-danger"></span>
+</style>
 
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 style="color:white !important;">Edit Company</h2>
+        </div>
+        <div class="card-body">
+            <form asp-action="UpdateCompany" class="needs-validation" novalidate>
+                <div class="row">
+                    <!-- Company Name -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Name" class="form-label">
+                            <span class="text-danger">*</span> Company Name
+                            <i class="fas fa-info-circle" data-toggle="tooltip" title="Enter the full company name."></i>
+                        </label>
+                        <input asp-for="Name" class="form-control" placeholder="Enter company name" />
+                        <div class="invalid-feedback">Company name is required.</div>
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                        <span id="NameError" class="text-danger"></span>
+                    </div>
+                    <!-- Country -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="CountryId" class="form-label">
+                            <span class="text-danger">*</span> Country
+                        </label>
+                        @if (ViewBag.CountriesDTOs != null)
+                        {
+                            <select asp-for="CountryId" class="form-control">
+                                <option value="">-- Select a country --</option>
+                                @foreach (var country in ViewBag.CountriesDTOs)
+                                {
+                                    <option value="@country.Value" selected="@(country.Value == Model.CountryId.ToString())">@country.Text</option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            <p>No countries available.</p>
+                        }
+                        <div class="invalid-feedback">Please select a country.</div>
+                        <span asp-validation-for="CountryId" class="text-danger"></span>
+                        <span id="CountryError" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Contact Person Details -->
+                <h3 class="mt-4">Contact Person</h3>
+                <div class="row">
+                    <!-- Person Name -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="PersonName" class="form-label">Person Name</label>
+                        <input asp-for="PersonName" class="form-control" placeholder="Enter person's name">
+                        <span asp-validation-for="PersonName" class="text-danger"></span>
+                    </div>
+                    <!-- Email -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Email" class="form-label">Email</label>
+                        <input asp-for="Email" type="email" class="form-control" placeholder="Enter email">
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    <!-- Phone Number -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="PhoneNumber" class="form-label">Phone Number</label>
+                        <input asp-for="PhoneNumber" class="form-control" placeholder="Enter phone number">
+                        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-success px-4">Submit</button>
+                    <a class="btn btn-secondary" asp-action="GetCompanies">Back to list</a>
+                </div>
+            </form>
+        </div>
     </div>
-
-    <h2 style="margin-top: 50px;font-size: 27px;">Contact Person</h2>
-
-    <div class="form-group" style="margin-top: 15px;">
-        <label asp-for="PersonName" class="control-label">Person Name</label>
-        <input style="width: 30%;" asp-for="PersonName" class="form-control" />
-        <span asp-validation-for="PersonName" class="text-danger"></span>
-    </div>
-
-    <div class="form-group" style="margin-top: 15px;">
-        <label asp-for="Email" class="control-label">Email</label>
-        <input style="width: 30%;" asp-for="Email" class="form-control" />
-        <span asp-validation-for="Email" class="text-danger"></span>
-    </div>
-
-    <div class="form-group" style="margin-top: 15px;">
-        <label asp-for="PhoneNumber" class="control-label">Phone Number</label>
-        <input style="width: 30%;" asp-for="PhoneNumber" class="form-control" />
-        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
-    </div>
-
-    <div class="form-group " style="margin-top: 10px;">
-        <input type="submit" class="btn btn-primary" value="Submit" />
-        <a class="btn btn-secondary" asp-action="GetCompanies">Back to list</a>
-
-    </div>
-</form>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
-<!-- Add this script block after your existing script -->
 <script>
-    $(document).ready(function () {
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+
         $('form').submit(function (e) {
-            var name = $('#Name').val();
+            var isValid = true;
+            var name = $('#Name').val().trim();
             var countryId = $('#CountryId').val();
 
-            // Validate Name
-            if (!name.trim()) {
-                $('#NameError').text('Name is required.');
-                e.preventDefault(); // Prevent form submission
+            // Validate Company Name
+            if (!name) {
+                $('#Name').addClass('is-invalid');
+                isValid = false;
             } else {
-                $('#NameError').text('');
+                $('#Name').removeClass('is-invalid').addClass('is-valid');
             }
 
             // Validate Country
             if (!countryId) {
-                $('#CountryError').text('Please select a country.');
-                e.preventDefault(); // Prevent form submission
+                $('#CountryId').addClass('is-invalid');
+                isValid = false;
             } else {
-                $('#CountryError').text('');
+                $('#CountryId').removeClass('is-invalid').addClass('is-valid');
             }
 
-
+            if (!isValid) {
+                e.preventDefault();
+            }
         });
-
-
     });
 </script>

@@ -1,7 +1,6 @@
 ﻿using CMS.Application.DTOs;
 using CMS.Application.Extensions;
 using CMS.Domain.Entities;
-using CMS.Repository.Implementation;
 using CMS.Repository.Interfaces;
 using CMS.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -9,253 +8,204 @@ using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
 using System.Threading.Tasks;
 
 
-namespace CMS.Services.Services
+namespace CMS.Services.Services;
+
+public class PositionService : IPositionService
 {
-    public class PositionService : IPositionService
+    private readonly IPositionRepository _positionRepository;
+    private readonly UserManager<IdentityUser> _userManager;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IAttachmentService _attachmentService;
+    public PositionService(
+        IPositionRepository repository,
+        IHttpContextAccessor httpContextAccessor,
+        UserManager<IdentityUser> userManager,
+        IAttachmentService attachmentService)
     {
-        IPositionRepository _repository;
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IAttachmentService _attachmentService;
-        public PositionService(IPositionRepository repository,
-            IHttpContextAccessor httpContextAccessor,
-            UserManager<IdentityUser> userManager,
-            IAttachmentService attachmentService)
+        _positionRepository = repository;
+        _userManager = userManager;
+        _httpContextAccessor = httpContextAccessor;
+        _attachmentService = attachmentService;
+    }
+
+
+    public async Task<Result<PositionDTO>> Delete(int id)
+    {
+        try
         {
-            _repository = repository;
-            _userManager = userManager;
-            _httpContextAccessor = httpContextAccessor;
-            _attachmentService = attachmentService;
-        }
+            Position position = await _positionRepository.GetById(id);
 
-        public void LogException(string methodName, Exception ex = null, string additionalInfo = null)
-        {
-            _repository.LogException(methodName, ex, additionalInfo);
-        }
-
-     
-
-
-        public async Task<Result<PositionDTO>> Delete(int id)
-        {
-            try
+            if (position != null)
             {
-                
+                int attachmentToRemove = 0;
 
-                var pos = await _repository.GetById(id)
+                if (position.EvaluationId != null)
+                    attachmentToRemove = (int)position.EvaluationId;
+
+                await _positionRepository.Delete(id)
 ;
-
-                if (pos != null)
-                {
-                    var attachmentToRemove = 0;
-                    if (pos.EvaluationId != null)
-                    {
-                        attachmentToRemove = (int)pos.EvaluationId;
-                    }
-
-                    await _repository.Delete(id)
-;
-                    if (attachmentToRemove != 0)
-                    {
-                        await _attachmentService.DeleteAttachmentAsync(attachmentToRemove);
-                    }
-
-                }
-
-
-                return Result<PositionDTO>.Success(null);
-
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(Delete),ex);
-                return Result<PositionDTO>.Failure(null, $"An error occurred while deleting the position {ex.InnerException.Message}");
+                if (attachmentToRemove != 0)
+                    await _attachmentService.DeleteAttachmentAsync(attachmentToRemove);
             }
 
-
-
+            return Result<PositionDTO>.Success(null);
         }
-
-        public async Task<Result<IEnumerable<PositionDTO>>> GetAll()
+        catch (Exception ex)
         {
-            var positions = await _repository.GetAll();
-            if (positions == null)
-            {
-                return Result<IEnumerable<PositionDTO>>.Failure(null, "no positions found");
-            }
-            try
-            {
-                var positionDTOS = new List<PositionDTO>();
-                foreach (var position in positions)
-                {
-                    positionDTOS.Add(new PositionDTO
-                    {
-                        Id = position.Id,
-                        Name = position.Name,
-                        EvaluationId = position.EvaluationId,
-                    });
-                }
-                return Result<IEnumerable<PositionDTO>>.Success(positionDTOS);
-
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(GetAll), ex);
-                return Result<IEnumerable<PositionDTO>>.Failure(null, $"unable to get positions{ex.InnerException.Message}");
-            }
+            return Result<PositionDTO>.Failure(null, $"An error occurred while deleting the position {ex.InnerException.Message}");
         }
+    }
 
-        public async Task<Result<PositionDTO>> GetById(int id)
+    public async Task<Result<IEnumerable<PositionDTO>>> GetAll()
+    {
+        List<Position> positions = await _positionRepository.GetAll();
+
+        if (positions == null)
+            return Result<IEnumerable<PositionDTO>>.Failure(null, "no positions found");
+
+        try
         {
-            if (id <= 0)
+            List<PositionDTO> positionDTOS = [];
+            foreach (Position position in positions)
             {
-                return Result<PositionDTO>.Failure(null, "Invalid position id");
-            }
-            try
-            {
-                
-
-                var position = await _repository.GetById(id);
-                var positionDTO = new PositionDTO
+                positionDTOS.Add(new PositionDTO
                 {
                     Id = position.Id,
                     Name = position.Name,
-                    EvaluationId= position.EvaluationId,
-                };
-                return Result<PositionDTO>.Success(positionDTO);
+                    EvaluationId = position.EvaluationId,
+                    CreatedOn = position.CreatedOn
+                });
             }
-            catch (Exception ex)
+
+            return Result<IEnumerable<PositionDTO>>.Success(positionDTOS);
+        }
+        catch (Exception ex)
+        {
+            return Result<IEnumerable<PositionDTO>>.Failure(null, $"unable to get positions{ex.InnerException.Message}");
+        }
+    }
+
+    public async Task<Result<PositionDTO>> GetById(int id)
+    {
+        if (id <= 0)
+            return Result<PositionDTO>.Failure(null, "Invalid position id");
+
+        try
+        {
+            Position position = await _positionRepository.GetById(id);
+            PositionDTO positionDTO = new PositionDTO
             {
-                LogException(nameof(GetById), ex);
-                return Result<PositionDTO>.Failure(null, $"unable to retrieve the position from the repository{ex.InnerException.Message}");
-            }
+                Id = position.Id,
+                Name = position.Name,
+                EvaluationId = position.EvaluationId,
+                CreatedOn = position.CreatedOn,
+            };
+
+            return Result<PositionDTO>.Success(positionDTO);
+        }
+        catch (Exception ex)
+        {
+            return Result<PositionDTO>.Failure(null, $"unable to retrieve the position from the repository{ex.InnerException.Message}");
+        }
+    }
+
+    public async Task<Result<PositionDTO>> Insert(PositionDTO data)
+    {
+        if (data is null)
+            return Result<PositionDTO>.Failure(data, "the position DTO is null");
+
+        if (data.FileData != null)
+        {
+            int attachmentId = await _attachmentService.CreateAttachmentAsync(data.FileName, (long)data.FileSize, data.FileData);
+            data.EvaluationId = attachmentId;
         }
 
-        public async Task<Result<PositionDTO>> Insert(PositionDTO data)
-        {
-            if (data == null)
-            {
-                return Result<PositionDTO>.Failure(data, "the position DTO is null");
-            }
-            if (data.FileData != null)
-            {
-                int attachmentId = await _attachmentService.CreateAttachmentAsync(data.FileName, (long)data.FileSize, data.FileData);
-                data.EvaluationId = attachmentId;
-            }
-            var currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
-            try
-            {
-                
+        IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
 
-                var position = new Position
-                {
-                    Name = data.Name,
-                    CreatedBy = currentUser.Id,
-                    CreatedOn=DateTime.Now,
-                    EvaluationId=data.EvaluationId,
-                };
-                await _repository.Insert(position);
-                return Result<PositionDTO>.Success(data);
-            }
-            catch (Exception ex)
+        try
+        {
+            Position position = new()
             {
-                LogException(nameof(Insert), ex);
-                return Result<PositionDTO>.Failure(data, $"unable to insert a position: {ex.InnerException.Message}");
-            }
+                Name = data.Name,
+                CreatedBy = currentUser.Id,
+                CreatedOn = DateTime.Now,
+                EvaluationId = data.EvaluationId,
+            };
+
+            await _positionRepository.Insert(position);
+            return Result<PositionDTO>.Success(data);
         }
-
-        public async Task<Result<PositionDTO>> Update(PositionDTO data)
+        catch (Exception ex)
         {
-            try
-            {
-                
+            return Result<PositionDTO>.Failure(data, $"unable to insert a position: {ex.InnerException.Message}");
+        }
+    }
 
-                if (data == null)
-            {
+    public async Task<Result<PositionDTO>> Update(PositionDTO data)
+    {
+        try
+        {
+            if (data is null)
                 return Result<PositionDTO>.Failure(null, "can not update a null object");
-            }
-            var currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
-            var previouePos = await _repository.GetById(data.Id);
-            
 
-                var position = new Position
-                {
-                    Id = data.Id,
-                    Name = data.Name,
-                    EvaluationId= data.EvaluationId,
-                    ModifiedBy = currentUser.Id,
-                    ModifiedOn = DateTime.Now,
-                    CreatedBy = previouePos.CreatedBy,
-                    CreatedOn=previouePos.CreatedOn,
-                };
-                await _repository.Update(position);
-                return Result<PositionDTO>.Success(data);
-            }
-            catch (Exception ex)
+            IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+            Position previouePos = await _positionRepository.GetById(data.Id);
+
+            Position position = new Position
             {
-                LogException(nameof(Update), ex);
-                return Result<PositionDTO>.Failure(data, $"error updating the position {ex.InnerException.Message}");
-            }
+                Id = data.Id,
+                Name = data.Name,
+                EvaluationId = data.EvaluationId,
+                ModifiedBy = currentUser.Id,
+                ModifiedOn = DateTime.Now,
+                CreatedBy = previouePos.CreatedBy,
+                CreatedOn = previouePos.CreatedOn,
+            };
+
+            await _positionRepository.Update(position);
+            return Result<PositionDTO>.Success(data);
         }
-        public async Task UpdatePositionEvaluationAsync(int id, string fileName, long fileSize, Stream fileStream)
+        catch (Exception ex)
         {
-            try
-            {
-
-                
-
-                var position = await _repository.GetById(id);
-                int attachmentId = await _attachmentService.CreateAttachmentAsync(fileName, fileSize, fileStream);
-
-                int attachmentToRemove = 0;
-                if (position.EvaluationId != null)
-                {
-                    attachmentToRemove = (int)position.EvaluationId;
-
-                }
-
-                position.EvaluationId = attachmentId;
-
-                await _repository.Update(position);
-                if (attachmentToRemove != 0)
-                {
-                    await _attachmentService.DeleteAttachmentAsync(attachmentToRemove);
-                }
-            }
-            catch (Exception ex)
-            {
-                LogException(nameof(Update), ex);
-                throw ex;
-            }
-
+            return Result<PositionDTO>.Failure(data, $"error updating the position {ex.InnerException.Message}");
         }
-
-
-
-        public bool DoesPositionNameExist(string name)
+    }
+    public async Task UpdatePositionEvaluationAsync(int id, string fileName, long fileSize, Stream fileStream)
+    {
+        try
         {
-            try
-            {
+            Position position = await _positionRepository.GetById(id);
+            int attachmentId = await _attachmentService.CreateAttachmentAsync(fileName, fileSize, fileStream);
+            int attachmentToRemove = 0;
 
-            return _repository.DoesPositionNameExist(name);
-            }
+            if (position.EvaluationId != null)
+                attachmentToRemove = (int)position.EvaluationId;
 
-            catch (Exception ex)
-            {
-                LogException(nameof(DoesPositionNameExist), ex);
-                throw ex;
-            }
+            position.EvaluationId = attachmentId;
+
+            await _positionRepository.Update(position);
+
+            if (attachmentToRemove != 0)
+                await _attachmentService.DeleteAttachmentAsync(attachmentToRemove);
         }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
 
-
-
-
-
+    public bool DoesPositionNameExist(string name)
+    {
+        try
+        {
+            return _positionRepository.DoesPositionNameExist(name);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
     }
 }

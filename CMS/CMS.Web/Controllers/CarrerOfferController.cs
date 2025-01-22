@@ -1,36 +1,30 @@
 ﻿using CMS.Application.DTOs;
-using CMS.Domain;
-using CMS.Domain.Entities;
 using CMS.Services.Interfaces;
-using CMS.Services.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using System;
 using System.Threading.Tasks;
 
-namespace CMS.Web.Controllers
+namespace CMS.Web.Controllers;
+
+public class CarrerOfferController : Controller
 {
-    public class CarrerOfferController : Controller
+    private readonly ICarrerOfferService _carrerOfferService;
+    private readonly IPositionService _positionService;
+
+
+    public CarrerOfferController(ICarrerOfferService carrerOfferService, IPositionService positionService)
     {
-        private readonly ICarrerOfferService _carrerOfferService;
-        private readonly IPositionService _positionService;
-        
+        _carrerOfferService = carrerOfferService;
+        _positionService = positionService;
 
-        public CarrerOfferController(ICarrerOfferService carrerOfferService,IPositionService positionService)
+    }
+
+    public async Task<IActionResult> Index(CarrerOfferDTO crrerOfferDTO)
+    {
+        if (User.IsInRole("None"))
         {
-            _carrerOfferService = carrerOfferService;
-            _positionService = positionService;
-          
-        }
 
-        public async Task<IActionResult> Index(CarrerOfferDTO crrerOfferDTO)
-        {
-            if(User.IsInRole("None"))
-            {
 
-            
             var result = await _carrerOfferService.GetAll();
             if (result.IsSuccess)
             {
@@ -39,112 +33,112 @@ namespace CMS.Web.Controllers
             }
             else
             {
-                ModelState.AddModelError("", result.Error);
+                ModelState.AddModelError(string.Empty, result.Error);
                 return View();
             }
+        }
+        else
+        {
+            if (User.Identity.IsAuthenticated)
+            {
+                return View("AccessDenied");
             }
             else
             {
-                if (User.Identity.IsAuthenticated)
-                {
-                    return View("AccessDenied");
-                }
-                else
-                {
-                    return RedirectToAction("Login", "Account");
-                }
+                return RedirectToAction("Login", "Account");
             }
-
         }
-        public async Task<IActionResult> Details(int id)
+
+    }
+
+    public async Task<IActionResult> Details(int id)
+    {
+        if (User.IsInRole("None"))
         {
-            if (User.IsInRole("None"))
+            var result = await _carrerOfferService.GetById(id);
+
+            var PositionsDTOs = await _positionService.GetAll();
+            ViewBag.positionDTOs = new SelectList(PositionsDTOs.Value, "PositionId", "Name");
+
+            if (result.IsSuccess)
             {
-                var result = await _carrerOfferService.GetById(id);
-
-                var PositionsDTOs = await _positionService.GetAll();
-                ViewBag.positionDTOs = new SelectList(PositionsDTOs.Value, "PositionId", "Name");
-
-                if (result.IsSuccess)
-                {
-                    var positionDTO = result.Value;
-                    return View(positionDTO);
-                }
-
-
-                else
-                {
-                    ModelState.AddModelError("", result.Error);
-                    return View();
-                }
+                var positionDTO = result.Value;
+                return View(positionDTO);
             }
+
+
             else
             {
-                if (User.Identity.IsAuthenticated)
-                {
-                    return View("AccessDenied");
-                }
-                else
-                {
-                    return RedirectToAction("Login", "Account");
-                }
-            }
-
-        }
-
-
-        public async Task<IActionResult> Create()
-        {
-            if (User.IsInRole("None"))
-            {
-                var PositionsDTOs = await _positionService.GetAll();
-                ViewBag.positionDTOs = new SelectList(PositionsDTOs.Value, "PositionId", "Name");
+                ModelState.AddModelError(string.Empty, result.Error);
                 return View();
             }
-            else
-            {
-                if (User.Identity.IsAuthenticated)
-                {
-                    return View("AccessDenied");
-                }
-                else
-                {
-                    return RedirectToAction("Login", "Account");
-                };
-            }
         }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CarrerOfferDTO carrerOfferDTO)
+        else
         {
-
-            var positionDTOs = await _positionService.GetAll();
-            ViewBag.positionDTOs = new SelectList(positionDTOs.Value, "PositionId", "Name");
-            if (ModelState.IsValid)
+            if (User.Identity.IsAuthenticated)
             {
-                var result = await _carrerOfferService.Insert(carrerOfferDTO);
-
-                if (result.IsSuccess)
-                {
-                    return RedirectToAction("Index");
-                }
-
-                ModelState.AddModelError("", result.Error);
+                return View("AccessDenied");
             }
             else
             {
-                ModelState.AddModelError("", "error validating the model");
+                return RedirectToAction("Login", "Account");
             }
-
-            return View(carrerOfferDTO);
         }
 
-        public async Task<IActionResult> Edit(int id)
+    }
+
+    public async Task<IActionResult> Create()
+    {
+        if (User.IsInRole("None"))
         {
-            if (User.IsInRole("None"))
+            var PositionsDTOs = await _positionService.GetAll();
+            ViewBag.positionDTOs = new SelectList(PositionsDTOs.Value, "PositionId", "Name");
+            return View();
+        }
+        else
+        {
+            if (User.Identity.IsAuthenticated)
             {
-                if (id <= 0)
+                return View("AccessDenied");
+            }
+            else
+            {
+                return RedirectToAction("Login", "Account");
+            };
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(CarrerOfferDTO carrerOfferDTO)
+    {
+
+        var positionDTOs = await _positionService.GetAll();
+        ViewBag.positionDTOs = new SelectList(positionDTOs.Value, "PositionId", "Name");
+        if (ModelState.IsValid)
+        {
+            var result = await _carrerOfferService.Insert(carrerOfferDTO);
+
+            if (result.IsSuccess)
+            {
+                return RedirectToAction("Index");
+            }
+
+            ModelState.AddModelError(string.Empty, result.Error);
+        }
+        else
+        {
+            ModelState.AddModelError(string.Empty, "error validating the model");
+        }
+
+        return View(carrerOfferDTO);
+    }
+
+    public async Task<IActionResult> Edit(int id)
+    {
+        if (User.IsInRole("None"))
+        {
+            if (id <= 0)
             {
                 return NotFound();
             }
@@ -157,61 +151,56 @@ namespace CMS.Web.Controllers
             var PositionsDTOs = await _positionService.GetAll();
             ViewBag.positionDTOs = new SelectList(PositionsDTOs.Value, "PositionId", "Name");
             return View(positionDTO);
+        }
+        else
+        {
+            if (User.Identity.IsAuthenticated)
+            {
+                return View("AccessDenied");
             }
             else
             {
-                if (User.Identity.IsAuthenticated)
-                {
-                    return View("AccessDenied");
-                }
-                else
-                {
-                    return RedirectToAction("Login", "Account");
-                }
+                return RedirectToAction("Login", "Account");
             }
         }
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, CarrerOfferDTO carrerOfferDTO)
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, CarrerOfferDTO carrerOfferDTO)
+    {
+        if (carrerOfferDTO == null)
         {
-            if (carrerOfferDTO == null)
+            ModelState.AddModelError(string.Empty, $"the career offer dto you are trying to update is null ");
+            return RedirectToAction("Index");
+        }
+
+        var PositionsDTOs = await _positionService.GetAll();
+        ViewBag.positionDTOs = new SelectList(PositionsDTOs.Value, "PositionId", "Name");
+        if (ModelState.IsValid)
+        {
+            var result = await _carrerOfferService.Update(carrerOfferDTO);
+
+            if (result.IsSuccess)
             {
-                ModelState.AddModelError("", $"the career offer dto you are trying to update is null ");
                 return RedirectToAction("Index");
             }
 
-            var PositionsDTOs = await _positionService.GetAll();
-            ViewBag.positionDTOs = new SelectList(PositionsDTOs.Value, "PositionId", "Name");
-            if (ModelState.IsValid)
-            {
-                var result = await _carrerOfferService.Update(carrerOfferDTO);
-
-                if (result.IsSuccess)
-                {
-                    return RedirectToAction("Index");
-                }
-
-                ModelState.AddModelError("", result.Error);
-                return View(carrerOfferDTO);
-            }
-            else
-            {
-                ModelState.AddModelError("", $"the model state is not valid");
-            }
+            ModelState.AddModelError(string.Empty, result.Error);
             return View(carrerOfferDTO);
         }
-
-        public async Task<IActionResult> Delete(int id)
+        else
         {
-            //var carrerOffer = await _carrerOfferService.GetById(id);
-            //if (carrerOffer == null)
-            //{
-            //    return NotFound();
-            //}
-            //return View(carrerOffer);.
-            if (User.IsInRole("None"))
-            {
-                var result = await _carrerOfferService.GetById(id);
+            ModelState.AddModelError(string.Empty, $"the model state is not valid");
+        }
+        return View(carrerOfferDTO);
+    }
+
+    public async Task<IActionResult> Delete(int id)
+    {
+        if (User.IsInRole("None"))
+        {
+            var result = await _carrerOfferService.GetById(id);
             if (result.IsSuccess)
             {
                 var positionDTO = result.Value;
@@ -221,186 +210,37 @@ namespace CMS.Web.Controllers
 
             else
             {
-                ModelState.AddModelError("", result.Error);
+                ModelState.AddModelError(string.Empty, result.Error);
                 return View();
             }
+        }
+        else
+        {
+            if (User.Identity.IsAuthenticated)
+            {
+                return View("AccessDenied");
             }
             else
             {
-                if (User.Identity.IsAuthenticated)
-                {
-                    return View("AccessDenied");
-                }
-                else
-                {
-                    return RedirectToAction("Login", "Account");
-                }
+                return RedirectToAction("Login", "Account");
             }
         }
+    }
 
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        if (id <= 0)
         {
-            if (id <= 0)
-            {
-                return BadRequest("invalid career offer id");
-            }
-            var result = await _carrerOfferService.Delete(id);
-            if (result.IsSuccess)
-            {
-                return RedirectToAction("Index");
-            }
-            ModelState.AddModelError("", result.Error);
-            return View();
+            return BadRequest("invalid career offer id");
         }
-
-
-
-
-
-
-
-
-
-
-
-        //public async Task<IActionResult> Index()
-        //{
-        //    var carrerOffers = await _carrerOfferService.GetAllCarrerOffersAsync();
-        //    return View(carrerOffers);
-        //}
-        //public async Task<IActionResult> Details(int id)
-        //{
-        //    var carrerOffer = await _carrerOfferService.GetCarrerOfferByIdAsync(id);
-        //    if (carrerOffer == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    var position = await _positionService.GetAll();
-        //    ViewBag.positionList = new SelectList(position, "PositionId", "Name", carrerOffer.Id);
-
-        //    return View(carrerOffer);
-        //}
-
-
-        //public async Task<IActionResult> Create()
-        //{
-        //    var position = await _positionService.GetAll();
-        //    ViewBag.positionList = new SelectList(position, "PositionId", "Name");
-
-        //    return View();
-        //}
-
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> Create(CarrerOfferDTO carrerOfferDTO)
-        //{
-        //    if (!ModelState.IsValid)
-        //    {
-        //        await _carrerOfferService.CreateCarrerOfferAsync(carrerOfferDTO);
-        //        return RedirectToAction(nameof(Index));
-        //    }
-
-        //    var position = await _positionService.GetAll();
-        //    ViewBag.positionList = new SelectList(position, "PositionId", "Name");
-        //    return View(carrerOfferDTO);
-        //}
-
-        //public async Task<IActionResult> Edit(int id)
-        //{
-        //    var carrerOffer = await _carrerOfferService.GetCarrerOfferByIdAsync(id);
-        //    if (carrerOffer == null)
-        //        return NotFound();
-
-
-        //    var position = await _positionService.GetAll();
-        //    ViewBag.positionList = new SelectList(position, "PositionId", "Name", carrerOffer.Id);
-
-        //    return View(carrerOffer);
-        //}
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> Edit(int id, CarrerOfferDTO carrerOfferDTO)
-        //{
-        //    if (id != carrerOfferDTO.Id)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    var posi = await _positionService.GetById(id);
-
-        //    if (!ModelState.IsValid)
-        //    {
-        //        await _carrerOfferService.UpdateCarrerOfferAsync(id, carrerOfferDTO);
-        //        return RedirectToAction(nameof(Index));
-        //    }
-
-
-        //    var position = await _positionService.GetAll();
-        //    ViewBag.positionList = new SelectList(position, "PositionId", "Name", posi.PositionId);
-
-
-        //    return View(carrerOfferDTO);
-        //}
-
-        //public async Task<IActionResult> Delete(int id)
-        //{
-        //    var carrerOffer = await _carrerOfferService.GetCarrerOfferByIdAsync(id);
-        //    if (carrerOffer == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    return View(carrerOffer);
-        //}
-
-        //[HttpPost, ActionName("Delete")]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> DeleteConfirmed(int id)
-        //{
-        //    await _carrerOfferService.DeleteCarrerOfferAsync(id);
-        //    return RedirectToAction(nameof(Index));
-        //}
-
-
-
-
-
-
-
-        //public async Task<IActionResult> SubmitCareerOffer(string position)
-        //{
-        //    var userRole = "General Manager"; 
-
-        //    if (userRole == "General Manager")
-        //    {
-        //        var hrRoleId = "5935a081-f473-42c6-9940-1da862c61a42"; 
-
-        //       
-        //        var notification = new Notifications
-        //        {
-        //            ReceiverId = hrRoleId, // Send to HR role
-        //            Message = $"I need a new Employee with position {position}",
-        //            SendDate = DateTime.Now
-        //        };
-
-        //       
-        //        Db.Notifications.Add(notification);
-        //        await Db.SaveChangesAsync();
-        //    }
-
-        //    // Continue with your career offer submission logic
-
-        //    return RedirectToAction("Index", "Home");
-        //}
-
-
-
-
-
-
-
-
+        var result = await _carrerOfferService.Delete(id);
+        if (result.IsSuccess)
+        {
+            return RedirectToAction("Index");
+        }
+        ModelState.AddModelError(string.Empty, result.Error);
+        return View();
     }
 }

@@ -1,4 +1,5 @@
-﻿@using CMS.Domain.Enums;
+﻿@using CMS.Application.Helpers
+@using CMS.Domain.Enums;
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet" />
 <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
@@ -15,80 +16,82 @@
         max-width: 100%;
         overflow-y: hidden;
     }
+
+  /*   #toggleFilter{
+        background-color: #405189;
+        border-color: #405189;
+    } */
 </style>
 
-@using (Html.BeginForm("Index", "SearchInterviews", FormMethod.Get, new { onsubmit = "return validateDates();" }))
+@using (Html.BeginForm("Index", "SearchInterviews", FormMethod.Get))
 {
-    <div class="col-md-3" style="margin-top: -11px;margin-bottom: 21px;margin-left: -8px;">
-        <label>&nbsp;</label>
-        <a style="" asp-action="ExportFilteredData"
-           asp-route-positionFilter="@ViewBag.positionFilter"
-           asp-route-scoreFilter="@ViewBag.scoreFilter"
-           asp-route-statusFilter="@ViewBag.statusFilter"
-           asp-route-candidateFilter="@ViewBag.candidateFilter"
-           asp-route-interviewerFilter="@ViewBag.interviewerFilter"
-           asp-route-fromDate="@ViewBag.fromDate"
-           asp-route-toDate="@ViewBag.toDate"
-           asp-route-trackFilter="@ViewBag.TrackList"
-           class="btn btn-success btn-block">Export to Excel</a>
-    </div>
+<div class="col-md-3" style="margin-top: -11px;margin-bottom: 21px;margin-left: -8px;">    <label>&nbsp;</label>
+    <a asp-action="ExportFilteredData"
+       asp-route-positionFilter="@ViewBag.positionFilter"
+       asp-route-scoreFilter="@ViewBag.scoreFilter"
+       asp-route-statusFilter="@ViewBag.statusFilter"
+       asp-route-candidateFilter="@ViewBag.candidateFilter"
+       asp-route-interviewerFilter="@ViewBag.interviewerFilter"
+       asp-route-fromDate="@ViewBag.fromDate"
+       asp-route-toDate="@ViewBag.toDate"
+       asp-route-trackFilter="@ViewBag.TrackList"
+       class="btn btn-success btn-block">Export to Excel</a>
+</div>
 
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-3">
-                @Html.Label("Filter by Levels:")
-                @Html.DropDownList("positionFilter", ViewBag.PositionList as SelectList, "All Levels", new { @class = "form-control", id = "position-dropdown" })
+   @*  <div class="filter-icon-container" style="margin-bottom: 15px;width: 10%;">
+        <button type="button" class="btn btn-secondary" id="toggleFilter" aria-expanded="false" title="Show Filters">
+            <i class="bx bx-filter" style="font-size: x-large;"></i> Filter
+        </button>
+    </div> *@
+    <div class="collapse show" id="filterFields" style="margin-bottom: 15px;">
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-3">
+                    @Html.Label("Filter by Levels:")
+                    @Html.DropDownList("positionFilter", ViewBag.PositionList as SelectList, "All Levels", new { @class = "form-control", id = "position-dropdown" })
+                </div>
+                <div class="col-md-3">
+                    @Html.Label("Filter by Track:")
+                    @Html.DropDownList("trackFilterDropdown", ViewBag.TrackListDropdown as SelectList, "All Tracks", new { @class = "form-control", id = "track-dropdown" })
+                </div>
+                <div class="col-md-3">
+                    @Html.Label("Filter by Status:")
+                    @Html.DropDownList("statusFilter", ViewBag.StatusList as SelectList, "All Statuses", new { @class = "form-control" })
+                </div>
+                <div class="col-md-3">
+                    @Html.Label("Filter by Candidate:")
+                    <input type="text" id="candidateFilter" name="candidateFilter" class="form-control" placeholder="Search by Candidate Name" value="@ViewBag.candidateFilter">
+                </div>
+                <div class="col-md-3" style="margin-top: 25px;">
+                    @Html.Label("Filter by Interviewer:")
+                    @Html.DropDownList("interviewerFilter", ViewBag.InterviewerList as SelectList, "All Interviewers", new { @class = "form-control" })
+                </div>
+                <div class="col-md-3" style="margin-top: 25px;">
+                    <label for="fromDate">From Date:</label>
+                    <input type="date" id="fromDate" name="fromDate" class="form-control" value="@ViewBag.fromDate?.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-3" style="margin-top: 25px;">
+                    <label for="toDate">To Date:</label>
+                    <input type="date" id="toDate" name="toDate" class="form-control" value="@ViewBag.toDate?.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-3" style="margin-top:52px;width: 8%;">
+                    <label>&nbsp;</label>
+                    <button type="submit" id="filterButton" class="btn btn-primary btn-block">Filter</button>
+                </div>
+                <div class="col-md-3" style="margin-top:52px;width: 7%;">
+                    <button type="button" id="resetButton" class="btn btn-secondary btn-block">Reset</button>
+                </div>
+
+                <div id="dateValidationMessage" style="color: red; margin-top: 5px;"></div>
             </div>
-            <div class="col-md-3">
-                @Html.Label("Filter by Track:")
-                @Html.DropDownList("trackFilterDropdown", ViewBag.TrackListDropdown as SelectList, "All Tracks", new { @class = "form-control" })
-            </div>
-
-            <div class="col-md-3">
-                @Html.Label("Filter by Status:")
-                @Html.DropDownList("statusFilter", ViewBag.StatusList as SelectList, "All Statuses", new { @class = "form-control" })
-            </div>
-
-            <div class="col-md-3">
-                @Html.Label("Filter by Candidate:")
-                <input type="text" id="candidateFilter" name="candidateFilter" class="form-control" placeholder="Search by Candidate Name" value="@ViewBag.candidateFilter">
-            </div>
-
-            <div class="col-md-3" style="margin-top: 25px;">
-                @Html.Label("Filter by Interviewer:")
-                @Html.DropDownList("interviewerFilter", ViewBag.InterviewerList as SelectList, "All Interviewers", new { @class = "form-control" })
-            </div>
-
-            <div class="col-md-3" style="margin-top: 25px;">
-                <label for="fromDate">From Date:</label>
-                <input type="date" id="fromDate" name="fromDate" class="form-control">
-            </div>
-            <div class="col-md-3" style="margin-top: 25px;">
-                <label for="toDate">To Date:</label>
-                <input type="date" id="toDate" name="toDate" class="form-control">
-            </div>
-
-
-
-            <div class="col-md-3" style="margin-top:52px;">
-                <label>&nbsp;</label>
-                <button type="submit" class="btn btn-primary btn-block">Filter</button>
-            </div>
-
-            <span id="dateValidationMessage" style="color: red;margin-top:22px;"></span>
-      
-
-
         </div>
     </div>
 }
 
-
-
-
+<br />
 
 <div class="card-body" style="margin-top: 25px;">
-    <table id="add-rows3" class="table table-nowrap dt-responsive table-bordered display" style="width:100%">
+    <table id="add-rows3" class="display nowrap" style="width:100%">
         <thead>
             <tr>
                 <th>#</th>
@@ -99,9 +102,7 @@
                 <th>Date and Time</th>
                 <th>Status</th>
                 <th hidden>Parent ID</th>
-                @* <th>Score</th> *@
                 <th hidden>Notes</th>
-                @* <th>Evaluation</th> *@
                 <th>CV</th>
                 <th>History</th>
                 <th>Actions</th>
@@ -135,16 +136,8 @@
                         </td>
                         <td>@item.StatusName</td>
                         <td hidden>@item.ParentId</td>
-                        @* <td>@item.Score</td> *@
                         <td hidden>@item.Notes</td>
-                        @* @if (item.AttachmentId != null)
-                        {
-                            <td><a asp-controller="Attachments" asp-action="Download" asp-route-id="@item.AttachmentId">Download evaluation</a></td>
-                        }
-                        else
-                        {
-                            <td></td>
-                        } *@
+                        
                         @if (item.CandidateCVAttachmentId != null)
                         {
                             <td>
@@ -161,23 +154,19 @@
                         <td><a class="bx bx-history" style="font-size:x-large" asp-action="ShowHistory" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="View Candidate History"></a></td>
 
                         <td>
-                           @*  @if (item.InterviewerRole == "Interviewer" && item.StatusName == StatusCode.GetName("PND"))
-                            {
-                                <a class="bx bxs-edit-alt" style="font-size:x-large" asp-controller="Interviews" asp-action="Edit" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="Edit"> </a>
-                            } *@
-
-                            <a class="bx bx-detail" style="font-size:x-large" asp-action="Details" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Details"></a> |
+                            <a class="bx bx-detail" style="font-size:x-large" asp-action="Details" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Details"></a>
                             @if (item.ParentId == null && item.StatusName == StatusCode.GetName("PND"))
                             {
-                                <a class="ri-delete-bin-2-line text-danger" style="font-size:x-large" asp-action="Delete" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Delete"></a>
+                                @: |  <a class="ri-delete-bin-2-line text-danger" style="font-size:x-large" asp-action="Delete" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Delete"></a>
                             }
-                          
                         </td>
 
                     </tr>
                 }
         </tbody>
     </table>
+
+    @await Html.PartialAsync("_PaginationPartial", Model)
 
 
 </div>
@@ -190,7 +179,6 @@
         candidateFilter.value = candidateFilter.value.trim(); // Remove trailing spaces
     }
 
-    // Validate form and remove trailing spaces before submission
     function validateDates() {
         removeTrailingSpaces(); // Remove trailing spaces from candidate name
         var fromDate = new Date(document.getElementById("fromDate").value);
@@ -199,19 +187,105 @@
 
         if (fromDate > toDate) {
             validationMessageElement.textContent = "* 'From Date' should be less than or equal to 'To Date'.";
-            return false; // Prevent form submission
+            $('#fromDate').css('border-color', 'red'); // Highlight "fromDate"
+            $('#toDate').css('border-color', 'red');   // Highlight "toDate"
+            return false; // Return false to prevent further action
         }
 
-        validationMessageElement.textContent = ""; // Clear validation message
-        return true; // Allow form submission
+        // Reset styles if validation is successful
+        validationMessageElement.textContent = ''; // Clear validation message
+        $('#fromDate').css('border-color', '');  // Reset border color
+        $('#toDate').css('border-color', '');    // Reset border color
+        return true; // Return true if validation passed
     }
+
+    function buildQueryString() {
+    const positionFilter = $('#position-dropdown').val();
+    const trackFilter = $('#track-dropdown').val();
+    const statusFilter = $('#statusFilter').val();
+    const candidateFilter = $('#candidateFilter').val();
+    const interviewerFilter = $('#interviewerFilter').val();
+    const fromDate = $('#fromDate').val();
+    const toDate = $('#toDate').val();
+
+    let queryString = `?positionFilter=${encodeURIComponent(positionFilter)}`;
+    queryString += `&trackFilterDropdown=${encodeURIComponent(trackFilter)}`;
+    queryString += `&statusFilter=${encodeURIComponent(statusFilter)}`;
+    queryString += `&candidateFilter=${encodeURIComponent(candidateFilter)}`;
+    queryString += `&interviewerFilter=${encodeURIComponent(interviewerFilter)}`;
+    queryString += `&fromDate=${encodeURIComponent(fromDate)}`;
+    queryString += `&toDate=${encodeURIComponent(toDate)}`;
+
+    window.location.href = '/interviewsfilteration' + queryString;
+}
+
+
+
+
+    $('#filterButton').on('click', function (e) {
+        e.preventDefault();
+
+        if (!validateDates()) {
+            return;
+        }
+
+        buildQueryString();
+    });
+
+
 
     $(document).ready(function () {
         $('#add-rows3').DataTable({
-            searching: false
+            paging: false,
+            info: false,
+            ordering: false,
+            scrollCollapse: true,
+            scrollY: '50vh',
+            searching: false,
         });
 
         $('#position-dropdown').selectize();
+        $('#track-dropdown').selectize();
+
+    // // Toggle filter section visibility
+    // $('#toggleFilter').on('click', function () {
+    //     $('#filterFields').collapse('toggle');
+    //     $(this).attr('aria-expanded', function(_, attr){
+    //         return attr === 'true' ? 'false' : 'true';
+    //     });
+    // });
+
+     function checkFilters() {
+        const hasFilters = $('#position-dropdown').val() ||
+                           $('#track-dropdown').val() ||
+                           $('#statusFilter').val() ||
+                           $('#candidateFilter').val() ||
+                           $('#interviewerFilter').val() ||
+                           $('#fromDate').val() ||
+                           $('#toDate').val();
+        
+       //if (hasFilters) {
+       //    $('#filterFields').collapse('show'); // Keep the filter section open
+       //    $('#toggleFilter').attr('aria-expanded', 'true');
+       //}
+    }
+
+    // Call the checkFilters function on page load
+    checkFilters();
+
+    $('#resetButton').on('click', function () {
+        $('#position-dropdown')[0].selectize.clear();
+        $('#track-dropdown')[0].selectize.clear();
+        $('#statusFilter').val('');
+        $('#candidateFilter').val('');
+        $('#interviewerFilter').val('');
+        $('#fromDate').val('');
+        $('#toDate').val('');
+
+    window.location.href = '/interviewsfilteration';
+});
+
+
     });
 </script>
 

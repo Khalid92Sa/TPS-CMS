@@ -1,132 +1,168 @@
 ﻿@using CMS.Domain.Enums;
 @model CMS.Application.DTOs.InterviewsDTO
 
-
-    
-<h2>Update Interview Result:   <span style="color:red;">@Model.FullName</span> </h2>
-
-<form asp-action="UpdateAfterInterview" id="updateForm" method="post" enctype="multipart/form-data">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <input type="hidden" asp-for="InterviewsId" />
-    <input type="hidden" asp-for="InterviewerId" />
-    <input type="hidden" asp-for="EvalutaionFormId" />
-    <input type="hidden" asp-for="CandidateId" />
-    <input type="hidden" asp-for="PositionId" />
-    <input type="hidden" asp-for="isUpdated" />
-    @if ((User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture")) && Model.ParentId == null)
-    {
-        <div class="form-group">
-            <label asp-for="Score"><span class="text-danger">*</span> Score out of 5:</label>
-            <input style="width: 10%;" asp-for="Score" class="form-control score" />
-            <span asp-validation-for="Score" class="text-danger"></span>
-        </div>
+<style>
+    label.required:before {
+        content: "* ";
+        color: red;
     }
 
-  
-    @if (!User.IsInRole("HR Manager"))
-    {
-        <div class="form-group" style="margin-top: 15px;">
-            <label asp-for="ActualExperience"><span class="text-danger">*</span> Actual Experience:</label>
-            <input style="width: 10%;" asp-for="ActualExperience" class="form-control actualexperience" pattern="^(?:0(\.\d+)?|[1-9]\d*(\.\d+)?)$" title="Experience must be a non-negative numeric value." />
-            <span asp-validation-for="ActualExperience" class="text-danger"></span>
-        </div>
+    input:invalid + label.required:before {
+        content: "* ";
+        color: red;
     }
 
-    <div class="form-group" style="margin-top: 15px;">
+    .card-header {
+        color: white;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
 
-        <label asp-for="StatusId" class="control-label"><span style="color:red;">*</span> Status</label>
-        @if (ViewBag.StatusDTOs != null)
-        {
+    .btn-success {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        border: none;
+        color: white;
+    }
 
-            <select style="width:30%;" asp-for="StatusId" class="form-control">
-                <option value="">Select a Status</option>
-                @foreach (var sta in ViewBag.StatusDTOs)
+        .btn-success:hover {
+            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
+            color: white;
+            transition: background 0.3s ease;
+        }
+
+    .btn-secondary {
+        background-color: gray;
+        border-color: gray;
+    }
+
+        .btn-secondary:hover {
+            background-color: darkgray !important;
+            border-color: darkgray !important;
+        }
+
+        .btn-link {
+        font-size: 11px;
+        color: white;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
+
+        .btn-link:hover {
+            color: white;
+            text-decoration: underline;
+        }
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 style="color:white !important;">Update Interview Result: <span style="color:#c50000;">@Model.FullName</span></h2>
+        </div>
+        <div class="card-body">
+            <form asp-action="UpdateAfterInterview" asp-controller="Interviews" asp-route-id="@Model.InterviewsId" method="post" enctype="multipart/form-data" id="updateForm" class="needs-validation" novalidate>
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <input type="hidden" asp-for="InterviewsId" />
+                <input type="hidden" asp-for="InterviewerId" />
+                <input type="hidden" asp-for="EvalutaionFormId" />
+                <input type="hidden" asp-for="CandidateId" />
+                <input type="hidden" asp-for="PositionId" />
+                <input type="hidden" asp-for="isUpdated" />
+
+                <!-- Score (Interviewer Only) -->
+                @if ((User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture")) && Model.ParentId == null)
                 {
-                    if (sta.Text != StatusCode.GetName("PND"))
-                    {
-                    <option value="@sta.Value" selected="@(sta.Value == Model.StatusId.ToString())">@sta.Text</option>
-                    }
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Score" class="form-label required">
+                                Score out of 5
+                            </label>
+                            <input asp-for="Score" class="form-control score" style="width:50%;" />
+                            <span asp-validation-for="Score" class="text-danger"></span>
+                        </div>
+                    </div>
                 }
 
-            </select>
-        }
-        else
-        {
-            <p>No statuses available.</p>
-        }
-        <span asp-validation-for="StatusId" class="text-danger"></span>
+                <!-- Actual Experience (Non-HR Manager Only) -->
+                @if (!User.IsInRole("HR Manager"))
+                {
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ActualExperience" class="form-label required">
+                                Actual Experience:
+                            </label>
+                            <input asp-for="ActualExperience" style="width:50%;" class="form-control actualexperience" pattern="^(?:0(\.\d+)?|[1-9]\d*(\.\d+)?)$" title="Experience must be a non-negative numeric value." />
+                            <span asp-validation-for="ActualExperience" class="text-danger"></span>
+                        </div>
+                    </div>
+                }
 
-    </div>
-
-    <div class="form-group" style="margin-top: 15px;">
-        <label asp-for="Notes">Notes:</label>
-        <textarea style="width: 40%;" asp-for="Notes" class="form-control"></textarea>
-        <span asp-validation-for="Notes" class="text-danger"></span>
-    </div>
-
-
-    @if (User.IsInRole("Interviewer") || (User.IsInRole("Solution Architecture") && Model.ParentId == null))
-    {
-        @if (Model.EvalutaionFormId != null)
-        {
-            <div class="alert alert-info" style="margin-top: 15px;">
-                <p>
-                    Please download the evaluation form by clicking the link below. After making the necessary modifications, please upload the modified form using the file input field.
-                </p>
-                <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.EvalutaionFormId">Download Evaluation Form</a>
-            </div>
-        }
-        else
-        {
-            <p></p>
-        }
-
-        <div class="form-group" style="margin-top: 15px;">
-            <label for="file">Upload An evaluation:</label>
-            <input style="width:30%;" type="file" id="file" name="file" class="form-control-file" onchange="validateFileFormat(this)"  />
-
-            @if (Model.AttachmentId != null)
-            {
-                <div class="mt-2">
-                    <strong>Previously uploaded file:</strong>
-                    <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.AttachmentId">Download File</a>
+                <!-- Status -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="StatusId" class="form-label required">Status</label>
+                        <select asp-for="StatusId" asp-items="@(ViewBag.StatusDTOs)" class="form-control" style="width:50%;"></select>
+                        <span asp-validation-for="StatusId" class="text-danger"></span>
+                    </div>
                 </div>
-            }
 
-            <br>
-            <span asp-validation-for="AttachmentId" class="text-danger"></span>
-            <span id="fileError" class="text-danger"></span>
-        </div>
-     
-    }
+                <!-- Notes -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="Notes" class="form-label">Notes</label>
+                        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="Notes" class="text-danger"></span>
+                    </div>
+                </div>
 
-    <p>
-        <div class="form-group">
-            <button type="submit" class="btn btn-primary">Submit</button>
-            <a class="btn btn-secondary" asp-action="MyInterviews">Back to List</a>
+                <!-- Evaluation Form (Interviewer Only) -->
+                @if (User.IsInRole("Interviewer") || (User.IsInRole("Solution Architecture") && Model.ParentId == null))
+                {
+                    @if (Model.EvalutaionFormId != null)
+                    {
+                        <div class="alert alert-info mt-4">
+                            <p>
+                                Please download the evaluation form by clicking the link below. After making the necessary modifications, upload the modified form using the file input field.
+                            </p>
+                            <a class="btn btn-link" asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.EvalutaionFormId">Download Evaluation Form</a>
+                        </div>
+                    }
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="file" class="form-label required">Upload Evaluation</label>
+                            <input type="file" id="file" name="file" class="form-control-file" onchange="validateFileFormat(this)" />
+                            <br />
+                            <span asp-validation-for="AttachmentId" class="text-danger"></span>
+                            <br />
+                            <span id="fileError" class="text-danger"></span>
+
+                            @if (Model.AttachmentId != null)
+                            {
+                                <div class="mt-2">
+                                    <strong>Previously uploaded file:</strong>
+                                    <a  asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.AttachmentId">Download File</a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Submit Button -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-success px-4">Submit</button>
+                    <a class="btn btn-secondary" asp-action="MyInterviews">Back to List</a>
+                </div>
+            </form>
         </div>
-    </p>
-</form>
+    </div>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<!-- SweetAlert2 CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10">
-
-<!-- SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
-
 
 <script>
     $(document).ready(function () {
-
-
-          // Allow numeric characters from 1 to 5 and decimal numbers like 2.5 in the score field
+        // Allow only numbers and decimals in Score field
         $('.score').on('input', function () {
-            // Remove any non-numeric and non-decimal characters
             this.value = this.value.replace(/[^0-9.]/g, '');
-
-            // Ensure the value is within the range of 1 to 5
             if (parseFloat(this.value) < 1) {
                 this.value = '1';
             } else if (parseFloat(this.value) > 5) {
@@ -134,75 +170,82 @@
             }
         });
 
-
-        // Prevent letters in the actual experience field
+        // Prevent non-numeric characters in Actual Experience field
         $('.actualexperience').on('input', function () {
-            this.value = this.value.replace(/[^0-9.]/g, ''); // Allow only numeric characters
+            this.value = this.value.replace(/[^0-9.]/g, '');
         });
 
-
         $('#updateForm').submit(function (e) {
-            // Clear previous error messages
-            $(".text-danger").text("");
+            e.preventDefault();
+            $(".text-danger").text(""); // Clear previous error messages
 
-        
+            var scoreValue = $('[name="Score"]').val();
+            var actualExperienceValue = $('[name="ActualExperience"]').val();
+            var statusValue = $('[name="StatusId"]').val();
+            var fileInput = $('#file');
+            var fileSelected = fileInput.val();
+            var isValid = true;
 
-            // Additional validations can be added here for other fields if needed
-
-            // Validate Score (if user is Interviewer)
+            // Validate Score (if applicable)
             if ($('[name="Score"]').is(":visible")) {
-                if (!$('[name="Score"]').val()) {
-                    $('#Score').next(".text-danger").text("Score is required.");
-                    e.preventDefault();
-                    return;
+                if (!scoreValue) {
+                    $('[name="Score"]').next(".text-danger").text("Score is required.");
+                    isValid = false;
+                } else if (scoreValue < 0 || scoreValue > 5) {
+                    $('[name="Score"]').next(".text-danger").text("Score should be between 0 and 5.");
+                    isValid = false;
+                } else if (statusValue === "2" && scoreValue < 3) {
+                    $('[name="Score"]').next(".text-danger").text("Score should not be less than 3 when the status is Accepted.");
+                    isValid = false;
                 }
             }
 
-            // Validate Notes (if StatusId is 3)
-            if ($('[name="StatusId"]').val() === "3" && !$('[name="Notes"]').val()) {
-                $('#Notes').next(".text-danger").text("Please provide a reason for the candidate rejection.");
-                e.preventDefault();
-                return;
+            // Validate Actual Experience if visible
+            if ($('[name="ActualExperience"]').is(":visible")) {
+                if (!actualExperienceValue) {
+                    $('[name="ActualExperience"]').next(".text-danger").text("Actual Experience is required. Please provide a valid number.");
+                    isValid = false;
+                } else if (isNaN(actualExperienceValue) || actualExperienceValue < 0) {
+                    $('[name="ActualExperience"]').next(".text-danger").text("Actual Experience must be a positive number or zero.");
+                    isValid = false;
+                }
             }
 
             // Validate StatusId
-            if (!$('[name="StatusId"]').val()) {
-                $('#StatusId').next(".text-danger").text("Status is required.");
-                e.preventDefault();
-                return;
+            if (!statusValue) {
+                $('[name="StatusId"]').next(".text-danger").text("Status is required.");
+                isValid = false;
             }
 
-             var fileInput = $('[name="file"]');
+            // Validate Notes if StatusId is 3 (Rejection)
+            if (statusValue === "3" && !$('[name="Notes"]').val()) {
+                $('[name="Notes"]').next(".text-danger").text("Please provide a reason for the candidate rejection.");
+                isValid = false;
+            }
 
-            // Use SweetAlert2 for confirmation
-            Swal.fire({
-                title: 'Are you sure?',
-                text: 'You are about to submit the form.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, submit it!',
-                cancelButtonText: 'No, cancel!',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // If confirmed, submit the form
-                    $('#updateForm').off('submit').submit();
-                }
-                // If canceled, do nothing
-            });
+            // Validate if the file is uploaded (Only if the file input is visible)
+            if (fileInput.is(":visible") && !fileSelected) {
+                $('#fileError').text("Please choose a file to upload.");
+                isValid = false;
+            } else {
+                $('#fileError').text('');
+            }
 
-            e.preventDefault();
+            // If all validation passes, show confirmation
+            if (isValid) {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'You are about to submit the form.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, submit it!',
+                    cancelButtonText: 'No, cancel!',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#updateForm').off('submit').submit();
+                    }
+                });
+            }
         });
-
-
-        // Function to check if a value is numeric
-        function isNumeric(value) {
-            return !isNaN(value) && isFinite(value);
-        }
     });
-
-    // Additional function to validate file format (assuming it's used elsewhere)
-    function validateFileFormat(input) {
-        // Add file format validation logic here if needed
-    }
 </script>
-
