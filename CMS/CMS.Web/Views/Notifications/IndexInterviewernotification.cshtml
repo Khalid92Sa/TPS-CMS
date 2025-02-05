@@ -169,7 +169,7 @@
     $(document).ready(function () {
         $("#read-tab").click(function () {
             $.ajax({
-                url: '@Url.Action("IndexInterviewerForAllNotification", "Notifications")',
+                url: '@Url.Action("IndexInterviewerForAllNotification", "notifications")',
                 type: 'GET',
                 success: function (response) {
                     let readNotificationsHtml = "";

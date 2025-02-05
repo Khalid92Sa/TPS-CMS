@@ -17,13 +17,33 @@
         overflow-y: hidden;
     }
 
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        display: none; /* Initially hidden */
+    }
+
+        .loading-overlay img {
+            width: 50px;
+            height: 50px;
+        }
+
+
   /*   #toggleFilter{
         background-color: #405189;
         border-color: #405189;
     } */
 </style>
 
-@using (Html.BeginForm("Index", "SearchInterviews", FormMethod.Get))
+@using (Html.BeginForm("index", "interviewsFilteration", FormMethod.Get))
 {
 <div class="col-md-3" style="margin-top: -11px;margin-bottom: 21px;margin-left: -8px;">    <label>&nbsp;</label>
     <a asp-action="ExportFilteredData"
@@ -91,6 +111,10 @@
 <br />
 
 <div class="card-body" style="margin-top: 25px;">
+    <div class="loading-overlay" id="loadingOverlay">
+        <img src="https://i.gifer.com/ZKZg.gif" alt="Loading..." />
+    </div>
+
     <table id="add-rows3" class="display nowrap" style="width:100%">
         <thead>
             <tr>
@@ -173,68 +197,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js"></script>
 
 <script>
-    // Function to remove trailing spaces from candidate name input field
-    function removeTrailingSpaces() {
-        var candidateFilter = document.getElementById("candidateFilter");
-        candidateFilter.value = candidateFilter.value.trim(); // Remove trailing spaces
-    }
-
-    function validateDates() {
-        removeTrailingSpaces(); // Remove trailing spaces from candidate name
-        var fromDate = new Date(document.getElementById("fromDate").value);
-        var toDate = new Date(document.getElementById("toDate").value);
-        var validationMessageElement = document.getElementById("dateValidationMessage");
-
-        if (fromDate > toDate) {
-            validationMessageElement.textContent = "* 'From Date' should be less than or equal to 'To Date'.";
-            $('#fromDate').css('border-color', 'red'); // Highlight "fromDate"
-            $('#toDate').css('border-color', 'red');   // Highlight "toDate"
-            return false; // Return false to prevent further action
-        }
-
-        // Reset styles if validation is successful
-        validationMessageElement.textContent = ''; // Clear validation message
-        $('#fromDate').css('border-color', '');  // Reset border color
-        $('#toDate').css('border-color', '');    // Reset border color
-        return true; // Return true if validation passed
-    }
-
-    function buildQueryString() {
-    const positionFilter = $('#position-dropdown').val();
-    const trackFilter = $('#track-dropdown').val();
-    const statusFilter = $('#statusFilter').val();
-    const candidateFilter = $('#candidateFilter').val();
-    const interviewerFilter = $('#interviewerFilter').val();
-    const fromDate = $('#fromDate').val();
-    const toDate = $('#toDate').val();
-
-    let queryString = `?positionFilter=${encodeURIComponent(positionFilter)}`;
-    queryString += `&trackFilterDropdown=${encodeURIComponent(trackFilter)}`;
-    queryString += `&statusFilter=${encodeURIComponent(statusFilter)}`;
-    queryString += `&candidateFilter=${encodeURIComponent(candidateFilter)}`;
-    queryString += `&interviewerFilter=${encodeURIComponent(interviewerFilter)}`;
-    queryString += `&fromDate=${encodeURIComponent(fromDate)}`;
-    queryString += `&toDate=${encodeURIComponent(toDate)}`;
-
-    window.location.href = '/interviewsfilteration' + queryString;
-}
-
-
-
-
-    $('#filterButton').on('click', function (e) {
-        e.preventDefault();
-
-        if (!validateDates()) {
-            return;
-        }
-
-        buildQueryString();
-    });
-
-
-
-    $(document).ready(function () {
+       $(document).ready(function () {
         $('#add-rows3').DataTable({
             paging: false,
             info: false,
@@ -247,46 +210,99 @@
         $('#position-dropdown').selectize();
         $('#track-dropdown').selectize();
 
-    // // Toggle filter section visibility
-    // $('#toggleFilter').on('click', function () {
-    //     $('#filterFields').collapse('toggle');
-    //     $(this).attr('aria-expanded', function(_, attr){
-    //         return attr === 'true' ? 'false' : 'true';
-    //     });
-    // });
+        function removeTrailingSpaces() {
+            var candidateFilter = document.getElementById("candidateFilter");
+            candidateFilter.value = candidateFilter.value.trim(); // Remove trailing spaces
+        }
 
-     function checkFilters() {
-        const hasFilters = $('#position-dropdown').val() ||
-                           $('#track-dropdown').val() ||
-                           $('#statusFilter').val() ||
-                           $('#candidateFilter').val() ||
-                           $('#interviewerFilter').val() ||
-                           $('#fromDate').val() ||
-                           $('#toDate').val();
-        
-       //if (hasFilters) {
-       //    $('#filterFields').collapse('show'); // Keep the filter section open
-       //    $('#toggleFilter').attr('aria-expanded', 'true');
-       //}
-    }
+        function validateDates() {
+            removeTrailingSpaces();
+            var fromDate = new Date(document.getElementById("fromDate").value);
+            var toDate = new Date(document.getElementById("toDate").value);
+            var validationMessageElement = document.getElementById("dateValidationMessage");
 
-    // Call the checkFilters function on page load
-    checkFilters();
+            if (fromDate > toDate) {
+                validationMessageElement.textContent = "* 'From Date' should be less than or equal to 'To Date'.";
+                $('#fromDate').css('border-color', 'red'); // Highlight "fromDate"
+                $('#toDate').css('border-color', 'red');   // Highlight "toDate"
+                return false; // Return false to prevent further action
+            }
 
-    $('#resetButton').on('click', function () {
-        $('#position-dropdown')[0].selectize.clear();
-        $('#track-dropdown')[0].selectize.clear();
-        $('#statusFilter').val('');
-        $('#candidateFilter').val('');
-        $('#interviewerFilter').val('');
-        $('#fromDate').val('');
-        $('#toDate').val('');
+            // Reset styles if validation is successful
+            validationMessageElement.textContent = ''; // Clear validation message
+            $('#fromDate').css('border-color', '');  // Reset border color
+            $('#toDate').css('border-color', '');    // Reset border color
+            return true; // Return true if validation passed
+        }
 
-    window.location.href = '/interviewsfilteration';
-});
+        function buildQueryString() {
+            const positionFilter = $('#position-dropdown').val();
+            const trackFilter = $('#track-dropdown').val();
+            const statusFilter = $('#statusFilter').val();
+            const candidateFilter = $('#candidateFilter').val();
+            const interviewerFilter = $('#interviewerFilter').val();
+            const fromDate = $('#fromDate').val();
+            const toDate = $('#toDate').val();
 
+            let queryString = `?positionFilter=${encodeURIComponent(positionFilter)}`;
+            queryString += `&trackFilterDropdown=${encodeURIComponent(trackFilter)}`;
+            queryString += `&statusFilter=${encodeURIComponent(statusFilter)}`;
+            queryString += `&candidateFilter=${encodeURIComponent(candidateFilter)}`;
+            queryString += `&interviewerFilter=${encodeURIComponent(interviewerFilter)}`;
+            queryString += `&fromDate=${encodeURIComponent(fromDate)}`;
+            queryString += `&toDate=${encodeURIComponent(toDate)}`;
 
+            window.location.href = '/interviewsfilteration/index' + queryString;
+        }
+
+        // Show loading overlay before filtering or resetting
+        function showLoading() {
+            $('#loadingOverlay').fadeIn(); // Show loading icon
+        }
+
+        $('#filterButton, #resetButton').on('click', function (e) {
+            e.preventDefault();
+            showLoading();
+
+            if ($(this).attr('id') === 'filterButton') {
+                if (!validateDates()) {
+                    $('#loadingOverlay').fadeOut(); // Hide if validation fails
+                    return;
+                }
+                buildQueryString();
+            } else {
+                // Reset filters
+                $('#position-dropdown')[0].selectize.clear();
+                $('#track-dropdown')[0].selectize.clear();
+                $('#statusFilter').val('');
+                $('#candidateFilter').val('');
+                $('#interviewerFilter').val('');
+                $('#fromDate').val('');
+                $('#toDate').val('');
+
+                window.location.href = '/interviewsfilteration/index';
+            }
+        });
+
+        function checkFilters() {
+            const hasFilters = $('#position-dropdown').val() ||
+                $('#track-dropdown').val() ||
+                $('#statusFilter').val() ||
+                $('#candidateFilter').val() ||
+                $('#interviewerFilter').val() ||
+                $('#fromDate').val() ||
+                $('#toDate').val();
+
+            // if (hasFilters) {
+            //    $('#filterFields').collapse('show');
+            //    $('#toggleFilter').attr('aria-expanded', 'true');
+            // }
+        }
+
+        // Call the checkFilters function on page load
+        checkFilters();
     });
+
 </script>
 
 

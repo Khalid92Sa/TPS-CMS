@@ -185,7 +185,7 @@
         // Mark all notifications as read
         $("#readAllButton").click(function () {
             $.ajax({
-                url: '@Url.Action("MarkAllAsRead", "Notifications")',
+                url: '@Url.Action("MarkAll", "notifications")',
                 type: 'POST',
                 success: function (response) {
                     if (response.success) {
@@ -232,7 +232,7 @@
 
         function loadUnreadNotifications() {
             $.ajax({
-                url: '@Url.Action("GetUnreadNotificationsForGmAndArchi", "Notifications")',
+                url: '@Url.Action("UnReadForGmAndArchi", "notifications")',
                 type: 'GET',
                 success: function (response) {
                     var unreadNotificationsHtml = "";
@@ -262,7 +262,7 @@
 
         function loadReadNotifications() {
             $.ajax({
-                url: '@Url.Action("GetReadNotifications", "Notifications")',
+                url: '@Url.Action("Read", "notifications")',
                 type: 'GET',
                 success: function (response) {
                     var readNotificationsHtml = "";

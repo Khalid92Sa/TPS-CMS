@@ -1,23 +1,19 @@
 ﻿@model IEnumerable<CMS.Application.DTOs.InterviewsDTO>
 
 <style>
-    .card-header h5 {
-        color: #333;
-        font-size: 1.25rem;
-        margin-bottom: 0;
-    }
-
     .table {
         border-collapse: collapse;
         width: 100%;
         margin: 20px 0;
         font-size: 0.9rem;
         text-align: left;
+        table-layout: fixed; 
     }
 
         .table th, .table td {
             padding: 12px 15px;
             border: 1px solid #ddd;
+            word-wrap: break-word; 
         }
 
         .table th {
@@ -27,21 +23,6 @@
 
         .table tr:nth-child(even) {
             background-color: #f9f9f9;
-        }
-
-    .btn-secondary {
-        background-color: #6c757d;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        margin-top: 20px;
-        cursor: pointer;
-        border-radius: 4px;
-        text-align: center;
-    }
-
-        .btn-secondary:hover {
-            background-color: #5a6268;
         }
 
     .more-text {
@@ -110,7 +91,9 @@
                                 <td>
                                     @if (!string.IsNullOrEmpty(item.Notes))
                                     {
-                                        @Html.Raw(ShowMore(item.Notes, 100))
+                                        <div style="overflow: hidden; text-overflow: ellipsis;">
+                                            @Html.Raw(ShowMore(item.Notes, 100))
+                                        </div>
                                     }
                                     else
                                     {
@@ -142,15 +125,16 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function () {
-        $(".more-link").on("click", function () {
+        $(".more-link").click(function () {
             var moreContent = $(this).siblings(".more-text");
-            var linkText = $(this).text();
+            var moreLink = $(this);
 
             moreContent.toggle();
-            $(this).text(linkText === "More" ? "Less" : "More");
+            moreLink.text(moreContent.is(":visible") ? "Less" : "More");
         });
     });
 </script>
+
 
 @functions {
     public string ShowMore(string text, int maxLength)

@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace CMS.Web.Controllers;
 
+[Route("notifications")]
 public class NotificationsController : Controller
 {
     private readonly INotificationsService _notificationsService;
@@ -55,6 +56,7 @@ public class NotificationsController : Controller
         }
     }
 
+    [Route("allNotifications")]
     public async Task<ActionResult> AllNotifications()
     {
         try
@@ -68,7 +70,7 @@ public class NotificationsController : Controller
         }
     }
 
-    [Route("/notifications/gm")]
+    [Route("gm")]
     public async Task<ActionResult> IndexGMnotification()
     {
         try
@@ -92,7 +94,7 @@ public class NotificationsController : Controller
         }
     }
 
-    [Route("/notifications/archi")]
+    [Route("archi")]
     public async Task<ActionResult> IndexArchinotification()
     {
         try
@@ -116,7 +118,7 @@ public class NotificationsController : Controller
         }
     }
 
-    [Route("/notifications/interviewer")]
+    [Route("interviewer")]
     public async Task<ActionResult> IndexInterviewernotification()
     {
         try
@@ -141,6 +143,7 @@ public class NotificationsController : Controller
         }
     }
 
+    [Route("IndexInterviewerForAllNotification")]
     public async Task<ActionResult> IndexInterviewerForAllNotification()
     {
         try
@@ -165,7 +168,7 @@ public class NotificationsController : Controller
         }
     }
 
-    [Route("/notifications/hr")]
+    [Route("hr")]
     public async Task<ActionResult> IndexHRnotification()
     {
         try
@@ -189,6 +192,7 @@ public class NotificationsController : Controller
         }
     }
 
+    [Route("details/{id}")]
     public async Task<ActionResult> Details(int id)
     {
         try
@@ -318,6 +322,7 @@ public class NotificationsController : Controller
         }
     }
 
+    [Route("hr-notifications")]
     public async Task<IActionResult> GetNotificationsForHR()
     {
         try
@@ -331,6 +336,7 @@ public class NotificationsController : Controller
         }
     }
 
+    [Route("Interviewers-notifications")]
     public async Task<IActionResult> GetNotificationsForInterviewers()
     {
         try
@@ -345,6 +351,7 @@ public class NotificationsController : Controller
         }
     }
 
+    [Route("GM-notifications")]
     public async Task<IActionResult> GetNotificationsForGeneralManager()
     {
         try
@@ -358,6 +365,7 @@ public class NotificationsController : Controller
         }
     }
 
+    [Route("Archi-notifications")]
     public async Task<IActionResult> GetNotificationsForArchitecture()
     {
         try
@@ -372,6 +380,7 @@ public class NotificationsController : Controller
     }
 
     [HttpPost]
+    [Route("MarkAll")]
     public async Task<ActionResult> MarkAllAsRead()
     {
         try
@@ -397,7 +406,7 @@ public class NotificationsController : Controller
         }
     }
 
-
+    [Route("UnRead")]
     public async Task<List<NotificationsDTO>> GetUnreadNotificationsAsync()
     {
         try
@@ -412,6 +421,7 @@ public class NotificationsController : Controller
         }
     }
 
+    [Route("UnReadForGmAndArchi")]
     public async Task<List<NotificationsDTO>> GetUnreadNotificationsForGmAndArchiAsync()
     {
         try
@@ -426,7 +436,7 @@ public class NotificationsController : Controller
         }
     }
 
-
+    [Route("Read")]
     public async Task<List<NotificationsDTO>> GetReadNotificationsAsync()
     {
         try

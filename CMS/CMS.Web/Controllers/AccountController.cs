@@ -1,6 +1,7 @@
 ﻿using CMS.Application.DTOs;
 using CMS.Application.Helpers;
 using CMS.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -34,6 +35,7 @@ public class AccountController : Controller
     }
 
     [Route("login")]
+    [AllowAnonymous]
     public ActionResult Login()
     {
         try
@@ -60,7 +62,7 @@ public class AccountController : Controller
 
     [HttpPost]
     [Route("login")]
-    [ValidateAntiForgeryToken]
+    [AllowAnonymous]
     public async Task<ActionResult> Login(Login collection)
     {
         try

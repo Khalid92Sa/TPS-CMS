@@ -201,7 +201,7 @@
     $(document).ready(function () {
         $("#read-tab").click(function () {
             $.ajax({
-                url: '@Url.Action("AllNotifications", "Notifications")',
+                url: '@Url.Action("allNotifications", "notifications")',
                 type: 'GET',
                 success: function (response) {
                     let readNotificationsHtml = "";

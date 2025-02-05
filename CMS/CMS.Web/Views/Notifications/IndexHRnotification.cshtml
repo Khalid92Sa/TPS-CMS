@@ -196,7 +196,7 @@
         // Handle "Mark All as Read" button click
         $("#markAllAsReadButton").click(function () {
             $.ajax({
-                url: '@Url.Action("MarkAllAsRead", "Notifications")',
+                url: '@Url.Action("MarkAll", "notifications")',
                 type: 'POST',
                 success: function (response) {
                     if (response.success) {
@@ -234,7 +234,7 @@
 
         function loadUnreadNotifications() {
             $.ajax({
-                url: '@Url.Action("GetUnreadNotifications", "Notifications")',
+                url: '@Url.Action("UnRead", "notifications")',
                 type: 'GET',
                 success: function (response) {
                     var unreadNotificationsHtml = "";
@@ -261,7 +261,7 @@
 
         function loadReadNotifications() {
             $.ajax({
-                url: '@Url.Action("GetReadNotifications", "Notifications")',
+                url: '@Url.Action("Read", "notifications")',
                 type: 'GET',
                 success: function (response) {
                     var readNotificationsHtml = "";
