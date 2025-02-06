@@ -240,7 +240,6 @@
                     if (response.length === 0) {
                         unreadNotificationsHtml = '<div class="empty-state">No unread notifications found.</div>';
                     } else {
-                        response.reverse();
                         response.forEach(notification => {
                             unreadNotificationsHtml += `
                                 <div class="notification-card" onclick="location.href='/Notifications/Details/${notification.notificationsId}'">
@@ -270,7 +269,6 @@
                     if (response.length === 0) {
                         readNotificationsHtml = '<div class="empty-state">No read notifications found.</div>';
                     } else {
-                        response.reverse();
                         response.forEach(notification => {
                             readNotificationsHtml += `
                                 <div class="notification-card" onclick="location.href='/Notifications/Details/${notification.notificationsId}'">

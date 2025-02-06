@@ -412,22 +412,7 @@ public class NotificationsController : Controller
         try
         {
             IEnumerable<NotificationsDTO> notifications = await _notificationsService.GetAllNotificationsAnotherTab();
-            List<NotificationsDTO> unreadNotifications = notifications.Where(n => !n.IsRead).ToList();
-            return unreadNotifications;
-        }
-        catch (Exception)
-        {
-            throw;
-        }
-    }
-
-    [Route("UnReadForGmAndArchi")]
-    public async Task<List<NotificationsDTO>> GetUnreadNotificationsForGmAndArchiAsync()
-    {
-        try
-        {
-            IEnumerable<NotificationsDTO> notifications = await _notificationsService.GetUnreadNotificationsForGMAsync();
-            List<NotificationsDTO> unreadNotifications = notifications.Where(n => !n.IsRead).ToList();
+            List<NotificationsDTO> unreadNotifications = [.. notifications.Where(n => !n.IsRead).OrderByDescending(n => n.SendDate)];
             return unreadNotifications;
         }
         catch (Exception)
@@ -442,8 +427,23 @@ public class NotificationsController : Controller
         try
         {
             IEnumerable<NotificationsDTO> notifications = await _notificationsService.GetAllNotificationsAnotherTab();
-            List<NotificationsDTO> readNotifications = notifications.Where(n => n.IsRead).ToList();
+            List<NotificationsDTO> readNotifications = [.. notifications.Where(n => n.IsRead).OrderByDescending(n => n.SendDate)];
             return readNotifications;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    [Route("UnReadForGmAndArchi")]
+    public async Task<List<NotificationsDTO>> GetUnreadNotificationsForGmAndArchiAsync()
+    {
+        try
+        {
+            IEnumerable<NotificationsDTO> notifications = await _notificationsService.GetUnreadNotificationsForGMAsync();
+            List<NotificationsDTO> unreadNotifications = [.. notifications.Where(n => !n.IsRead).OrderByDescending(n => n.SendDate)];
+            return unreadNotifications;
         }
         catch (Exception)
         {
