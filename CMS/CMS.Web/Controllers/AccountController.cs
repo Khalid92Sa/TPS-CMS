@@ -488,48 +488,57 @@ public class AccountController : Controller
     {
         try
         {
-            if (ModelState.IsValid)
+            if (string.IsNullOrWhiteSpace(model.CurrentPassword))
             {
-                IdentityUser user = await _userManager.GetUserAsync(User);
-                if (user is null)
-                    return NotFound();
-
-                // Check if the current password is correct
-                bool isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, model.CurrentPassword);
-
-                if (!isCurrentPasswordValid)
-                {
-                    ModelState.AddModelError(string.Empty, "The current password is incorrect.");
-                    return View(model);
-                }
-
-                // Check if the new password is different from the current password
-                if (model.CurrentPassword == model.NewPassword)
-                {
-                    ModelState.AddModelError(string.Empty, "The new password must be different from the current password.");
-                    return View(model);
-                }
-
-                IdentityResult changePasswordResult = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
-
-                if (changePasswordResult.Succeeded)
-                {
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-
-                    return RedirectToAction("Index", "Home");
-                }
-                else
-                {
-                    foreach (IdentityError error in changePasswordResult.Errors)
-                        ModelState.AddModelError(string.Empty, error.Description);
-                }
+                return BadRequest(new { field = "CurrentPassword", message = "Current Password is required." });
             }
 
-            return View(model);
+            if (string.IsNullOrWhiteSpace(model.NewPassword))
+            {
+                return BadRequest(new { field = "NewPassword", message = "New Password is required." });
+            }
+
+            if (string.IsNullOrWhiteSpace(model.ConfirmPassword))
+            {
+                return BadRequest(new { field = "ConfirmPassword", message = "Confirm New Password is required." });
+            }
+
+            if (model.NewPassword != model.ConfirmPassword)
+            {
+                return BadRequest(new { field = "ConfirmPassword", message = "New Password and Confirm Password do not match." });
+            }
+
+            IdentityUser user = await _userManager.GetUserAsync(User);
+            if (user is null)
+                return NotFound();
+
+            bool isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, model.CurrentPassword);
+
+            if (!isCurrentPasswordValid)
+            {
+                return BadRequest(new { field = "CurrentPassword", message = "The current password is incorrect." });
+            }
+
+            if (model.CurrentPassword == model.NewPassword)
+            {
+                return BadRequest(new { field = "NewPassword", message = "New Password must be different from the Current Password." });
+            }
+
+            IdentityResult changePasswordResult = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+
+            if (changePasswordResult.Succeeded)
+            {
+                await _signInManager.SignInAsync(user, isPersistent: false);
+                return Ok(new { message = "Password successfully changed! You will be logged out." });
+            }
+            else
+            {
+                return BadRequest(new { field = "NewPassword", message = "Error changing password. Please try again." });
+            }
         }
         catch (Exception)
         {
-            throw;
+            return StatusCode(500, new { message = "An error occurred while processing your request." });
         }
     }
 
