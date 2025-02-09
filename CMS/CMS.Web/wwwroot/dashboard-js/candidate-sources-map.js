@@ -2,8 +2,8 @@ const mapContainer = document.querySelector('#candidate-sources-map');
 const locations = JSON.parse(mapContainer.dataset.locations.replaceAll("'",'"')) ?? [];
 
 const markers = locations.map(l=>{
-    const coords = countries[l];
-    return { name: l, coords: coords}
+    const country = countries[l];
+    return { name: l, coords: country.coord, shortname: country.shortname}
 })
 
 
@@ -12,6 +12,11 @@ const  worldemapmarkers = new jsVectorMap({
     selector: "#candidate-sources-map",
     zoomOnScroll: true,
     zoomButtons: false,
+    showTooltip: true,
+    focusOn: {
+        regions: markers.map(x => x.shortname),
+        animate: true
+    },
     selectedMarkers: [],
     regionStyle: {
       initial: {
