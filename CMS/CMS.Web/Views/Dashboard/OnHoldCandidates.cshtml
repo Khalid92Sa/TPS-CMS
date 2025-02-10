@@ -136,11 +136,18 @@
 <script>
     $(document).ready(function () {
         $('#onHoldCandidateId').DataTable({
-            searching: false,
             paging: false,
+            searching: false,
             info: false,
+            ordering: false,
             scrollCollapse: true,
-            scrollY: '50vh'
+            scrollY: '50vh',  // Ensures proper height management
+            scrollX: true,     // Enables horizontal scrolling to prevent misalignment
+            autoWidth: false,  // Prevents columns from being resized incorrectly
+            fixedHeader: true, // Keeps column headers aligned correctly
+            columnDefs: [
+                { targets: 'hidden', visible: false } // Ensures hidden columns remain hidden
+            ]
         });
 
            $('#resetButton').on('click', function () {

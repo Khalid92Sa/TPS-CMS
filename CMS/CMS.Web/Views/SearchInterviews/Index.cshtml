@@ -200,11 +200,17 @@
        $(document).ready(function () {
         $('#add-rows3').DataTable({
             paging: false,
+            searching: false,
             info: false,
             ordering: false,
             scrollCollapse: true,
-            scrollY: '50vh',
-            searching: false,
+            scrollY: '50vh',  // Ensures proper height management
+            scrollX: true,     // Enables horizontal scrolling to prevent misalignment
+            autoWidth: false,  // Prevents columns from being resized incorrectly
+            fixedHeader: true, // Keeps column headers aligned correctly
+            columnDefs: [
+                { targets: 'hidden', visible: false } // Ensures hidden columns remain hidden
+            ]
         });
 
         $('#position-dropdown').selectize();

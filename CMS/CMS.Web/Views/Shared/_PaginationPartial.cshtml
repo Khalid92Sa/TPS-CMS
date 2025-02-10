@@ -7,7 +7,6 @@
         align-items: center;
         margin-top: 20px;
         padding: 10px;
-        background-color: #f9f9f9;
         border-radius: 8px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         margin-bottom: 10px;
@@ -21,79 +20,104 @@
         margin: 0;
     }
 
-    .pagination .page-item {
-        margin: 0 5px;
-    }
+        .pagination .page-item {
+            margin: 0 5px;
+        }
 
-    .pagination .page-item .page-link {
-        padding: 10px 15px;
-        border-radius: 50%;
-        border: 2px solid #405189;
-        background-color: #f1f1f1;
-        color: #405189;
-        font-weight: bold;
-        transition: all 0.3s ease;
-    }
+            .pagination .page-item .page-link {
+                padding: 10px 15px;
+                border-radius: 50%;
+                border: 2px solid #ffffff;
+                background: linear-gradient(135deg, #486fc7, #319ca7) !important;
+                color: white !important;
+                font-weight: bold;
+                transition: all 0.3s ease;
+                text-align: center;
+            }
 
-    .pagination .page-item .page-link:hover {
-        background-color: #405189;
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
+                .pagination .page-item .page-link:hover {
+                    background: linear-gradient(135deg, #319ca7, #486fc7) !important;
+                    color: #ffffff !important;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                }
 
-    .pagination .page-item.active .page-link {
-        background-color: #405189;
-        color: white;
-        border-color: #405189;
-    }
+            .pagination .page-item.active .page-link {
+                background: linear-gradient(135deg, #319ca7, #486fc7) !important;
+                color: white !important;
+                border-color: white;
+            }
 
-    .pagination .page-item.disabled .page-link {
-        color: #6c757d;
-        background-color: #fff;
-        border-color: #dee2e6;
-        cursor: not-allowed;
-    }
+            .pagination .page-item.disabled .page-link {
+                color: #ffffff !important;
+                background: linear-gradient(135deg, #486fc7, #319ca7) !important;
+                border-color: #ffffff;
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
 
+    /* Dropdown Styling */
     .pagination-dropdown, .rows-per-page {
         display: flex;
         align-items: center;
     }
 
-    .pagination-dropdown label, .rows-per-page label {
-        font-weight: bold;
-        color: #405189;
-        margin-right: 10px;
+        .pagination-dropdown label, .rows-per-page label {
+            font-weight: bold;
+            color: #ffffff;
+            margin-right: 10px;
+        }
+
+        .pagination-dropdown select, .rows-per-page select {
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 2px solid #ffffff;
+            background: linear-gradient(135deg, #486fc7, #319ca7) !important;
+            color: white !important;
+            font-weight: bold;
+            max-height: 150px;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+            margin-right: 15px;
+            /* Custom dropdown arrow */
+            background-image: url('data:image/svg+xml,%3Csvg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M6 9l6 6 6-6"/%3E%3C/svg%3E');
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            cursor: pointer;
+        }
+
+            .pagination-dropdown select:hover, .rows-per-page select:hover {
+                background: linear-gradient(135deg, #319ca7, #486fc7) !important;
+                color: white !important;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+
+            .pagination-dropdown select:focus, .rows-per-page select:focus {
+                outline: none;
+                border-color: #ffffff;
+                background: linear-gradient(135deg, #319ca7, #486fc7) !important;
+            }
+
+            .pagination-dropdown select:hover, .rows-per-page select:hover {
+                background: linear-gradient(135deg, #319ca7, #486fc7) !important;
+                color: white !important;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+
+            .pagination-dropdown select:focus, .rows-per-page select:focus {
+                outline: none;
+                border-color: #ffffff;
+                background: linear-gradient(135deg, #319ca7, #486fc7) !important;
+            }
+
+    .size {
+        background: linear-gradient(135deg, #486fc7, #319ca7) !important;
+        color: white !important;
     }
 
-    .pagination-dropdown select, .rows-per-page select {
-        padding: 8px 30px;
-        border-radius: 8px;
-        border: 1px solid #405189;
-        background-color: white;
-        font-weight: bold;
-        max-height: 150px;
-        overflow-y: auto;
-        transition: all 0.3s ease;
-        appearance: none;
-        background-image: url('data:image/svg+xml,%3Csvg width="10" height="5" viewBox="0 0 10 5" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M1 1l4 4 4-4" stroke="%23007bff" stroke-width="1.5" fill="none" fill-rule="evenodd"%3E%3C/path%3E%3C/svg%3E');
-        background-repeat: no-repeat;
-        background-position: right 10px top 50%;
-        background-size: 12px;
-        margin-right: 15px;
-    }
-
-    .pagination-dropdown select:hover, .rows-per-page select:hover {
-        background-color: #f1f1f1;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .pagination-dropdown select:focus, .rows-per-page select:focus {
-        outline: none;
-        border-color: #0056b3;
-        background-color: #e9f7ff;
-    }
 </style>
 
 @{
@@ -114,17 +138,17 @@
     <div class="pagination-container">
         <!-- Rows per page dropdown -->
         <div class="rows-per-page">
-            <label for="pageSize">Rows per page:</label>
+        <label style="color:#3ca1ab;" for="pageSize">Rows per page:</label>
             <select id="pageSize" onchange="location.href='?pageSize=' + this.value + '&pageNumber=1@(queryString)'">
                 @for (int size = 5; size <= 50; size += 5)
                 {
                     @if (Model.PageSize == size)
                     {
-                        <option value="@size" selected>@size</option>
+                    <option style="color:black;" value="@size" selected>@size</option>
                     }
                     else
                     {
-                        <option value="@size">@size</option>
+                    <option style="color:black;" value="@size">@size</option>
                     }
                 }
             </select>
@@ -158,19 +182,20 @@
 
         <!-- Pagination Dropdown -->
         <div class="pagination-dropdown">
-            <label for="pageSelect">Go to page:</label>
-            <select id="pageSelect" onchange="location.href='?pageNumber=' + this.value + '&pageSize=@Model.PageSize@(queryString)'">
-                @for (int i = 1; i <= Model.TotalPages; i++)
+        <label style="color:#3ca1ab;" for="pageSelect">Go to page:</label>
+        <select id="pageSelect" onchange="location.href='?pageNumber=' + this.value + '&pageSize=@Model.PageSize@(queryString)'">
+            @for (int i = 1; i <= (Model.TotalPages > 0 ? Model.TotalPages : 1); i++) // Ensure at least 1 page exists
+            {
+                var selectedPage = (Model.PageIndex > 0 ? Model.PageIndex : 1); // Ensure default page is 1
+                if (i == selectedPage)
                 {
-                    if (i == Model.PageIndex)
-                    {
-                        <option value="@i" selected="selected">@i</option>
-                    }
-                    else
-                    {
-                        <option value="@i">@i</option>
-                    }
+                    <option style="color:black;" value="@i" selected="selected">@i</option>
                 }
-            </select>
+                else
+                {
+                    <option style="color:black;" value="@i">@i</option>
+                }
+            }
+        </select>
         </div>
     </div>
