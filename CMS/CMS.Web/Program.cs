@@ -1,5 +1,6 @@
 using CMS.Application.ActionFilters;
 using CMS.Application.Configrations;
+using CMS.Application.Helpers;
 using CMS.Application.Middlewares;
 using CMS.Domain;
 using CMS.Repository.Implementation;
@@ -7,6 +8,8 @@ using CMS.Repository.Interfaces;
 using CMS.Repository.Repositories;
 using CMS.Services.Interfaces;
 using CMS.Services.Services;
+using CMS.Web.Jobs;
+using CMS.Web.Jobs.Interfaces;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
@@ -78,6 +81,8 @@ builder.Services.AddTransient<ITemplatesService, TemplatesService>();
 
 builder.Services.AddTransient<IReportingService, ReportingService>();
 builder.Services.AddScoped<LoggingActionFilter>();
+
+builder.Services.AddScoped<IInterviewReminderJob, InterviewReminderJob>();
 
 builder.Services.AddDefaultIdentity<IdentityUser>()
     .AddDefaultTokenProviders()
@@ -156,6 +161,15 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseHangfireDashboard("/jobs");
+
+string interviewReminderCron = HangfireCronHelper.GetJordanTimeCronExpression(builder.Configuration);
+
+RecurringJob.AddOrUpdate<IInterviewReminderJob>(
+    "SendInterviewReminder",
+    job => job.SendReminderEmails(),
+    interviewReminderCron
+);
+
 app.UseSession();
 app.UseMiddleware<RoleBasedRedirectionMiddleware>();
 

@@ -34,5 +34,5 @@ public interface IInterviewsRepository
     Task<Interviews> GetByInterviewerRoleAsync(int candidateId, string roleName);
     Task<Interviews> GetThirdInterviewAsync(int candidateId);
     Task<bool> DoesInterviewExistForCandidateAsync(int candidateId);
-
+    Task<List<Interviews>> GetFirstInterviews();
 }

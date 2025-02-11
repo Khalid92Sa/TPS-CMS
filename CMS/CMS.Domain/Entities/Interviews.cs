@@ -15,34 +15,47 @@ public class Interviews : BaseEntity
     public double? ActualExperience { get; set; }
 
     [Required(ErrorMessage = "Please select a Date.")]
-
     public DateTime Date { get; set; }
+
     [Required]
     public int StatusId { set; get; }
+
     public virtual Status Status { get; set; }
 
     [Required(ErrorMessage = "Please select a Candidate.")]
     public int CandidateId { get; set; }
+
     public virtual Candidate Candidate { get; set; }
 
     [Required(ErrorMessage = "Please select a Position.")]
     public int PositionId { get; set; }
+
     public virtual Position Position { get; set; }
+
     public int? AttachmentId { get; set; }
+
     public virtual Attachment Attachment { get; set; }
+
     [Required(ErrorMessage = "Please select a Interviewer.")]
     public string InterviewerId { get; set; }
+
     public virtual IdentityUser Interviewer { get; set; }
+
     public int? ParentId { get; set; }
+
 #nullable enable
     public string? Notes { get; set; }
-    public bool IsUpdated { get; set; }
-    public string? SecondInterviewerId { get; set; }
-    public string? ArchitectureInterviewerId { get; set; }
 
+    public bool IsUpdated { get; set; }
+
+    public string? SecondInterviewerId { get; set; }
+
+    public string? ArchitectureInterviewerId { get; set; }
 
     [Required(ErrorMessage = "Please select a Track.")]
     public int TrackId { get; set; }
+
     public virtual Track Track { get; set; }
+
     public string? StopCycleNote { get; set; }
 }

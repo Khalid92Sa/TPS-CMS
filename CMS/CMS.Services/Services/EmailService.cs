@@ -125,7 +125,7 @@ public class EmailService : IEmailService
             if (!hasGivenScore)
             {
                 string interviewerEmail2 = await GetInterviewerEmail(collection.InterviewerId);
-                EmailDTOs emailModel = new EmailDTOs
+                EmailDTOs emailModel = new()
                 {
                     EmailTo = new List<string> { interviewerEmail2 },
                     EmailBody = "You haven't provided a score for the interview. Please provide a score.",
@@ -145,7 +145,7 @@ public class EmailService : IEmailService
     {
         try
         {
-            SmtpClient smtp = new SmtpClient
+            SmtpClient smtp = new()
             {
                 Host = "mail.sssprocess.com",
                 Port = 587,
@@ -158,7 +158,7 @@ public class EmailService : IEmailService
             string Password = "P@ssw0rd2023";
             smtp.Credentials = new NetworkCredential(UserName, Password);
 
-            using MailMessage message = new MailMessage();
+            using MailMessage message = new();
             message.From = new MailAddress("cms@techprocess.net");
 
             if (emailToResend.EmailTo != null && emailToResend.EmailTo.Any())
@@ -224,7 +224,7 @@ public class EmailService : IEmailService
     {
         try
         {
-            SmtpClient smtp = new SmtpClient
+            SmtpClient smtp = new()
             {
                 Host = "mail.sssprocess.com",
                 Port = 587,
@@ -237,7 +237,7 @@ public class EmailService : IEmailService
             string Password = "P@ssw0rd2023";
             smtp.Credentials = new NetworkCredential(UserName, Password);
 
-            using MailMessage message = new MailMessage();
+            using MailMessage message = new();
             message.From = new MailAddress("cms@techprocess.net");
 
             if (emailModel.EmailTo != null && emailModel.EmailTo.Any())
@@ -268,7 +268,7 @@ public class EmailService : IEmailService
     {
         try
         {
-            SmtpClient smtp = new SmtpClient
+            SmtpClient smtp = new()
             {
                 Host = "mail.sssprocess.com",
                 Port = 587,
@@ -280,7 +280,7 @@ public class EmailService : IEmailService
             string Password = "P@ssw0rd2023";
             smtp.Credentials = new NetworkCredential(UserName, Password);
 
-            using MailMessage message = new MailMessage();
+            using MailMessage message = new();
             message.From = new MailAddress("cms@techprocess.net");
 
             if (emailModel.EmailTo != null && emailModel.EmailTo.Any())
@@ -318,7 +318,7 @@ public class EmailService : IEmailService
 
             if (!string.IsNullOrEmpty(interviewerEmail))
             {
-                EmailDTOs emailModel = new EmailDTOs
+                EmailDTOs emailModel = new()
                 {
                     EmailTo = new List<string> { interviewerEmail },
                     Subject = $"Interview Reminder ( {candidateNameresult} )",

@@ -6,6 +6,7 @@ using CMS.Repository.Interfaces;
 using CMS.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,6 +27,7 @@ public class InterviewsService : IInterviewsService
     private readonly ICompanyService _companyService;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IAttachmentService _attachmentService;
+    private readonly IConfiguration _configuration;
 
     public InterviewsService(
         IInterviewsRepository interviewsRepository,
@@ -36,7 +38,8 @@ public class InterviewsService : IInterviewsService
         RoleManager<IdentityRole> roleManager,
         IHttpContextAccessor httpContextAccessor,
         IStatusRepository statusRepository,
-        ICompanyService companyService)
+        ICompanyService companyService,
+        IConfiguration configuration)
     {
         _interviewsRepository = interviewsRepository;
         _candidateService = candidateService;
@@ -47,6 +50,7 @@ public class InterviewsService : IInterviewsService
         _httpContextAccessor = httpContextAccessor;
         _statusRepository = statusRepository;
         _companyService = companyService;
+        _configuration = configuration;
     }
 
 
@@ -408,7 +412,7 @@ public class InterviewsService : IInterviewsService
             string archiName = await GetArchitectureName(interview.ArchitectureInterviewerId);
             string interviewerRole = await GetInterviewerRole(interview.InterviewerId);
             double? firstInterviewScore = await GetFirstInterviewScore(id);
-            double? firstEvaluation =  GetFirstEvaluation(interview.AttachmentId);
+            double? firstEvaluation = GetFirstEvaluation(interview.AttachmentId);
             InterviewsDTO interviewDTO = new InterviewsDTO
             {
                 InterviewsId = interview.InterviewsId,
@@ -1287,70 +1291,105 @@ public class InterviewsService : IInterviewsService
         }
     }
 
-        public async Task<Result<bool>> AddArchitectureInterviewer(int interviewId, string architectureId)
+    public async Task<Result<bool>> AddArchitectureInterviewer(int interviewId, string architectureId)
+    {
+        try
         {
-            try
+            var interview = await _interviewsRepository.GetById(interviewId);
+            if (interview == null)
             {
-                var interview = await _interviewsRepository.GetById(interviewId);
-                if (interview == null)
-                {
-                    return Result<bool>.Failure(false, "Interview not found.");
-                }
+                return Result<bool>.Failure(false, "Interview not found.");
+            }
 
-                interview.SecondInterviewerId = architectureId;
-                await _interviewsRepository.Update(interview);
-                return Result<bool>.Success(true);
-            }
-            catch (Exception ex)
-            {
-                return Result<bool>.Failure(false, "Failed to update architecture interviewer.");
-            }
+            interview.SecondInterviewerId = architectureId;
+            await _interviewsRepository.Update(interview);
+            return Result<bool>.Success(true);
         }
-
-        public async Task<Result<bool>> RemoveArchitectureInterviewer(int interviewId)
+        catch (Exception ex)
         {
-            try
-            {
-                var interview = await _interviewsRepository.GetById(interviewId);
-                if (interview == null)
-                {
-                    return Result<bool>.Failure(false, "Interview not found.");
-                }
-
-                interview.SecondInterviewerId = null;
-                await _interviewsRepository.Update(interview);
-
-                return Result<bool>.Success(true);
-            }
-            catch (Exception ex)
-            {
-                // Log the exception
-                return Result<bool>.Failure(false, "Failed to remove Architecture Interviewer.");
-            }
+            return Result<bool>.Failure(false, "Failed to update architecture interviewer.");
         }
+    }
 
-        public async Task<Result<bool>> AddOrUpdateArchitectureInterviewer(int interviewId, string architectureId)
+    public async Task<Result<bool>> RemoveArchitectureInterviewer(int interviewId)
+    {
+        try
         {
-            try
+            var interview = await _interviewsRepository.GetById(interviewId);
+            if (interview == null)
             {
-                var interview = await _interviewsRepository.GetById(interviewId);
-                if (interview == null)
-                {
-                    return Result<bool>.Failure(false, "Interview not found.");
-                }
-
-                interview.SecondInterviewerId = architectureId;
-                await _interviewsRepository.Update(interview);
-
-                return Result<bool>.Success(true);
+                return Result<bool>.Failure(false, "Interview not found.");
             }
-            catch (Exception ex)
-            {
-                // Log the exception
-                return Result<bool>.Failure(false, "Failed to add or update Architecture Interviewer.");
-            }
+
+            interview.SecondInterviewerId = null;
+            await _interviewsRepository.Update(interview);
+
+            return Result<bool>.Success(true);
         }
+        catch (Exception ex)
+        {
+            // Log the exception
+            return Result<bool>.Failure(false, "Failed to remove Architecture Interviewer.");
+        }
+    }
+
+    public async Task<Result<bool>> AddOrUpdateArchitectureInterviewer(int interviewId, string architectureId)
+    {
+        try
+        {
+            var interview = await _interviewsRepository.GetById(interviewId);
+            if (interview == null)
+            {
+                return Result<bool>.Failure(false, "Interview not found.");
+            }
+
+            interview.SecondInterviewerId = architectureId;
+            await _interviewsRepository.Update(interview);
+
+            return Result<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            // Log the exception
+            return Result<bool>.Failure(false, "Failed to add or update Architecture Interviewer.");
+        }
+    }
 
     public async Task<bool> DoesInterviewExistForCandidate(int candidateId) => await _interviewsRepository.DoesInterviewExistForCandidateAsync(candidateId);
 
+    public async Task<Result<List<InterviewsDTO>>> GetInterviewsWithoutResults()
+    {
+        try
+        {
+            List<Interviews> firstInterviews = await _interviewsRepository.GetFirstInterviews();
+            int interviewReminderDaysDelay = _configuration.GetValue<int>("HangfireSettings:InterviewReminderDaysDelay");
+
+            if (firstInterviews == null || firstInterviews.Count == 0)
+                return Result<List<InterviewsDTO>>.Failure(null, "No interviews found.");
+
+            List<InterviewsDTO> interviewsDtoList = [];
+
+            foreach (var interview in firstInterviews)
+            {
+                if (interview.Score == null && DateTime.UtcNow >= interview.Date.ToUniversalTime().AddDays(interviewReminderDaysDelay))
+                {
+                    interviewsDtoList.Add(new InterviewsDTO
+                    {
+                        InterviewsId = interview.InterviewsId,
+                        CandidateId = interview.CandidateId,
+                        FullName = interview.Candidate?.FullName,
+                        InterviewerId = interview.InterviewerId,
+                        Date = interview.Date,
+                        StatusId = interview.StatusId
+                    });
+                }
+            }
+
+            return Result<List<InterviewsDTO>>.Success(interviewsDtoList);
+        }
+        catch (Exception ex)
+        {
+            return Result<List<InterviewsDTO>>.Failure(null, $"An error occurred while fetching interviews: {ex.Message}");
+        }
+    }
 }

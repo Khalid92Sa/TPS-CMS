@@ -568,4 +568,9 @@ public class InterviewsRepository : IInterviewsRepository
     }
 
     public async Task<bool> DoesInterviewExistForCandidateAsync(int candidateId) => await _context.Interviews.AnyAsync(i => i.CandidateId == candidateId);
+
+    public async Task<List<Interviews>> GetFirstInterviews() => await _context.Interviews
+                                                                              .Where(i => i.ParentId == null)
+                                                                              .ToListAsync();
+
 }

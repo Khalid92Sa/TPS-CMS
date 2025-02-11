@@ -238,7 +238,7 @@ public class AccountController : Controller
                     if (!string.IsNullOrEmpty(collection.SelectedRole))
                         await _userManager.AddToRoleAsync(user, collection.SelectedRole);
 
-                    EmailDTOs emailModel = new EmailDTOs
+                    EmailDTOs emailModel = new()
                     {
                         EmailTo = new List<string> { user.Email },
                         Subject = "Welcome to CMS System",
@@ -352,7 +352,7 @@ public class AccountController : Controller
 
                     if (currentEmail != collection.Email || currentUsername != collection.UserName || passwordChangeResult.Succeeded || !currentUserRoles.SequenceEqual(new[] { collection.SelectedRole }))
                     {
-                        EmailDTOs emailModel = new EmailDTOs
+                        EmailDTOs emailModel = new()
                         {
                             EmailTo = new List<string> { user.Email },
                             Subject = "Account Details Updated for CMS system",

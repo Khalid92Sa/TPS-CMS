@@ -499,9 +499,9 @@ public class InterviewsController : Controller
                         string interviewerEmail = await _emailService.GetInterviewerEmail(collection.InterviewerId);
                         IdentityUser userInterviewer = await _userManager.FindByEmailAsync(interviewerEmail);
 
-                        EmailDTOs emailModel = new EmailDTOs
+                        EmailDTOs emailModel = new()
                         {
-                            EmailTo = new List<string> { interviewerEmail },
+                            EmailTo = [interviewerEmail],
                             Subject = $"Interview Invitation ( {candidateNameresult} )",
                             EmailBody = $@"<html>
                             <body style='font-family: Arial, sans-serif;'>
@@ -510,7 +510,7 @@ public class InterviewsController : Controller
                                         Dear {userInterviewer.UserName.Replace("_", " ")},
                                     </p>
                                     <p style='font-size: 16px; color: #555;'>
-                                {(collection.SecondInterviewerId != null ? $"You and {userSecondInterviewer} are" : "You are")} assigned to have a first interview for {candidateNameresult} scheduled on {formattedDate} for the {lastPositionName} position,<br><br>kindly <a href='https://apps.sssprocess.com:6134/Interviews/UpdateAfterInterview/{collection.InterviewsId}'>Click here</a> to see the invitation details.
+                                {(collection.SecondInterviewerId != null ? $"You and {userSecondInterviewer} are" : "You are")} assigned to have a first interview for {candidateNameresult} scheduled on {formattedDate} for the {lastPositionName} position,<br><br>kindly <a href='https://apps.sssprocess.com:6134/interviews/{collection.InterviewsId}/addingresult'>Click here</a> to see the invitation details.
                                     </p>
                                     <p style='font-size: 14px; color: #777;'>
                                         Regards,
@@ -528,7 +528,7 @@ public class InterviewsController : Controller
                         {
                             EmailDTOs emailModel2 = new EmailDTOs
                             {
-                                EmailTo = new List<string> { secondInterviewerEmail },
+                                EmailTo = [secondInterviewerEmail],
                                 Subject = $"Interview Invitation ( {candidateNameresult} )",
                                 EmailBody = $@"<html>
                                 <body style='font-family: Arial, sans-serif;'>
@@ -537,7 +537,7 @@ public class InterviewsController : Controller
                                             Dear {userSecondInterviewer.Replace("_", " ")},
                                         </p>
                                         <p style='font-size: 16px; color: #555;'>
-                                            You and {userInterviewer} are assigned to have a first interview with {candidateNameresult} for the {lastPositionName} position scheduled on {collection.Date},<br><br>kindly <a href='https://apps.sssprocess.com:6134/Interviews/UpdateAfterInterview/{collection.InterviewsId}'>Click here</a> to see the invitation details.
+                                            You and {userInterviewer} are assigned to have a first interview with {candidateNameresult} for the {lastPositionName} position scheduled on {collection.Date},<br><br>kindly <a href='https://apps.sssprocess.com:6134/interviews/{collection.InterviewsId}/addingresult'>Click here</a> to see the invitation details.
                                         </p>
                                         <p style='font-size: 14px; color: #777;'>
                                             Regards,
@@ -701,7 +701,7 @@ public class InterviewsController : Controller
 
                         EmailDTOs emailModel = new EmailDTOs
                         {
-                            EmailTo = new List<string> { interviewerEmail },
+                            EmailTo = [interviewerEmail],
                             Subject = $"Interview Invitation ( {candidateNameresult} )",
                             EmailBody = $@"<html>
                             <body style='font-family: Arial, sans-serif;'>
@@ -728,9 +728,9 @@ public class InterviewsController : Controller
                         // Prepare the email model for the second interviewer if selected
                         if (collection.SecondInterviewerId != null)
                         {
-                            EmailDTOs emailModel2 = new EmailDTOs
+                            EmailDTOs emailModel2 = new()
                             {
-                                EmailTo = new List<string> { secondInterviewerEmail },
+                                EmailTo = [secondInterviewerEmail],
                                 Subject = $"Interview Invitation ( {candidateNameresult} )",
                                 EmailBody = $@"<html>
                                 <body style='font-family: Arial, sans-serif;'>
@@ -1184,7 +1184,7 @@ public class InterviewsController : Controller
                                         await _notificationsService.CreateInterviewNotificationForFinalHRInterview(interviewsDTO.StatusId.Value, interviewsDTO.Notes, interviewsDTO.CandidateId, interviewsDTO.PositionId);
                                         EmailDTOs emailModels = new EmailDTOs
                                         {
-                                            EmailTo = new List<string> { HREmail },
+                                            EmailTo = [HREmail],
                                             Subject = $"Interview Invitation ( {candidateNameresult} )",
                                             EmailBody = $@"<html>
                                        <body style='font-family: Arial, sans-serif;'>
@@ -1207,7 +1207,7 @@ public class InterviewsController : Controller
 
                                         EmailDTOs emailModelToHR = new EmailDTOs
                                         {
-                                            EmailTo = new List<string> { HREmail },
+                                            EmailTo = [HREmail],
                                             Subject = $"Interview Approval ({candidateNameresult})",
                                             EmailBody = $@"<html>
                                        <body style='font-family: Arial, sans-serif;'>
@@ -1244,7 +1244,7 @@ public class InterviewsController : Controller
                                         //from interviewer to GM
                                         EmailDTOs emailModel = new EmailDTOs
                                         {
-                                            EmailTo = new List<string> { GMEmail },
+                                            EmailTo = [GMEmail],
                                             Subject = $"Interview Invitation ( {candidateNameresult} )",
                                             EmailBody = $@"<html>
                                        <body style='font-family: Arial, sans-serif;'>
@@ -1268,7 +1268,7 @@ public class InterviewsController : Controller
 
                                         EmailDTOs emailModelToHR = new EmailDTOs
                                         {
-                                            EmailTo = new List<string> { HREmail },
+                                            EmailTo = [HREmail],
                                             Subject = $"Interview Approval ({candidateNameresult})",
                                             EmailBody = $@"<html>
                                        <body style='font-family: Arial, sans-serif;'>
@@ -1298,7 +1298,7 @@ public class InterviewsController : Controller
 
                                             EmailDTOs architectureEmailModel = new EmailDTOs
                                             {
-                                                EmailTo = new List<string> { ArchiEmail },
+                                                EmailTo = [ArchiEmail],
                                                 Subject = $"Interview Invitation ( {candidateNameresult} )",
                                                 EmailBody = $@"<html>
                                            <body style='font-family: Arial, sans-serif;'>
@@ -1341,7 +1341,7 @@ public class InterviewsController : Controller
                                     //from interviewer to GM
                                     EmailDTOs emailModel = new EmailDTOs
                                     {
-                                        EmailTo = new List<string> { GMEmail },
+                                        EmailTo = [GMEmail],
                                         Subject = $"Interview Invitation ( {candidateNameresult} )",
                                         EmailBody = $@"<html>
                                        <body style='font-family: Arial, sans-serif;'>
@@ -1365,7 +1365,7 @@ public class InterviewsController : Controller
 
                                     EmailDTOs emailModelToHR = new EmailDTOs
                                     {
-                                        EmailTo = new List<string> { HREmail },
+                                        EmailTo = [HREmail],
                                         Subject = $"Interview Approval ( {candidateNameresult} )",
                                         EmailBody = $@"<html>
                                        <body style='font-family: Arial, sans-serif;'>
@@ -1394,7 +1394,7 @@ public class InterviewsController : Controller
 
                                         EmailDTOs architectureEmailModel = new EmailDTOs
                                         {
-                                            EmailTo = new List<string> { ArchiEmail },
+                                            EmailTo = [ArchiEmail],
                                             Subject = $"Interview Invitation ( {candidateNameresult} )",
                                             EmailBody = $@"<html>
                                            <body style='font-family: Arial, sans-serif;'>
@@ -1439,7 +1439,7 @@ public class InterviewsController : Controller
 
                                 EmailDTOs emailModel = new EmailDTOs
                                 {
-                                    EmailTo = new List<string> { HREmail },
+                                    EmailTo = [HREmail],
                                     Subject = $"Interview Rejection ({candidateNameresult})",
                                     EmailBody = $@"<html>
                                        <body style='font-family: Arial, sans-serif;'>
@@ -1490,7 +1490,7 @@ public class InterviewsController : Controller
                                 IdentityUser userHR = await _userManager.FindByEmailAsync(HREmail);
                                 EmailDTOs emailModel = new EmailDTOs
                                 {
-                                    EmailTo = new List<string> { HREmail },
+                                    EmailTo = [HREmail],
                                     Subject = $"Interview Invitation ( {candidateNameresult} )",
                                     EmailBody = $@"<html>
                                            <body style='font-family: Arial, sans-serif;'>
@@ -1513,7 +1513,7 @@ public class InterviewsController : Controller
 
                                 EmailDTOs emailModelApproval = new EmailDTOs
                                 {
-                                    EmailTo = new List<string> { HREmail },
+                                    EmailTo = [HREmail],
                                     Subject = $"Interview Approval ({candidateNameresult})",
                                     EmailBody = $@"<html>
                                        <body style='font-family: Arial, sans-serif;'>
@@ -1551,7 +1551,7 @@ public class InterviewsController : Controller
 
                                 EmailDTOs emailModel = new EmailDTOs
                                 {
-                                    EmailTo = new List<string> { HREmail },
+                                    EmailTo = [HREmail],
                                     Subject = $"Interview Rejection ({candidateNameresult})",
                                     EmailBody = $@"<html>
                                        <body style='font-family: Arial, sans-serif;'>
@@ -1616,7 +1616,7 @@ public class InterviewsController : Controller
 
                                         EmailDTOs emailModels = new EmailDTOs
                                         {
-                                            EmailTo = new List<string> { GMEmail },
+                                            EmailTo = [GMEmail],
                                             Subject = $"Interview Invitation ( {candidateNameresult} )",
                                             EmailBody = $@"<html>
                                            <body style='font-family: Arial, sans-serif;'>
@@ -1638,7 +1638,7 @@ public class InterviewsController : Controller
                                         };
                                         EmailDTOs emailModelApproval = new EmailDTOs
                                         {
-                                            EmailTo = new List<string> { HREmail },
+                                            EmailTo = [HREmail],
                                             Subject = $"Interview Approval ({candidateNameresult})",
                                             EmailBody = $@"<html>
                                        <body style='font-family: Arial, sans-serif;'>
@@ -1676,7 +1676,7 @@ public class InterviewsController : Controller
                                         //from Archi to HR
                                         EmailDTOs emailModel = new EmailDTOs
                                         {
-                                            EmailTo = new List<string> { HREmail },
+                                            EmailTo = [HREmail],
                                             Subject = $"Interview Invitation ( {candidateNameresult} )",
                                             EmailBody = $@"<html>
                                            <body style='font-family: Arial, sans-serif;'>
@@ -1699,7 +1699,7 @@ public class InterviewsController : Controller
 
                                         EmailDTOs emailModelApproval = new EmailDTOs
                                         {
-                                            EmailTo = new List<string> { HREmail },
+                                            EmailTo = [HREmail],
                                             Subject = $"Interview Approval ({candidateNameresult})",
                                             EmailBody = $@"<html>
                                        <body style='font-family: Arial, sans-serif;'>
@@ -1741,7 +1741,7 @@ public class InterviewsController : Controller
 
                                             EmailDTOs emailModels = new EmailDTOs
                                             {
-                                                EmailTo = new List<string> { HREmail },
+                                                EmailTo = [HREmail],
                                                 Subject = $"Interview Invitation ( {candidateNameresult} )",
                                                 EmailBody = $@"<html>
                                                        <body style='font-family: Arial, sans-serif;'>
@@ -1781,7 +1781,7 @@ public class InterviewsController : Controller
                                         //from Archi to HR
                                         EmailDTOs emailModel = new EmailDTOs
                                         {
-                                            EmailTo = new List<string> { HREmail },
+                                            EmailTo = [HREmail],
                                             Subject = $"Interview Invitation ( {candidateNameresult} )",
                                             EmailBody = $@"<html>
                                            <body style='font-family: Arial, sans-serif;'>
@@ -1823,7 +1823,7 @@ public class InterviewsController : Controller
                                     string HREmail = await _emailService.GetHREmail();
                                     EmailDTOs emailModel = new EmailDTOs
                                     {
-                                        EmailTo = new List<string> { HREmail },
+                                        EmailTo = [HREmail],
                                         Subject = $"Interview Rejection ({candidateNameresult})",
                                         EmailBody = $@"<html>
                                        <body style='font-family: Arial, sans-serif;'>
@@ -1963,7 +1963,7 @@ public class InterviewsController : Controller
 
                         var emailModel = new EmailDTOs
                         {
-                            EmailTo = new List<string> { architectureEmail },
+                            EmailTo = [architectureEmail],
                             Subject = $"Interview Assignment Removed ({candidateName.FullName})",
                             EmailBody = $@"<html>
                                 <body style='font-family: Arial, sans-serif;'>
@@ -2019,13 +2019,13 @@ public class InterviewsController : Controller
 
                     var emailModel = new EmailDTOs
                     {
-                        EmailTo = new List<string> { architectureEmail },
+                        EmailTo = [architectureEmail],
                         Subject = $"New Architecture Interview Assigned ({candidateName.FullName})",
                         EmailBody = $@"<html>
                         <body style='font-family: Arial, sans-serif;'>
                             <p style='font-size: 16px;'>Dear {architectureUser.UserName.Replace("_", " ")},</p>
                             <p style='font-size: 16px;'>You have been assigned with the GM to interview {candidateName.FullName}, scheduled on {formattedDate}.</p>
-                            <p><a href='https://apps.sssprocess.com:6134/Interviews/Details/{interviewId}'>Click here</a> for more details.</p>
+                            <p><a href='https://apps.sssprocess.com:6134/interviews/{interviewId}/addingresult'>Click here</a> for more details.</p>
                             <p>Thank you.</p>
                         </body>
                     </html>"
