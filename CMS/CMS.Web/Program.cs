@@ -11,6 +11,7 @@ using CMS.Services.Services;
 using CMS.Web.Jobs;
 using CMS.Web.Jobs.Interfaces;
 using Hangfire;
+using Hangfire.Console;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -140,6 +141,13 @@ builder.Services.AddRazorPages()
             _ => "This field is required.");
     });
 
+builder.Services.AddHangfire(config =>
+{
+    config.UseSqlServerStorage(builder.Configuration.GetConnectionString("Defultconiction"))
+          .UseConsole();
+});
+
+
 WebApplication app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -166,7 +174,7 @@ string interviewReminderCron = HangfireCronHelper.GetJordanTimeCronExpression(bu
 
 RecurringJob.AddOrUpdate<IInterviewReminderJob>(
     "SendInterviewReminder",
-    job => job.SendReminderEmails(),
+    job => job.SendReminderEmails(null),
     interviewReminderCron
 );
 

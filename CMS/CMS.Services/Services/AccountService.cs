@@ -6,6 +6,7 @@ using CMS.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,15 @@ public class AccountService : IAccountService
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IUserRepository _userRepository;
+    private readonly IConfiguration _configuration;
+
+    private readonly string _smtpHost;
+    private readonly int _smtpPort;
+    private readonly string _smtpUserName;
+    private readonly string _smtpPassword;
+    private readonly bool _useDefaultCredentials;
+    private readonly bool _enableSsl;
+    private readonly string _fromEmail;
 
     public AccountService(
         UserManager<IdentityUser> userManager,
@@ -30,7 +40,8 @@ public class AccountService : IAccountService
         ApplicationDbContext dbContext,
         IUserRepository userRepository,
         RoleManager<IdentityRole> roleManager,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IConfiguration configuration)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -38,6 +49,16 @@ public class AccountService : IAccountService
         _userRepository = userRepository;
         _roleManager = roleManager;
         _httpContextAccessor = httpContextAccessor;
+        _configuration = configuration;
+
+        // Load email settings from appsettings.json
+        _smtpHost = _configuration["EmailSettings:Host"];
+        _smtpPort = _configuration.GetValue<int>("EmailSettings:Port");
+        _smtpUserName = _configuration["EmailSettings:UserName"];
+        _smtpPassword = _configuration["EmailSettings:Password"];
+        _useDefaultCredentials = _configuration.GetValue<bool>("EmailSettings:UseDefaultCredentials");
+        _enableSsl = _configuration.GetValue<bool>("EmailSettings:EnableSsl");
+        _fromEmail = _configuration["EmailSettings:FromEmail"];
     }
 
     public async Task<List<Login>> GetAllUsersAsync()
@@ -267,21 +288,21 @@ public class AccountService : IAccountService
     {
         try
         {
-            SmtpClient smtp = new SmtpClient
+            SmtpClient smtp = new()
             {
-                Host = "mail.sssprocess.com",
-                Port = 587,
+                Host = _smtpHost,
+                Port = _smtpPort,
                 DeliveryMethod = SmtpDeliveryMethod.Network,
-                EnableSsl = false,
-                UseDefaultCredentials = true
+                EnableSsl = _enableSsl,
+                UseDefaultCredentials = _useDefaultCredentials
             };
-            string UserName = "CMS@sss-process.org";
-            string Password = "P@ssw0rd2023";
+            string UserName = _smtpUserName;
+            string Password = _smtpPassword;
             smtp.Credentials = new NetworkCredential(UserName, Password);
 
-            using MailMessage message = new MailMessage();
+            using MailMessage message = new();
 
-            message.From = new MailAddress("cms@techprocess.net");
+            message.From = new MailAddress(_fromEmail);
 
             if (emailmodel.EmailTo != null && emailmodel.EmailTo.Any())
             {

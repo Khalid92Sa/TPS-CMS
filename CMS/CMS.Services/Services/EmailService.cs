@@ -4,6 +4,7 @@ using CMS.Services.Interfaces;
 using Hangfire;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -20,19 +21,39 @@ public class EmailService : IEmailService
     private readonly IInterviewsRepository _interviewsRepository;
     private readonly ICandidateService _candidateService;
     private readonly IInterviewsService _interviewsService;
+    private readonly IConfiguration _configuration;
+
+    private readonly string _smtpHost;
+    private readonly int _smtpPort;
+    private readonly string _smtpUserName;
+    private readonly string _smtpPassword;
+    private readonly bool _useDefaultCredentials;
+    private readonly bool _enableSsl;
+    private readonly string _fromEmail;
 
     public EmailService(
         IHttpContextAccessor httpContextAccessor,
         UserManager<IdentityUser> userManager,
         IInterviewsRepository interviewsRepository,
         ICandidateService candidateService,
-        IInterviewsService interviewsService)
+        IInterviewsService interviewsService,
+        IConfiguration configuration)
     {
         _httpContextAccessor = httpContextAccessor;
         _userManager = userManager;
         _interviewsRepository = interviewsRepository;
         _candidateService = candidateService;
         _interviewsService = interviewsService;
+        _configuration = configuration;
+
+        // Load email settings from appsettings.json
+        _smtpHost = _configuration["EmailSettings:Host"];
+        _smtpPort = _configuration.GetValue<int>("EmailSettings:Port");
+        _smtpUserName = _configuration["EmailSettings:UserName"];
+        _smtpPassword = _configuration["EmailSettings:Password"];
+        _useDefaultCredentials = _configuration.GetValue<bool>("EmailSettings:UseDefaultCredentials");
+        _enableSsl = _configuration.GetValue<bool>("EmailSettings:EnableSsl");
+        _fromEmail = _configuration["EmailSettings:FromEmail"];
     }
 
 
@@ -147,19 +168,19 @@ public class EmailService : IEmailService
         {
             SmtpClient smtp = new()
             {
-                Host = "mail.sssprocess.com",
-                Port = 587,
+                Host = _smtpHost,
+                Port = _smtpPort,
                 DeliveryMethod = SmtpDeliveryMethod.Network,
-                EnableSsl = false,
-                UseDefaultCredentials = true
+                EnableSsl = _enableSsl,
+                UseDefaultCredentials = _useDefaultCredentials
             };
 
-            string UserName = "CMS@sss-process.org";
-            string Password = "P@ssw0rd2023";
+            string UserName = _smtpUserName;
+            string Password = _smtpPassword;
             smtp.Credentials = new NetworkCredential(UserName, Password);
 
             using MailMessage message = new();
-            message.From = new MailAddress("cms@techprocess.net");
+            message.From = new MailAddress(_fromEmail);
 
             if (emailToResend.EmailTo != null && emailToResend.EmailTo.Any())
             {
@@ -199,7 +220,6 @@ public class EmailService : IEmailService
         }
     }
 
-
     public async Task ScheduleInterviewReminder(InterviewsDTO collection)
     {
         try
@@ -219,26 +239,25 @@ public class EmailService : IEmailService
         }
     }
 
-
     public async Task SendEmailToInterviewer(string interviewerEmail, InterviewsDTO interview, EmailDTOs emailModel)
     {
         try
         {
             SmtpClient smtp = new()
             {
-                Host = "mail.sssprocess.com",
-                Port = 587,
+                Host = _smtpHost,
+                Port = _smtpPort,
                 DeliveryMethod = SmtpDeliveryMethod.Network,
-                EnableSsl = false,
-                UseDefaultCredentials = true
+                EnableSsl = _enableSsl,
+                UseDefaultCredentials = _useDefaultCredentials
             };
 
-            string UserName = "CMS@sss-process.org";
-            string Password = "P@ssw0rd2023";
+            string UserName = _smtpUserName;
+            string Password = _smtpPassword;
             smtp.Credentials = new NetworkCredential(UserName, Password);
 
             using MailMessage message = new();
-            message.From = new MailAddress("cms@techprocess.net");
+            message.From = new MailAddress(_fromEmail);
 
             if (emailModel.EmailTo != null && emailModel.EmailTo.Any())
             {
@@ -270,18 +289,19 @@ public class EmailService : IEmailService
         {
             SmtpClient smtp = new()
             {
-                Host = "mail.sssprocess.com",
-                Port = 587,
+                Host = _smtpHost,
+                Port = _smtpPort,
                 DeliveryMethod = SmtpDeliveryMethod.Network,
-                EnableSsl = false,
-                UseDefaultCredentials = true
+                EnableSsl = _enableSsl,
+                UseDefaultCredentials = _useDefaultCredentials
             };
-            string UserName = "CMS@sss-process.org";
-            string Password = "P@ssw0rd2023";
+
+            string UserName = _smtpUserName;
+            string Password = _smtpPassword;
             smtp.Credentials = new NetworkCredential(UserName, Password);
 
             using MailMessage message = new();
-            message.From = new MailAddress("cms@techprocess.net");
+            message.From = new MailAddress(_fromEmail);
 
             if (emailModel.EmailTo != null && emailModel.EmailTo.Any())
             {
