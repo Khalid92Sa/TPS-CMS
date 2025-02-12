@@ -1373,15 +1373,26 @@ public class InterviewsService : IInterviewsService
             {
                 if (interview.Score == null && DateTime.UtcNow >= interview.Date.ToUniversalTime().AddDays(interviewReminderDaysDelay))
                 {
-                    interviewsDtoList.Add(new InterviewsDTO
+                    IdentityUser interviewer = await _userManager.FindByIdAsync(interview.InterviewerId);
+
+                    if (interviewer != null)
                     {
-                        InterviewsId = interview.InterviewsId,
-                        CandidateId = interview.CandidateId,
-                        FullName = interview.Candidate?.FullName,
-                        InterviewerId = interview.InterviewerId,
-                        Date = interview.Date,
-                        StatusId = interview.StatusId
-                    });
+                        IList<string> roles = await _userManager.GetRolesAsync(interviewer);
+
+                        // Exclude interviews where the interviewer is a "General Manager"
+                        if (!roles.Contains("General Manager", StringComparer.OrdinalIgnoreCase))
+                        {
+                            interviewsDtoList.Add(new InterviewsDTO
+                            {
+                                InterviewsId = interview.InterviewsId,
+                                CandidateId = interview.CandidateId,
+                                FullName = interview.Candidate?.FullName,
+                                InterviewerId = interview.InterviewerId,
+                                Date = interview.Date,
+                                StatusId = interview.StatusId
+                            });
+                        }
+                    }
                 }
             }
 
