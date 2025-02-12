@@ -5,6 +5,7 @@ using Hangfire;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,7 @@ public class EmailService : IEmailService
     private readonly ICandidateService _candidateService;
     private readonly IInterviewsService _interviewsService;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<EmailService> _logger;
 
     private readonly string _smtpHost;
     private readonly int _smtpPort;
@@ -37,7 +39,8 @@ public class EmailService : IEmailService
         IInterviewsRepository interviewsRepository,
         ICandidateService candidateService,
         IInterviewsService interviewsService,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ILogger<EmailService> logger)
     {
         _httpContextAccessor = httpContextAccessor;
         _userManager = userManager;
@@ -46,6 +49,7 @@ public class EmailService : IEmailService
         _interviewsService = interviewsService;
         _configuration = configuration;
 
+        _logger = logger;
         // Load email settings from appsettings.json
         _smtpHost = _configuration["EmailSettings:Host"];
         _smtpPort = _configuration.GetValue<int>("EmailSettings:Port");
@@ -215,7 +219,7 @@ public class EmailService : IEmailService
 
             await Task.CompletedTask;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
         }
     }
@@ -270,9 +274,13 @@ public class EmailService : IEmailService
             message.IsBodyHtml = true;
 
             await smtp.SendMailAsync(message);
+            _logger.LogInformation("Email has been sent successfully to:" + emailModel.EmailTo.FirstOrDefault());
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogInformation("Error sent email to:" + emailModel.EmailTo.FirstOrDefault());
+            _logger.LogError(ex.InnerException != null ? ex.InnerException.Message : ex.Message, ex);
+
             (string To, string Subject, string Body) emailLogInfo = (
                 To: string.Join(",", emailModel.EmailTo),
                 Subject: emailModel.Subject,
