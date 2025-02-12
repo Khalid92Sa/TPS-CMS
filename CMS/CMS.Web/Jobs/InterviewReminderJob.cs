@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace CMS.Web.Jobs;
 
@@ -42,12 +43,26 @@ public class InterviewReminderJob : IInterviewReminderJob
             _logger.LogInformation("InterviewReminderJob started execution.");
             performContext?.WriteLine("- InterviewReminderJob started execution.");
 
+            DateTime cutoffDate = DateTime.Parse("2025-01-01 00:00:00.000");
+
             int interviewReminderDaysDelay = _configuration.GetValue<int>("HangfireSettings:InterviewReminderDaysDelay");
             _logger.LogInformation("Configured InterviewReminderDaysDelay: {delay} days", interviewReminderDaysDelay);
             performContext?.WriteLine($"- Configured InterviewReminderDaysDelay: {interviewReminderDaysDelay} days");
 
             Result<List<InterviewsDTO>> pendingInterviewsResult = await _interviewsService.GetInterviewsWithoutResults();
             List<InterviewsDTO> pendingInterviews = pendingInterviewsResult.Value;
+
+            // **Filter to include only interviews created on or after 2025-01-01**
+            pendingInterviews = pendingInterviews
+                .Where(i => i.Date >= cutoffDate)
+                .ToList();
+
+            if (!pendingInterviews.Any())
+            {
+                _logger.LogInformation("No interviews found that were created on or after {cutoffDate}.", cutoffDate);
+                performContext?.WriteLine($"- No interviews found that were created on or after {cutoffDate}.");
+                return;
+            }
 
             _logger.LogInformation("Fetched {count} pending interviews without results.", pendingInterviews.Count);
             performContext?.WriteLine($"- Fetched {pendingInterviews.Count} pending interviews without results.");
@@ -73,14 +88,14 @@ public class InterviewReminderJob : IInterviewReminderJob
                         EmailTo = [interviewerEmail],
                         Subject = "Reminder: Interview Result Submission",
                         EmailBody = $@"
-                    <html>
-                    <body>
-                        <p>Dear {interviewer.UserName.Replace("_", " ")},</p>
-                        <p>You conducted an interview for {interview.FullName} at {interview.Date}.</p>
-                        <p>Please submit the interview result <a href='https://apps.sssprocess.com:6134/interviews/{interview.InterviewsId}/addingresult'>here</a> as soon as possible.</p>
-                        <p>Best Regards,<br>CMS Team</p>
-                    </body>
-                    </html>"
+                <html>
+                <body>
+                    <p>Dear {interviewer.UserName.Replace("_", " ")},</p>
+                    <p>You conducted an interview for {interview.FullName} at {interview.Date}.</p>
+                    <p>Please submit the interview result <a href='https://apps.sssprocess.com:6134/interviews/{interview.InterviewsId}/addingresult'>here</a> as soon as possible.</p>
+                    <p>Best Regards,<br>CMS Team</p>
+                </body>
+                </html>"
                     };
 
                     await _emailService.SendEmailToInterviewer(interviewerEmail, interview, reminderEmail);

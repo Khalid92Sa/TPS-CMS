@@ -1371,7 +1371,9 @@ public class InterviewsService : IInterviewsService
 
             foreach (var interview in firstInterviews)
             {
-                if (interview.Score == null && DateTime.UtcNow >= interview.Date.ToUniversalTime().AddDays(interviewReminderDaysDelay))
+                if (interview.Score == null
+                    && DateTime.UtcNow >= interview.Date.ToUniversalTime().AddDays(interviewReminderDaysDelay)
+                    && interview.Date >= DateTime.Parse("2025-01-01 00:00:00.000"))
                 {
                     IdentityUser interviewer = await _userManager.FindByIdAsync(interview.InterviewerId);
 
