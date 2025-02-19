@@ -6,6 +6,7 @@
         color: white;
         background: linear-gradient(135deg, #486fc7, #319ca7);
     }
+
     .btn-success {
         background: linear-gradient(135deg, #486fc7, #319ca7);
         border: none;
@@ -55,34 +56,33 @@
                 <input type="hidden" asp-for="PositionId" />
                 <input type="hidden" asp-for="isUpdated" />
 
-                @if ((User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture")) && Model.ParentId == null)
-                {
-                    <div class="row">
+                <div class="row">
+                    @if ((User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture")) && Model.ParentId == null)
+                    {
+                        <!-- Score -->
                         <div class="col-md-6 mb-3">
                             <label asp-for="Score"><span class="text-danger">*</span> Score out of 5:</label>
-                            <input asp-for="Score" class="form-control score" style="width:50%;" />
+                            <input asp-for="Score" class="form-control score" />
                             <span asp-validation-for="Score" class="text-danger"></span>
                         </div>
-                    </div>
-                }
+                    }
 
-                @if (!User.IsInRole("HR Manager"))
-                {
-                    <div class="row">
+                    @if (!User.IsInRole("HR Manager"))
+                    {
+                        <!-- Actual Experience -->
                         <div class="col-md-6 mb-3">
                             <label asp-for="ActualExperience"><span class="text-danger">*</span> Actual Experience:</label>
-                            <input asp-for="ActualExperience" style="width:50%;" class="form-control actualexperience" pattern="^(?:0(\.\d+)?|[1-9]\d*(\.\d+)?)$" title="Experience must be a non-negative numeric value." />
+                            <input asp-for="ActualExperience" class="form-control actualexperience" pattern="^(?:0(\.\d+)?|[1-9]\d*(\.\d+)?)$" title="Experience must be a non-negative numeric value." />
                             <span asp-validation-for="ActualExperience" class="text-danger"></span>
                         </div>
-                    </div>
-                }
+                    }
 
-                <div class="row">
+                    <!-- Status -->
                     <div class="col-md-6 mb-3">
                         <label asp-for="StatusId" class="control-label"><span class="text-danger">*</span> Status</label>
                         @if (ViewBag.StatusDTOs != null)
                         {
-                            <select asp-for="StatusId" class="form-control" style="width:50%;">
+                            <select asp-for="StatusId" class="form-control">
                                 <option value="">Select a Status</option>
                                 @foreach (var sta in ViewBag.StatusDTOs)
                                 {
@@ -99,9 +99,8 @@
                         }
                         <span asp-validation-for="StatusId" class="text-danger"></span>
                     </div>
-                </div>
 
-                <div class="row">
+                    <!-- Notes -->
                     <div class="col-md-6 mb-3">
                         <label asp-for="Notes">Notes:</label>
                         <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
@@ -121,10 +120,11 @@
                         </div>
                     }
 
+                    <!-- Upload Evaluation -->
                     <div class="row mt-3">
                         <div class="col-md-6 mb-3">
                             <label for="file"><span class="text-danger">*</span> Upload An Evaluation:</label>
-                            <input type="file" id="file" name="file" class="form-control-file" onchange="validateFileFormat(this)" />
+                            <input type="file" id="file" name="file" class="form-control-file" />
                             <br />
                             <span asp-validation-for="AttachmentId" class="text-danger"></span>
                             <br />
@@ -148,17 +148,11 @@
 
 <script>
     $(document).ready(function () {
-        // Allow only numbers and decimal in Score field
-        $('.score').on('input', function () {
+        // Allow only numbers and decimal in Score and Actual Experience fields
+        $('.score, .actualexperience').on('input', function () {
             this.value = this.value.replace(/[^0-9.]/g, '');
         });
 
-        // Allow only numbers and decimal in Actual Experience field
-        $('.actualexperience').on('input', function () {
-            this.value = this.value.replace(/[^0-9.]/g, '');
-        });
-
-        // Handle form submission with validation
         $('#submitButton').click(function () {
             var isValid = true;
             var scoreValue = $('[name="Score"]').val();
@@ -166,29 +160,18 @@
             var fileInput = $('#file');
             var fileSelected = fileInput.val();
 
-            // Validate Score if visible
             if ($('[name="Score"]').is(":visible")) {
-                if (!scoreValue) {
-                    $('[name="Score"]').next(".text-danger").text("Score is required.");
-                    isValid = false;
-                } else if (scoreValue < 0 || scoreValue > 5) {
-                    $('[name="Score"]').next(".text-danger").text("Score should be between 0 and 5.");
-                    isValid = false;
-                } else if (statusValue === "2" && scoreValue < 3) {
-                    $('[name="Score"]').next(".text-danger").text("Score should not be less than 3 if status is Accepted.");
+                if (!scoreValue || scoreValue < 0 || scoreValue > 5 || (statusValue === "2" && scoreValue < 3)) {
+                    $('[name="Score"]').next(".text-danger").text("Score must be between 0 and 5. If status is Accepted, score should be at least 3.");
                     isValid = false;
                 } else {
                     $('[name="Score"]').next(".text-danger").text("");
                 }
             }
 
-            // Validate Actual Experience if visible
             if ($('[name="ActualExperience"]').is(":visible")) {
                 var actualExperience = $('[name="ActualExperience"]').val();
-                if (!actualExperience) {
-                    $('[name="ActualExperience"]').next(".text-danger").text("Actual Experience is required. Please provide a valid number.");
-                    isValid = false;
-                } else if (isNaN(actualExperience) || actualExperience < 0) {
+                if (!actualExperience || isNaN(actualExperience) || actualExperience < 0) {
                     $('[name="ActualExperience"]').next(".text-danger").text("Actual Experience must be a positive number or zero.");
                     isValid = false;
                 } else {
@@ -196,31 +179,23 @@
                 }
             }
 
-            // Validate Status
             if (!statusValue) {
                 $('[name="StatusId"]').next(".text-danger").text("Status is required.");
                 isValid = false;
             }
 
-            // Validate Notes if StatusId is 3 (Rejected)
             if (statusValue === "3" && !$('[name="Notes"]').val()) {
-                $('[name="Notes"]').next(".text-danger").text("Please provide a reason for the candidate rejection.");
+                $('[name="Notes"]').next(".text-danger").text("Please provide a reason for rejection.");
                 isValid = false;
             }
 
-            // Validate if the file is uploaded (Only if the file input is visible)
             if (fileInput.is(":visible") && !fileSelected) {
                 $('#fileError').text("Please choose a file to upload.");
                 isValid = false;
-            } else {
-                $('#fileError').text('');
             }
 
-            if (!isValid) {
-                return;
-            }
+            if (!isValid) return;
 
-            // Use SweetAlert2 for confirmation
             Swal.fire({
                 title: 'Are you sure?',
                 text: 'You are about to submit the form.',
@@ -230,14 +205,9 @@
                 cancelButtonText: 'No, cancel!',
             }).then((result) => {
                 if (result.isConfirmed) {
-                    $('#updateForm').off('submit').submit();
+                    $('#updateForm').submit();
                 }
             });
         });
-
-        // Function to check if a value is numeric
-        function isNumeric(value) {
-            return !isNaN(value) && isFinite(value);
-        }
     });
 </script>

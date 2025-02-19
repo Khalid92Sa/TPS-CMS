@@ -33,7 +33,7 @@ public interface INotificationsService
     Task CreateNotificationForInterviewer(int CandidateId, string selectedInterviewerId);
     Task<NotificationsDTO> GetNotificationByIdforDetails(int notificationsId);
     Task<int> GetUnreadNotificationCount();
-    Task MarkAllAsReadForRoleAsync(string roleName);
+    Task MarkAllAsReadForUserAsync(string userId);
     Task NotifyAssignArchiAsync(int status, string notes, int CandidateId, int positionId);
     Task RemoveNotifyAssignArchiAsync(int status, string notes, int CandidateId, int positionId);
     Task<IEnumerable<NotificationsDTO>> GetUnreadNotificationsForGMAsync();

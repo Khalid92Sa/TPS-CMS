@@ -7,7 +7,7 @@
 <!-- Page Container -->
 <div class="container my-5">
     <div class="card shadow border-0 rounded-lg">
-        <div class="card-header text-dark text-center py-4 border-bottom" style="background-color:#405189;">
+        <div class="card-header text-dark text-center py-4 border-bottom" style="background: linear-gradient(135deg, #486fc7, #319ca7);">
             <h4 class="mb-0" style="color:white;">Confirm Deletion</h4>
         </div>
 
@@ -41,17 +41,17 @@
                             }
                         </dd>
                     </dl>
-
                 </div>
+
                 <!-- Action Buttons -->
-                    <div class="text-center mt-4">
-                        <form id="deleteForm" method="post" action="@Url.Action("DeletePosition", "Position", new { id = Model.Id })">
-                             <div class="d-flex justify-content-between mt-4">
-                                 <button type="button" class="btn btn-danger px-4" onclick="showSwalConfirm()">Delete</button>
-                                 <a class="btn btn-secondary" asp-action="GetPositions">Back to list</a>
-                             </div>
-                        </form>
-                    </div>
+                <div class="text-center mt-4">
+                    <form id="deleteForm" method="post" action="@Url.Action("DeletePosition", "Position", new { id = Model.Id })">
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-danger px-4" onclick="showSwalConfirm()">Delete</button>
+                            <a class="btn btn-secondary" asp-action="GetPositions">Back to list</a>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -63,7 +63,7 @@
     function showSwalConfirm() {
         Swal.fire({
             title: 'Are you sure?',
-            text: "This action cannot be undone!",
+            text: 'This action will permanently delete the position and its data!',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#e3342f',
@@ -77,5 +77,6 @@
         });
     }
 </script>
+
 <!-- Font Awesome for Icons -->
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>

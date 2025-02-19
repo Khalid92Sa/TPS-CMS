@@ -24,12 +24,10 @@
     }
 </style>
 
-
-
 @using (Html.BeginForm("Index", "Interviews", FormMethod.Get, new { id = "filterForm", onsubmit = "return validateForm();" }))
 {
-    <div class="form-group" style="margin-bottom: 23px;">
-        <div class="row">
+    <div class="form-group mb-3">
+        <div class="row align-items-end">
             <div class="col-md-3">
                 @Html.Label("Filter by Status:")
                 @Html.DropDownList("statusFilter", ViewBag.StatusList as SelectList, "All Statuses", new { @class = "form-control" })
@@ -45,13 +43,13 @@
                 @Html.DropDownList("trackFilter", ViewBag.TrackList as SelectList, "All Tracks", new { @class = "form-control" })
             </div>
 
-            <div class="col-md-1" style="margin-top: 27px;width:8%;">
-                <label>&nbsp;</label>
-                <button type="submit" class="btn btn-primary btn-block" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Filter Interviews">Filter</button>
-            </div>
-
-            <div class="col-md-1" style="margin-top: 27px;width:6%;">
-                <button type="button" id="resetButton" class="btn btn-secondary btn-block" title="Reset Filters">Reset</button>
+            <div class="col-md-3 d-flex">
+                <button type="submit" class="btn btn-primary mt-4 w-50 me-2" title="Filter Interviews">
+                    Filter
+                </button>
+                <button type="button" id="resetButton" class="btn btn-secondary mt-4 w-50" title="Reset Filters">
+                    Reset
+                </button>
             </div>
         </div>
     </div>

@@ -1146,37 +1146,28 @@ public class NotificationsService : INotificationsService
         }
     }
 
-    public async Task MarkAllAsReadForRoleAsync(string roleName)
+    public async Task MarkAllAsReadForUserAsync(string userId)
     {
         try
         {
-            IdentityRole role = await _roleManager.FindByNameAsync(roleName);
+            List<Notifications> notifications = await _dbContext.Notifications
+                                                                .Where(n => n.ReceiverId == userId && !n.IsRead)
+                                                                .ToListAsync();
 
-            if (role != null)
+            if (notifications.Any())
             {
-                IList<IdentityUser> users = await _userManager.GetUsersInRoleAsync(role.Name);
-
-                if (users.Any())
+                foreach (Notifications notification in notifications)
                 {
-                    string userId = users.First().Id;
-
-                    List<Notifications> notifications = await _dbContext.Notifications
-                                                                        .Where(n => n.ReceiverId == userId && !n.IsRead)
-                                                                        .ToListAsync();
-
-                    foreach (Notifications notification in notifications)
-                    {
-                        notification.IsRead = true;
-                        await _notificationsRepository.Update(notification);
-                    }
-
-                    await _dbContext.SaveChangesAsync();
+                    notification.IsRead = true;
+                    await _notificationsRepository.Update(notification);
                 }
+
+                await _dbContext.SaveChangesAsync();
             }
         }
         catch (Exception ex)
         {
-            throw new ApplicationException($"Failed to mark all notifications as read for {roleName}", ex);
+            throw new ApplicationException($"Failed to mark all notifications as read for user {userId}", ex);
         }
     }
 
@@ -1211,7 +1202,7 @@ public class NotificationsService : INotificationsService
                 CreatedOn = DateTime.Now
             };
 
-            notification.Title = $"You have been assigned, along with the GM, to interview {candidateName} for the {positionName} position. Prepare to make a great impression! 💼🚀";
+            notification.Title = $"You have been assigned, along with the Genral Manager, to interview {candidateName} for the {positionName} position. Prepare to make a great impression! 💼🚀";
             notification.ReceiverId = archiId;
 
             await _notificationsRepository.Create(notification);
@@ -1252,7 +1243,7 @@ public class NotificationsService : INotificationsService
                 CreatedOn = DateTime.Now
             };
 
-            notification.Title = $"Your interview with the GM for {candidateName} regarding the {positionName} position has been removed. Thank you!";
+            notification.Title = $"Your interview with the Genral Manager for {candidateName} regarding the {positionName} position has been removed. Thank you!";
             notification.ReceiverId = archiId;
 
             await _notificationsRepository.Create(notification);

@@ -42,36 +42,32 @@
             <form asp-action="Edit" asp-route-id="@Model.Id" class="needs-validation" novalidate>
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-                <!-- Full Name -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                <div class="row">
+                    <!-- Full Name -->
+                    <div class="col-md-6 mb-3">
                         <label asp-for="FullName" class="form-label">
                             <span class="text-danger">*</span> Full Name
                         </label>
-                        <input asp-for="FullName" class="form-control" style="width: 50%;" />
+                        <input asp-for="FullName" class="form-control" />
                         <div class="invalid-feedback">Full Name is required.</div>
                         <span asp-validation-for="FullName" class="text-danger"></span>
                     </div>
-                </div>
 
-                <!-- Phone -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                    <!-- Phone -->
+                    <div class="col-md-6 mb-3">
                         <label asp-for="Phone" class="form-label">Phone</label>
-                        <input asp-for="Phone" class="form-control" style="width: 50%;" autocomplete="off" />
+                        <input asp-for="Phone" class="form-control" autocomplete="off" />
                         <span asp-validation-for="Phone" class="text-danger"></span>
                     </div>
-                </div>
 
-                <!-- CV Provider -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                    <!-- CV Provider -->
+                    <div class="col-md-6 mb-3">
                         <label asp-for="CompanyId" class="form-label">
                             <span class="text-danger">*</span> CV Provider Name
                         </label>
                         @if (ViewBag.CompaniesDTOs != null)
                         {
-                            <select asp-for="CompanyId" class="form-control" style="width: 50%;">
+                            <select asp-for="CompanyId" class="form-control">
                                 <option value="">-- Select the provider --</option>
                                 @foreach (var c in ViewBag.CompaniesDTOs)
                                 {
@@ -82,49 +78,43 @@
                         <div class="invalid-feedback">Please select a CV provider.</div>
                         <span asp-validation-for="CompanyId" class="text-danger"></span>
                     </div>
-                </div>
 
-                <!-- Position -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                    <!-- Position -->
+                    <div class="col-md-6 mb-3">
                         <label asp-for="PositionId" class="form-label">
                             <span class="text-danger">*</span> Level
                         </label>
                         @if (ViewBag.positions != null)
                         {
-                            <select asp-for="PositionId" asp-items="@(ViewBag.positions)" class="form-control" style="width: 50%;">
+                            <select asp-for="PositionId" asp-items="@(ViewBag.positions)" class="form-control">
                                 <option value="">-- Select a position --</option>
                             </select>
                         }
                         <div class="invalid-feedback">Please select a level.</div>
                         <span asp-validation-for="PositionId" class="text-danger"></span>
                     </div>
-                </div>
 
-                <!-- Track -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                    <!-- Track -->
+                    <div class="col-md-6 mb-3">
                         <label asp-for="TrackId" class="form-label">
                             <span class="text-danger">*</span> Track
                         </label>
                         @if (ViewBag.Tracks != null)
                         {
-                            <select asp-for="TrackId" asp-items="@(ViewBag.Tracks)" class="form-control" style="width: 50%;">
+                            <select asp-for="TrackId" asp-items="@(ViewBag.Tracks)" class="form-control">
                                 <option value="">-- Select a track --</option>
                             </select>
                         }
                         <div class="invalid-feedback">Please select a track.</div>
                         <span asp-validation-for="TrackId" class="text-danger"></span>
                     </div>
-                </div>
 
-                <!-- Experience -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                    <!-- Experience -->
+                    <div class="col-md-6 mb-3">
                         <label asp-for="Experience" class="form-label">
                             <span class="text-danger">*</span> Experience
                         </label>
-                        <input asp-for="Experience" class="form-control" style="width: 50%;" />
+                        <input asp-for="Experience" class="form-control" />
                         <div class="invalid-feedback">Experience is required.</div>
                         <span asp-validation-for="Experience" class="text-danger"></span>
                     </div>
@@ -138,8 +128,8 @@
 
             <!-- Upload CV Form (if needed) -->
             <form asp-action="UpdateAttachment" asp-route-id="@Model.Id" enctype="multipart/form-data" class="mt-5">
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
                         <label for="file" class="form-label">Upload CV</label>
                         <input type="file" id="file" name="file" class="form-control-file" onchange="validateFileFormat()" required />
                         <span id="fileError" class="text-danger"></span>
@@ -157,7 +147,6 @@
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-
 
 <script>
     $(document).ready(function () {
@@ -213,24 +202,6 @@
                 $('#Experience').removeClass('is-invalid').addClass('is-valid');
             }
 
-            // Validate file if selected
-            if (fileInput.files.length > 0) {
-                var allowedExtensions = [".pdf", ".docx", ".png", ".jpg"];
-                var fileName = fileInput.files[0].name;
-                var fileSize = fileInput.files[0].size;
-                var fileExtension = '.' + fileName.split('.').pop().toLowerCase();
-
-                if (!allowedExtensions.includes(fileExtension)) {
-                    $('#fileError').text('Invalid file format. Allowed formats: PDF, DOCX, PNG, JPG.');
-                    isValid = false;
-                } else if (fileSize > 9 * 1024 * 1024) {
-                    $('#fileError').text('File size exceeds 9 MB.');
-                    isValid = false;
-                } else {
-                    $('#fileError').text('');
-                }
-            }
-
             if (!isValid) {
                 e.preventDefault();
             }
@@ -243,11 +214,8 @@
 
         if (file) {
             const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-            if (!allowedExtensions.includes(fileExtension)) {
-                $('#fileError').text('Invalid file format. Allowed formats: PDF, DOCX, PNG, JPG.');
-                input.value = '';
-            } else if (file.size > 9 * 1024 * 1024) {
-                $('#fileError').text('File size exceeds 9 MB.');
+            if (!allowedExtensions.includes(fileExtension) || file.size > 9 * 1024 * 1024) {
+                $('#fileError').text('Invalid file format or size exceeds 9MB.');
                 input.value = '';
             } else {
                 $('#fileError').text('');
@@ -255,4 +223,3 @@
         }
     }
 </script>
-

@@ -46,9 +46,9 @@
                 <!-- Register ID -->
                 <input type="hidden" asp-for="RegisterrId" />
 
-                <!-- Email -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                <div class="row">
+                    <!-- Email -->
+                    <div class="col-md-6 mb-3">
                         <label asp-for="Email" class="form-label">
                             <span class="text-danger">*</span> Email
                         </label>
@@ -56,11 +56,9 @@
                         <div class="invalid-feedback">Please enter a valid email.</div>
                         <span asp-validation-for="Email" class="text-danger"></span>
                     </div>
-                </div>
 
-                <!-- Username -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                    <!-- Username -->
+                    <div class="col-md-6 mb-3">
                         <label asp-for="UserName" class="form-label">
                             <span class="text-danger">*</span> Username
                         </label>
@@ -68,11 +66,9 @@
                         <div class="invalid-feedback">Please enter a username.</div>
                         <span asp-validation-for="UserName" class="text-danger"></span>
                     </div>
-                </div>
 
-                <!-- Password -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                    <!-- Password -->
+                    <div class="col-md-6 mb-3">
                         <label asp-for="Password" class="form-label">
                             <span class="text-danger">*</span> Password
                         </label>
@@ -80,11 +76,9 @@
                         <div class="invalid-feedback">Please enter a password.</div>
                         <span asp-validation-for="Password" class="text-danger"></span>
                     </div>
-                </div>
 
-                <!-- Confirm Password -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                    <!-- Confirm Password -->
+                    <div class="col-md-6 mb-3">
                         <label asp-for="ConfirmPassword" class="form-label">
                             <span class="text-danger">*</span> Confirm Password
                         </label>
@@ -92,11 +86,9 @@
                         <div class="invalid-feedback">Passwords must match.</div>
                         <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
                     </div>
-                </div>
 
-                <!-- Role Selection -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                    <!-- Role Selection -->
+                    <div class="col-md-6 mb-3">
                         <label asp-for="SelectedRole" class="form-label">
                             <span class="text-danger">*</span> Role
                         </label>

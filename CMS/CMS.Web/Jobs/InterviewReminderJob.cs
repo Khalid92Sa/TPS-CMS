@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using CMS.Application.EmailTemplates;
 
 namespace CMS.Web.Jobs;
 
@@ -83,19 +84,13 @@ public class InterviewReminderJob : IInterviewReminderJob
                     string interviewerEmail = await _emailService.GetInterviewerEmail(interview.InterviewerId);
                     IdentityUser interviewer = await _userManager.FindByEmailAsync(interviewerEmail);
 
+                    string emailBody = ReminderInterviewEmailTemplate.GetReminderEmailTemplate(interviewer.UserName, interviewerEmail, interview);
+
                     EmailDTOs reminderEmail = new()
                     {
                         EmailTo = [interviewerEmail],
                         Subject = "Reminder: Interview Result Submission",
-                        EmailBody = $@"
-                <html>
-                <body>
-                    <p>Dear {interviewer.UserName.Replace("_", " ")},</p>
-                    <p>You conducted an interview for {interview.FullName} at {interview.Date}.</p>
-                    <p>Please submit the interview result <a href='https://apps.sssprocess.com:6134/interviews/{interview.InterviewsId}/addingresult'>here</a> as soon as possible.</p>
-                    <p>Best Regards,<br>CMS Team</p>
-                </body>
-                </html>"
+                        EmailBody = emailBody
                     };
 
                     await _emailService.SendEmailToInterviewer(interviewerEmail, interview, reminderEmail);

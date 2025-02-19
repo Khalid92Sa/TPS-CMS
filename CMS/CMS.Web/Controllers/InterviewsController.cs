@@ -1,4 +1,5 @@
 ﻿using CMS.Application.DTOs;
+using CMS.Application.EmailTemplates;
 using CMS.Application.Extensions;
 using CMS.Application.Helpers;
 using CMS.Repository.Interfaces;
@@ -470,96 +471,66 @@ public class InterviewsController : Controller
                 {
                     if (User.IsInRole("HR Manager") || User.IsInRole("Admin"))
                     {
-                        string selectedInterviewerId = collection.InterviewerId;
                         InterviewsDTO insertedInterview = result.Value;
                         collection.InterviewsId = insertedInterview.InterviewsId;
 
-                        HttpContext.Session.SetString($"SecondInterviewerId_{collection.InterviewsId}", collection.SecondInterviewerId ?? "");
-                        HttpContext.Session.SetString($"InterviewerId_{collection.InterviewsId}", collection.InterviewerId ?? "");
+                        CandidateDTO candidate = await _candidateService.GetCandidateByIdAsync(collection.CandidateId);
+                        Result<PositionDTO> positionResult = await _positionService.GetById(collection.PositionId);
 
-                        CandidateDTO candidateName = await _candidateService.GetCandidateByIdAsync(collection.CandidateId);
-                        string candidateNameresult = candidateName.FullName;
-
-                        Result<PositionDTO> positionName = await _positionService.GetById(collection.PositionId);
-                        PositionDTO positionNameresult = positionName.Value;
-                        string lastPositionName = positionNameresult.Name;
-                        string userName = _emailService.GetLoggedInUserName();
-                        string userSecondInterviewer = null;
-
+                        string candidateName = candidate.FullName;
+                        string positionName = positionResult.Value.Name;
+                        string firstInterviewerEmail = await _emailService.GetInterviewerEmail(collection.InterviewerId);
                         string secondInterviewerEmail = await _emailService.GetInterviewerEmail(collection.SecondInterviewerId);
+                        IdentityUser firstInterviewer = await _userManager.FindByEmailAsync(firstInterviewerEmail);
+                        IdentityUser secondInterviewer = !string.IsNullOrEmpty(secondInterviewerEmail)
+                            ? await _userManager.FindByEmailAsync(secondInterviewerEmail)
+                            : null;
 
-                        if (secondInterviewerEmail != null)
-                        {
-                            IdentityUser userSecondInterviewerObj = await _userManager.FindByEmailAsync(secondInterviewerEmail);
-                            userSecondInterviewer = userSecondInterviewerObj.UserName;
-                        }
-
-                        string formattedDate = collection.Date.ToString("dd/MM/yyyy hh:mm tt");
-
-                        string interviewerEmail = await _emailService.GetInterviewerEmail(collection.InterviewerId);
-                        IdentityUser userInterviewer = await _userManager.FindByEmailAsync(interviewerEmail);
+                        // Generate email content for the first interviewer
+                        string firstInterviewerEmailBody = InterviewInvitationEmailTemplate.GetInvitationEmailTemplate(
+                            firstInterviewer.UserName,
+                            secondInterviewer?.UserName,
+                            candidateName,
+                            positionName,
+                            collection.Date,
+                            collection.InterviewsId
+                        );
 
                         EmailDTOs emailModel = new()
                         {
-                            EmailTo = [interviewerEmail],
-                            Subject = $"Interview Invitation ( {candidateNameresult} )",
-                            EmailBody = $@"<html>
-                            <body style='font-family: Arial, sans-serif;'>
-                                <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                    <p style='font-size: 18px; color: #333;'>
-                                        Dear {userInterviewer.UserName.Replace("_", " ")},
-                                    </p>
-                                    <p style='font-size: 16px; color: #555;'>
-                                {(collection.SecondInterviewerId != null ? $"You and {userSecondInterviewer} are" : "You are")} assigned to have a first interview for {candidateNameresult} scheduled on {formattedDate} for the {lastPositionName} position,<br><br>kindly <a href='https://apps.sssprocess.com:6134/interviews/{collection.InterviewsId}/addingresult'>Click here</a> to see the invitation details.
-                                    </p>
-                                    <p style='font-size: 14px; color: #777;'>
-                                        Regards,
-                                    </p>
-
-                                    <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                </div>
-                            </body>
-                        </html>"
+                            EmailTo = [firstInterviewerEmail],
+                            Subject = $"Interview Invitation ({candidateName})",
+                            EmailBody = firstInterviewerEmailBody
                         };
 
+                        await _emailService.SendEmailToInterviewer(firstInterviewerEmail, collection, emailModel);
                         await _notificationsService.CreateInterviewNotificationForInterviewerAsync(collection.Date, collection.CandidateId, collection.PositionId, new List<string> { collection.InterviewerId, collection.SecondInterviewerId }, isCanceled: false);
 
-                        if (collection.SecondInterviewerId != null)
+                        // If there's a second interviewer, send them an email too
+                        if (!string.IsNullOrEmpty(collection.SecondInterviewerId))
                         {
-                            EmailDTOs emailModel2 = new EmailDTOs
+                            string secondInterviewerEmailBody = InterviewInvitationEmailTemplate.GetInvitationEmailTemplate(
+                                secondInterviewer.UserName,
+                                firstInterviewer.UserName,
+                                candidateName,
+                                positionName,
+                                collection.Date,
+                                collection.InterviewsId
+                            );
+
+                            EmailDTOs emailModel2 = new()
                             {
                                 EmailTo = [secondInterviewerEmail],
-                                Subject = $"Interview Invitation ( {candidateNameresult} )",
-                                EmailBody = $@"<html>
-                                <body style='font-family: Arial, sans-serif;'>
-                                    <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                        <p style='font-size: 18px; color: #333;'>
-                                            Dear {userSecondInterviewer.Replace("_", " ")},
-                                        </p>
-                                        <p style='font-size: 16px; color: #555;'>
-                                            You and {userInterviewer} are assigned to have a first interview with {candidateNameresult} for the {lastPositionName} position scheduled on {collection.Date},<br><br>kindly <a href='https://apps.sssprocess.com:6134/interviews/{collection.InterviewsId}/addingresult'>Click here</a> to see the invitation details.
-                                        </p>
-                                        <p style='font-size: 14px; color: #777;'>
-                                            Regards,
-                                        </p>
-
-                                        <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                    </div>
-                                </body>
-                            </html>"
+                                Subject = $"Interview Invitation ({candidateName})",
+                                EmailBody = secondInterviewerEmailBody
                             };
 
-                            // Send emails to both first and second interviewers
                             await _emailService.SendEmailToInterviewer(secondInterviewerEmail, collection, emailModel2);
-                            await _emailService.SendEmailToInterviewer(interviewerEmail, collection, emailModel);
                         }
-                        else
-                            await _emailService.SendEmailToInterviewer(interviewerEmail, collection, emailModel);
 
                         return RedirectToAction(nameof(Index));
                     }
-                    else
-                        return RedirectToAction(nameof(Index));
+                    return RedirectToAction(nameof(Index));
                 }
 
                 ModelState.AddModelError("", result.Error);
@@ -574,6 +545,7 @@ public class InterviewsController : Controller
             throw;
         }
     }
+
 
     [Route("{id}/update")]
     public async Task<ActionResult> Edit(int id)
@@ -663,114 +635,71 @@ public class InterviewsController : Controller
 
                 Result<InterviewsDTO> result = await _interviewsService.Update(collection);
 
-                HttpContext.Session.SetString($"SecondInterviewerId_{collection.InterviewsId}", collection.SecondInterviewerId ?? "");
-                HttpContext.Session.SetString($"InterviewerId_{collection.InterviewsId}", collection.InterviewerId ?? "");
-
                 if (result.IsSuccess)
                 {
-                    if (User.IsInRole("HR Manager") || User.IsInRole("Admin"))
+                    CandidateDTO candidate = await _candidateService.GetCandidateByIdAsync(collection.CandidateId);
+                    Result<PositionDTO> positionResult = await _positionService.GetById(collection.PositionId);
+
+                    string candidateName = candidate.FullName;
+                    string positionName = positionResult.Value.Name;
+                    string firstInterviewerEmail = await _emailService.GetInterviewerEmail(collection.InterviewerId);
+                    string secondInterviewerEmail = await _emailService.GetInterviewerEmail(collection.SecondInterviewerId);
+                    IdentityUser firstInterviewer = await _userManager.FindByEmailAsync(firstInterviewerEmail);
+                    IdentityUser secondInterviewer = !string.IsNullOrEmpty(secondInterviewerEmail)
+                        ? await _userManager.FindByEmailAsync(secondInterviewerEmail)
+                        : null;
+
+                    // Generate email content for the first interviewer
+                    string firstInterviewerEmailBody = InterviewInvitationEmailTemplate.UpdatedInvitationEmail(
+                        firstInterviewer.UserName,
+                        secondInterviewer?.UserName,
+                        candidateName,
+                        positionName,
+                        collection.Date,
+                        collection.InterviewsId.ToString()
+                    );
+
+                    EmailDTOs emailModel = new()
                     {
-                        string selectedInterviewerId = collection.InterviewerId;
-                        InterviewsDTO insertedInterview = result.Value;
-                        collection.InterviewsId = insertedInterview.InterviewsId;
+                        EmailTo = [firstInterviewerEmail],
+                        Subject = $"Updated Interview Invitation ({candidateName})",
+                        EmailBody = firstInterviewerEmailBody
+                    };
 
-                        HttpContext.Session.SetString($"SecondInterviewerId_{collection.InterviewsId}", collection.SecondInterviewerId ?? "");
-                        HttpContext.Session.SetString($"InterviewerId_{collection.InterviewsId}", collection.InterviewerId ?? "");
+                    await _emailService.SendEmailToInterviewer(firstInterviewerEmail, collection, emailModel);
+                    await _notificationsService.CreateInterviewNotificationForInterviewerAsync(collection.Date, collection.CandidateId, collection.PositionId, new List<string> { collection.InterviewerId, collection.SecondInterviewerId }, isCanceled: false);
 
-                        CandidateDTO candidateName = await _candidateService.GetCandidateByIdAsync(collection.CandidateId);
-                        string candidateNameresult = candidateName.FullName;
+                    // If there's a second interviewer, send them an email too
+                    if (!string.IsNullOrEmpty(collection.SecondInterviewerId))
+                    {
+                        string secondInterviewerEmailBody = InterviewInvitationEmailTemplate.UpdatedInvitationEmail(
+                            secondInterviewer.UserName,
+                            firstInterviewer.UserName,
+                            candidateName,
+                            positionName,
+                            collection.Date,
+                            collection.InterviewsId.ToString()
+                        );
 
-                        Result<PositionDTO> positionName = await _positionService.GetById(collection.PositionId);
-                        PositionDTO positionNameresult = positionName.Value;
-                        string lastPositionName = positionNameresult.Name;
-                        string userName = _emailService.GetLoggedInUserName();
-                        string userSecondInterviewer = null;
-                        string secondInterviewerEmail = await _emailService.GetInterviewerEmail(collection.SecondInterviewerId);
-
-                        if (secondInterviewerEmail != null)
+                        EmailDTOs emailModel2 = new()
                         {
-                            IdentityUser userSecondInterviewerObj = await _userManager.FindByEmailAsync(secondInterviewerEmail);
-                            userSecondInterviewer = userSecondInterviewerObj.UserName;
-                        }
-
-                        string formattedDate = collection.Date.ToString("dd/MM/yyyy hh:mm tt");
-
-                        // Prepare the email model for the first interviewer
-                        string interviewerEmail = await _emailService.GetInterviewerEmail(collection.InterviewerId);
-                        IdentityUser userInterviewer = await _userManager.FindByEmailAsync(interviewerEmail);
-
-                        EmailDTOs emailModel = new EmailDTOs
-                        {
-                            EmailTo = [interviewerEmail],
-                            Subject = $"Interview Invitation ( {candidateNameresult} )",
-                            EmailBody = $@"<html>
-                            <body style='font-family: Arial, sans-serif;'>
-                                <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                    <p style='font-size: 18px; color: #333;'>
-                                        Dear {userInterviewer.UserName.Replace("_", " ")},
-                                    </p>
-                                    <p style='font-size: 16px; color: #555;'>
-                                {(collection.SecondInterviewerId != null ? $"You and {userSecondInterviewer} are" : "You are")} assigned to have a first interview for {candidateNameresult} scheduled on {formattedDate} for the {lastPositionName} position,<br><br>kindly <a href='https://apps.sssprocess.com:6134/'>Click here</a> to see the invitation details.
-                                    </p>
-                                    <p style='font-size: 14px; color: #777;'>
-                                        Regards,
-                                    </p>
-
-                                        <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                </div>
-                            </body>
-                        </html>"
+                            EmailTo = [secondInterviewerEmail],
+                            Subject = $"Updated Interview Invitation ({candidateName})",
+                            EmailBody = secondInterviewerEmailBody
                         };
 
-
-                        await _notificationsService.CreateInterviewNotificationForInterviewerAsync(collection.Date, collection.CandidateId, collection.PositionId, new List<string> { collection.InterviewerId, collection.SecondInterviewerId }, isCanceled: false);
-
-                        // Prepare the email model for the second interviewer if selected
-                        if (collection.SecondInterviewerId != null)
-                        {
-                            EmailDTOs emailModel2 = new()
-                            {
-                                EmailTo = [secondInterviewerEmail],
-                                Subject = $"Interview Invitation ( {candidateNameresult} )",
-                                EmailBody = $@"<html>
-                                <body style='font-family: Arial, sans-serif;'>
-                                    <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                        <p style='font-size: 18px; color: #333;'>
-                                            Dear {userSecondInterviewer.Replace("_", " ")},
-                                        </p>
-                                        <p style='font-size: 16px; color: #555;'>
-                                            You and {userInterviewer} are assigned to have a first interview with {candidateNameresult} for the {lastPositionName} position scheduled on {collection.Date} ,<br><br>kindly <a href='https://apps.sssprocess.com:6134/'>Click here</a> to see the invitation details.
-                                        </p>
-                                        <p style='font-size: 14px; color: #777;'>
-                                            Regards,
-                                        </p>
-
-                                       <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                    </div>
-                                </body>
-                            </html>"
-                            };
-
-                            // Send emails to both first and second interviewers
-                            await _emailService.SendEmailToInterviewer(secondInterviewerEmail, collection, emailModel2);
-                            await _emailService.SendEmailToInterviewer(interviewerEmail, collection, emailModel);
-                        }
-                        else
-                            await _emailService.SendEmailToInterviewer(interviewerEmail, collection, emailModel);
-
-                        return RedirectToAction(nameof(Index));
+                        await _emailService.SendEmailToInterviewer(secondInterviewerEmail, collection, emailModel2);
                     }
-                    else
-                    {
-                        return RedirectToAction(nameof(Index));
-                    }
+
+                    return RedirectToAction(nameof(Index));
                 }
 
                 ModelState.AddModelError("", result.Error);
-                return View(collection);
             }
             else
-                ModelState.AddModelError("", $"");
+            {
+                ModelState.AddModelError("", "Error validating the model");
+            }
 
             return View(collection);
         }
@@ -779,6 +708,7 @@ public class InterviewsController : Controller
             throw;
         }
     }
+
 
     [Route("{id}/delete")]
     public async Task<ActionResult> Delete(int id)
@@ -1151,6 +1081,48 @@ public class InterviewsController : Controller
                         AttachmentHelper.removeFile(file.FileName, _attachmentStoragePath);
                     }
 
+                    string userName = _emailService.GetLoggedInUserName();
+                    string GMEmail = await _emailService.GetGMEmail();
+                    string HREmail = await _emailService.GetHREmail();
+                    string ArchiEmail = await _emailService.GetArchiEmail();
+
+                    IdentityUser userGM = await _userManager.FindByEmailAsync(GMEmail);
+                    IdentityUser userHR = await _userManager.FindByEmailAsync(HREmail);
+                    IdentityUser userArchi = await _userManager.FindByEmailAsync(ArchiEmail);
+
+                    string hrApprovalEmailBody = HRInvitationEmailTemplate.GetHRApprovalEmail(
+                                                                                                 "Sajeda",
+                                                                                                 candidateNameresult,
+                                                                                                 userName
+                                                                                             );
+                    string hrRejectionEmailBody = HRInvitationEmailTemplate.GetHRRejectionEmail(
+                                                                                                   "Sajeda",
+                                                                                                   candidateNameresult,
+                                                                                                   userName,
+                                                                                                   "CMS"
+                                                                                               );
+
+                    string hrInvitationEmailBody = HRInvitationEmailTemplate.GetFinalHRInterviewEmail(
+                                                                                                        "Sajeda",
+                                                                                                        candidateNameresult,
+                                                                                                        lastPositionName,
+                                                                                                        "https://apps.sssprocess.com:6134/"
+                                                                                                     );
+
+                    string gmInvitationEmailBody = GMInterviewInvitationEmailTemplate.GetGMInvitationEmail(
+                                                                                                            userGM.UserName,
+                                                                                                            candidateNameresult,
+                                                                                                            lastPositionName,
+                                                                                                            "https://apps.sssprocess.com:6134/"
+                                                                                                          );
+
+                    string architectureEmailBody = ArchitectureInterviewEmailTemplate.GetArchiAndGmInvitationEmail(
+                                                                                                                      userArchi.UserName,
+                                                                                                                      candidateNameresult,
+                                                                                                                      lastPositionName,
+                                                                                                                      "https://apps.sssprocess.com:6134/"
+                                                                                                                  );
+
                     if (User.IsInRole("Interviewer"))
                     {
 
@@ -1161,18 +1133,13 @@ public class InterviewsController : Controller
                         {
                             if (status.Code == Domain.Enums.StatusCode.Approved)
                             {
-                                string userName = _emailService.GetLoggedInUserName();
-                                string GMEmail = await _emailService.GetGMEmail();
-                                string HREmail = await _emailService.GetHREmail();
-                                string ArchiEmail = await _emailService.GetArchiEmail();
-
-                                IdentityUser userGM = await _userManager.FindByEmailAsync(GMEmail);
-                                IdentityUser userHR = await _userManager.FindByEmailAsync(HREmail);
+                                
 
                                 IdentityUser firstinterviewer = await _userManager.FindByIdAsync(interviewsDTO.InterviewerId);
 
                                 string secondInterviewerId = HttpContext.Session.GetString($"SecondInterviewerId_{interviewsDTO.InterviewsId}");
                                 IdentityUser secondInterviewer = await _userManager.FindByIdAsync(secondInterviewerId);
+                                
 
                                 if (secondInterviewer != null)
                                 {
@@ -1182,50 +1149,19 @@ public class InterviewsController : Controller
                                     if (isInterviewerGMCombo || isGMInterviewerCombo)
                                     {
                                         await _notificationsService.CreateInterviewNotificationForFinalHRInterview(interviewsDTO.StatusId.Value, interviewsDTO.Notes, interviewsDTO.CandidateId, interviewsDTO.PositionId);
-                                        EmailDTOs emailModels = new EmailDTOs
+
+                                        EmailDTOs emailModels = new()
                                         {
                                             EmailTo = [HREmail],
-                                            Subject = $"Interview Invitation ( {candidateNameresult} )",
-                                            EmailBody = $@"<html>
-                                       <body style='font-family: Arial, sans-serif;'>
-                                           <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                               <p style='font-size: 18px; color: #333;'>
-                                                   Dear Sajeda,
-                                               </p>
-                                               <p style='font-size: 16px; color: #555;'>
-                                               You are assigned to have a Final interview for {candidateNameresult} with {lastPositionName} position,<br><br>kindly <a href='https://apps.sssprocess.com:6134/'>Click here</a> to see the invitation details.
-                                               </p>
-                                               <p style='font-size: 14px; color: #777;'>
-                                                   Regards,
-                                               </p>
-
-                                       <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                           </div>
-                                       </body>
-                                    </html>"
+                                            Subject = $"Interview Invitation ({candidateNameresult})",
+                                            EmailBody = hrInvitationEmailBody
                                         };
 
-                                        EmailDTOs emailModelToHR = new EmailDTOs
+                                        EmailDTOs emailModelToHR = new()
                                         {
                                             EmailTo = [HREmail],
                                             Subject = $"Interview Approval ({candidateNameresult})",
-                                            EmailBody = $@"<html>
-                                       <body style='font-family: Arial, sans-serif;'>
-                                           <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                               <p style='font-size: 18px; color: #333;'>
-                                                   Dear Sajeda,
-                                               </p>
-                                               <p style='font-size: 16px; color: #555;'>
-                                                    The first interview with {candidateNameresult} Approved by {userName}
-                                               </p>
-                                               <p style='font-size: 14px; color: #777;'>
-                                                   Regards,
-                                               </p>
-
-                                      <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                           </div>
-                                       </body>
-                                    </html>"
+                                            EmailBody = hrApprovalEmailBody
                                         };
 
                                         if (!string.IsNullOrEmpty(HREmail))
@@ -1246,78 +1182,25 @@ public class InterviewsController : Controller
                                         {
                                             EmailTo = [GMEmail],
                                             Subject = $"Interview Invitation ( {candidateNameresult} )",
-                                            EmailBody = $@"<html>
-                                       <body style='font-family: Arial, sans-serif;'>
-                                           <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                               <p style='font-size: 18px; color: #333;'>
-                                                   Dear {userGM.UserName.Replace("_", " ")},
-                                               </p>
-                                               <p style='font-size: 16px; color: #555;'>
-                                               You are assigned to have a second interview for {candidateNameresult} with {lastPositionName} position,<br><br>kindly <a href='https://apps.sssprocess.com:6134/'>Click here</a> to see the invitation details.
-                                               </p>
-                                               <p style='font-size: 14px; color: #777;'>
-                                                   Regards,
-                                               </p>
-
-                                       <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                           </div>
-                                       </body>
-                                    </html>"
+                                            EmailBody = gmInvitationEmailBody
                                         };
-
 
                                         EmailDTOs emailModelToHR = new EmailDTOs
                                         {
                                             EmailTo = [HREmail],
                                             Subject = $"Interview Approval ({candidateNameresult})",
-                                            EmailBody = $@"<html>
-                                       <body style='font-family: Arial, sans-serif;'>
-                                           <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                               <p style='font-size: 18px; color: #333;'>
-                                                   Dear Sajeda,
-                                               </p>
-                                               <p style='font-size: 16px; color: #555;'>
-                                                    The first interview with {candidateNameresult} Approved by {userName}
-                                               </p>
-                                               <p style='font-size: 14px; color: #777;'>
-                                                   Regards,
-                                               </p>
-
-                                      <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                           </div>
-                                       </body>
-                                    </html>"
+                                            EmailBody = hrApprovalEmailBody
                                         };
-
-
 
                                         if (aechituciterId != null)
                                         {
-                                            IdentityUser userArchi = await _userManager.FindByEmailAsync(ArchiEmail);
                                             await _notificationsService.CreateNotificationForArchiAsync(interviewsDTO.StatusId.Value, interviewsDTO.Notes, interviewsDTO.CandidateId, interviewsDTO.PositionId);
 
-                                            EmailDTOs architectureEmailModel = new EmailDTOs
+                                            EmailDTOs architectureEmailModel = new()
                                             {
                                                 EmailTo = [ArchiEmail],
                                                 Subject = $"Interview Invitation ( {candidateNameresult} )",
-                                                EmailBody = $@"<html>
-                                           <body style='font-family: Arial, sans-serif;'>
-                                               <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                                   <p style='font-size: 18px; color: #333;'>
-                                                       Dear {userArchi.UserName.Replace("_", " ")},
-                                                   </p>
-                                                   <p style='font-size: 16px; color: #555;'>
-                                                       An interview has been scheduled with Saeed, and you are assigned as the Architecture Interviewer for the {candidateNameresult} with position: {lastPositionName},<br><br>kindly <a href='https://apps.sssprocess.com:6134/'>Click here</a> to see the invitation details.
-                                                   </p>
-                                                   <p style='font-size: 14px; color: #777;'>
-                                                       Regards,
-                                                   </p>
-
-                                       <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                               </div>
-                                           </body>
-                                        </html>"
-
+                                                EmailBody = architectureEmailBody
                                             };
                                             if (!string.IsNullOrEmpty(ArchiEmail))
                                                 //Send an Email to the Archi if it was selceted
@@ -1339,81 +1222,31 @@ public class InterviewsController : Controller
                                     await _notificationsService.CreateNotificationForGeneralManagerAsync(interviewsDTO.StatusId.Value, interviewsDTO.Notes, interviewsDTO.CandidateId, interviewsDTO.PositionId, aechituciterId);
 
                                     //from interviewer to GM
-                                    EmailDTOs emailModel = new EmailDTOs
+                                    EmailDTOs emailModel = new()
                                     {
                                         EmailTo = [GMEmail],
                                         Subject = $"Interview Invitation ( {candidateNameresult} )",
-                                        EmailBody = $@"<html>
-                                       <body style='font-family: Arial, sans-serif;'>
-                                           <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                               <p style='font-size: 18px; color: #333;'>
-                                                   Dear {userGM.UserName.Replace("_", " ")},
-                                               </p>
-                                               <p style='font-size: 16px; color: #555;'>
-                                               You are assigned to have a second interview for {candidateNameresult} with {lastPositionName} position,<br><br>kindly <a href='https://apps.sssprocess.com:6134/'>Click here</a> to see the invitation details.
-                                               </p>
-                                               <p style='font-size: 14px; color: #777;'>
-                                                   Regards,
-                                               </p>
-
-                                       <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                           </div>
-                                       </body>
-                                    </html>"
+                                        EmailBody = gmInvitationEmailBody
                                     };
 
 
-                                    EmailDTOs emailModelToHR = new EmailDTOs
+                                    EmailDTOs emailModelToHR = new()
                                     {
                                         EmailTo = [HREmail],
                                         Subject = $"Interview Approval ( {candidateNameresult} )",
-                                        EmailBody = $@"<html>
-                                       <body style='font-family: Arial, sans-serif;'>
-                                           <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                               <p style='font-size: 18px; color: #333;'>
-                                                   Dear Sajeda,
-                                               </p>
-                                               <p style='font-size: 16px; color: #555;'>
-                                                    The first interview with {candidateNameresult} Approved by {userName}
-                                               </p>
-                                               <p style='font-size: 14px; color: #777;'>
-                                                   Regards,
-                                               </p>
-
-                                      <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                           </div>
-                                       </body>
-                                    </html>"
+                                        EmailBody = hrApprovalEmailBody
                                     };
 
 
                                     if ((aechituciterId != null) && status.Code == Domain.Enums.StatusCode.Approved)
                                     {
-                                        IdentityUser userArchi = await _userManager.FindByEmailAsync(ArchiEmail);
                                         await _notificationsService.CreateNotificationForArchiAsync(interviewsDTO.StatusId.Value, interviewsDTO.Notes, interviewsDTO.CandidateId, interviewsDTO.PositionId);
 
                                         EmailDTOs architectureEmailModel = new EmailDTOs
                                         {
                                             EmailTo = [ArchiEmail],
                                             Subject = $"Interview Invitation ( {candidateNameresult} )",
-                                            EmailBody = $@"<html>
-                                           <body style='font-family: Arial, sans-serif;'>
-                                               <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                                   <p style='font-size: 18px; color: #333;'>
-                                                       Dear {userArchi.UserName.Replace("_", " ")},
-                                                   </p>
-                                                   <p style='font-size: 16px; color: #555;'>
-                                                       An interview has been scheduled with Saeed, and you are assigned as the Architecture Interviewer for the {candidateNameresult} with position: {lastPositionName},<br><br>kindly <a href='https://apps.sssprocess.com:6134/'>Click here</a> to see the invitation details.
-                                                   </p>
-                                                   <p style='font-size: 14px; color: #777;'>
-                                                       Regards,
-                                                   </p>
-
-                                       <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                               </div>
-                                           </body>
-                                        </html>"
-
+                                            EmailBody = architectureEmailBody
                                         };
                                         if (!string.IsNullOrEmpty(ArchiEmail))
                                             //Send an Email to the Archi if it was selceted
@@ -1434,33 +1267,13 @@ public class InterviewsController : Controller
                             else if (status.Code == Domain.Enums.StatusCode.Rejected)
                             {
                                 await _notificationsService.CreateNotificationForGeneralManagerAsync(interviewsDTO.StatusId.Value, interviewsDTO.Notes, interviewsDTO.CandidateId, interviewsDTO.PositionId, interviewsDTO.ArchitectureInterviewerId);
-                                string userName = _emailService.GetLoggedInUserName();
-                                string HREmail = await _emailService.GetHREmail();
-
-                                EmailDTOs emailModel = new EmailDTOs
+                                
+                                EmailDTOs emailModel = new()
                                 {
                                     EmailTo = [HREmail],
                                     Subject = $"Interview Rejection ({candidateNameresult})",
-                                    EmailBody = $@"<html>
-                                       <body style='font-family: Arial, sans-serif;'>
-                                           <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                               <p style='font-size: 18px; color: #333;'>
-                                                   Dear Sajeda,
-                                               </p>
-                                               <p style='font-size: 16px; color: #555;'>
-                                                    The first interview with {candidateNameresult} Rejected by {userName}
-                                               </p>
-                                               <p style='font-size: 14px; color: #777;'>
-                                                   Regards,
-                                               </p>
-
-                                      <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                           </div>
-                                       </body>
-                                    </html>"
-
+                                    EmailBody = hrRejectionEmailBody
                                 };
-
 
                                 if (!string.IsNullOrEmpty(HREmail))
                                     await _emailService.SendEmailToInterviewer(HREmail, interviewsDTO, emailModel);
@@ -1485,54 +1298,18 @@ public class InterviewsController : Controller
 
                             if (status.Code == Domain.Enums.StatusCode.Approved)
                             {
-                                string userName = _emailService.GetLoggedInUserName();
-                                string HREmail = await _emailService.GetHREmail();
-                                IdentityUser userHR = await _userManager.FindByEmailAsync(HREmail);
-                                EmailDTOs emailModel = new EmailDTOs
+                                EmailDTOs emailModel = new()
                                 {
                                     EmailTo = [HREmail],
                                     Subject = $"Interview Invitation ( {candidateNameresult} )",
-                                    EmailBody = $@"<html>
-                                           <body style='font-family: Arial, sans-serif;'>
-                                               <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                                   <p style='font-size: 18px; color: #333;'>
-                                                       Dear Sajeda,
-                                                   </p>
-                                                   <p style='font-size: 16px; color: #555;'>
-                                                       You are assigned to have a third interview for candidate: {candidateNameresult} with position: {lastPositionName},<br><br>kindly <a href='https://apps.sssprocess.com:6134/'>Click here</a> to see the invitation details.
-                                                   </p>
-                                                   <p style='font-size: 14px; color: #777;'>
-                                                       Regards,
-                                                   </p>
-
-                                       <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                               </div>
-                                           </body>
-                                        </html>"
+                                    EmailBody = hrInvitationEmailBody
                                 };
 
-                                EmailDTOs emailModelApproval = new EmailDTOs
+                                EmailDTOs emailModelApproval = new()
                                 {
                                     EmailTo = [HREmail],
                                     Subject = $"Interview Approval ({candidateNameresult})",
-                                    EmailBody = $@"<html>
-                                       <body style='font-family: Arial, sans-serif;'>
-                                           <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                               <p style='font-size: 18px; color: #333;'>
-                                                   Dear Sajeda,
-                                               </p>
-                                               <p style='font-size: 16px; color: #555;'>
-                                                    The Second interview with {candidateNameresult} Approved by {userName}
-                                               </p>
-                                               <p style='font-size: 14px; color: #777;'>
-                                                   Regards,
-                                               </p>
-
-                                      <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                           </div>
-                                       </body>
-                                    </html>"
-
+                                    EmailBody = hrApprovalEmailBody
                                 };
 
                                 if (!string.IsNullOrEmpty(HREmail))
@@ -1546,30 +1323,11 @@ public class InterviewsController : Controller
 
                             else if (status.Code == Domain.Enums.StatusCode.Rejected)
                             {
-                                string userName = _emailService.GetLoggedInUserName();
-                                string HREmail = await _emailService.GetHREmail();
-
-                                EmailDTOs emailModel = new EmailDTOs
+                                EmailDTOs emailModel = new()
                                 {
                                     EmailTo = [HREmail],
                                     Subject = $"Interview Rejection ({candidateNameresult})",
-                                    EmailBody = $@"<html>
-                                       <body style='font-family: Arial, sans-serif;'>
-                                           <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                               <p style='font-size: 18px; color: #333;'>
-                                                   Dear Sajeda,
-                                               </p>
-                                               <p style='font-size: 16px; color: #555;'>
-                                                    The Second interview with {candidateNameresult} Rejected by {userName}
-                                               </p>
-                                               <p style='font-size: 14px; color: #777;'>
-                                                   Regards,
-                                               </p>
-
-                                      <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                           </div>
-                                       </body>
-                                    </html>"
+                                    EmailBody = hrRejectionEmailBody
                                 };
 
                                 if (!string.IsNullOrEmpty(HREmail))
@@ -1597,12 +1355,6 @@ public class InterviewsController : Controller
 
                             if (status.Code == Domain.Enums.StatusCode.Approved)
                             {
-                                string userName = _emailService.GetLoggedInUserName();
-                                string HREmail = await _emailService.GetHREmail();
-                                string GMEmail = await _emailService.GetGMEmail();
-                                IdentityUser userHR = await _userManager.FindByEmailAsync(HREmail);
-                                IdentityUser userGM = await _userManager.FindByEmailAsync(GMEmail);
-
                                 if (secondInterviewer != null)
                                 {
 
@@ -1614,50 +1366,20 @@ public class InterviewsController : Controller
 
                                         await _notificationsService.CreateNotificationForGeneralManagerAsync(interviewsDTO.StatusId.Value, interviewsDTO.Notes, interviewsDTO.CandidateId, interviewsDTO.PositionId, interviewsDTO.ArchitectureInterviewerId);
 
-                                        EmailDTOs emailModels = new EmailDTOs
+                                        EmailDTOs emailModels = new()
                                         {
                                             EmailTo = [GMEmail],
                                             Subject = $"Interview Invitation ( {candidateNameresult} )",
-                                            EmailBody = $@"<html>
-                                           <body style='font-family: Arial, sans-serif;'>
-                                               <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                                   <p style='font-size: 18px; color: #333;'>
-                                                       Dear {userGM.UserName.Replace("_", " ")},
-                                                   </p>
-                                                   <p style='font-size: 16px; color: #555;'>
-                                                       You are assigned to have a Second interview for candidate : {candidateNameresult} with position: {lastPositionName},<br><br>kindly <a href='https://apps.sssprocess.com:6134/'>Click here</a> to see the invitation details.
-                                                   </p>
-                                                   <p style='font-size: 14px; color: #777;'>
-                                                       Regards,
-                                                   </p>
-
-                                       <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                               </div>
-                                           </body>
-                                        </html>"
+                                            EmailBody = gmInvitationEmailBody
                                         };
-                                        EmailDTOs emailModelApproval = new EmailDTOs
+
+                                        EmailDTOs emailModelApproval = new()
                                         {
                                             EmailTo = [HREmail],
                                             Subject = $"Interview Approval ({candidateNameresult})",
-                                            EmailBody = $@"<html>
-                                       <body style='font-family: Arial, sans-serif;'>
-                                           <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                               <p style='font-size: 18px; color: #333;'>
-                                                   Dear Sajeda,
-                                               </p>
-                                               <p style='font-size: 16px; color: #555;'>
-                                                    The First interview with {candidateNameresult} Approved by {userName}
-                                               </p>
-                                               <p style='font-size: 14px; color: #777;'>
-                                                   Regards,
-                                               </p>
-
-                                      <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                           </div>
-                                       </body>
-                                    </html>"
+                                            EmailBody = hrApprovalEmailBody
                                         };
+
                                         if (!string.IsNullOrEmpty(GMEmail))
                                             await _emailService.SendEmailToInterviewer(GMEmail, interviewsDTO, emailModels);
 
@@ -1674,50 +1396,18 @@ public class InterviewsController : Controller
                                         await _notificationsService.CreateInterviewNotificationForHRInterview(interviewsDTO.StatusId.Value, interviewsDTO.Notes, interviewsDTO.CandidateId, interviewsDTO.PositionId);
 
                                         //from Archi to HR
-                                        EmailDTOs emailModel = new EmailDTOs
+                                        EmailDTOs emailModel = new()
                                         {
                                             EmailTo = [HREmail],
                                             Subject = $"Interview Invitation ( {candidateNameresult} )",
-                                            EmailBody = $@"<html>
-                                           <body style='font-family: Arial, sans-serif;'>
-                                               <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                                   <p style='font-size: 18px; color: #333;'>
-                                                       Dear Sajeda,
-                                                   </p>
-                                                   <p style='font-size: 16px; color: #555;'>
-                                                       You are assigned to have a Final interview for candidate : {candidateNameresult} with position: {lastPositionName},<br><br>kindly <a href='https://apps.sssprocess.com:6134/'>Click here</a> to see the invitation details.
-                                                   </p>
-                                                   <p style='font-size: 14px; color: #777;'>
-                                                       Regards,
-                                                   </p>
-
-                                       <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                               </div>
-                                           </body>
-                                        </html>"
+                                            EmailBody = hrInvitationEmailBody
                                         };
 
-                                        EmailDTOs emailModelApproval = new EmailDTOs
+                                        EmailDTOs emailModelApproval = new()
                                         {
                                             EmailTo = [HREmail],
                                             Subject = $"Interview Approval ({candidateNameresult})",
-                                            EmailBody = $@"<html>
-                                       <body style='font-family: Arial, sans-serif;'>
-                                           <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                               <p style='font-size: 18px; color: #333;'>
-                                                   Dear Sajeda,
-                                               </p>
-                                               <p style='font-size: 16px; color: #555;'>
-                                                    The First interview with {candidateNameresult} Approved by {userName}
-                                               </p>
-                                               <p style='font-size: 14px; color: #777;'>
-                                                   Regards,
-                                               </p>
-
-                                      <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                           </div>
-                                       </body>
-                                    </html>"
+                                            EmailBody = hrApprovalEmailBody
                                         };
 
                                         if (!string.IsNullOrEmpty(HREmail))
@@ -1739,28 +1429,40 @@ public class InterviewsController : Controller
                                         {
                                             await _notificationsService.CreateInterviewNotificationForFinalHRInterview(interviewsDTO.StatusId.Value, interviewsDTO.Notes, interviewsDTO.CandidateId, interviewsDTO.PositionId);
 
-                                            EmailDTOs emailModels = new EmailDTOs
+                                            EmailDTOs emailModels = new()
                                             {
                                                 EmailTo = [HREmail],
                                                 Subject = $"Interview Invitation ( {candidateNameresult} )",
-                                                EmailBody = $@"<html>
-                                                       <body style='font-family: Arial, sans-serif;'>
-                                                           <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                                               <p style='font-size: 18px; color: #333;'>
-                                                                   Dear Sajeda,
-                                                               </p>
-                                                               <p style='font-size: 16px; color: #555;'>
-                                                                   You are assigned to have a third interview for candidate : {candidateNameresult} with position: {lastPositionName},<br><br>kindly <a href='https://apps.sssprocess.com:6134/'>Click here</a> to see the invitation details.
-                                                               </p>
-                                                               <p style='font-size: 14px; color: #777;'>
-                                                                   Regards,
-                                                               </p>
-
-                                       <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                                           </div>
-                                                       </body>
-                                                    </html>"
+                                                EmailBody = hrInvitationEmailBody
                                             };
+
+                                            if(status.Code == Domain.Enums.StatusCode.Approved)
+                                            {
+                                                EmailDTOs emailModelApproval = new()
+                                                {
+                                                    EmailTo = [HREmail],
+                                                    Subject = $"Interview Approval ({candidateNameresult})",
+                                                    EmailBody = hrApprovalEmailBody
+                                                };
+
+                                                if (!string.IsNullOrEmpty(HREmail))
+                                                    await _emailService.SendEmailToInterviewer(HREmail, interviewsDTO, emailModelApproval);
+                                            }
+
+                                            if (status.Code == Domain.Enums.StatusCode.Rejected)
+                                            {
+                                                EmailDTOs emailModelRejection = new()
+                                                {
+                                                    EmailTo = [HREmail],
+                                                    Subject = $"Interview Rejection ({candidateNameresult})",
+                                                    EmailBody = hrRejectionEmailBody
+                                                };
+
+                                                if (!string.IsNullOrEmpty(HREmail))
+                                                    await _emailService.SendEmailToInterviewer(HREmail, interviewsDTO, emailModelRejection);
+                                            }
+
+
                                             if (!string.IsNullOrEmpty(HREmail))
                                             {
                                                 await _emailService.SendEmailToInterviewer(HREmail, interviewsDTO, emailModels);
@@ -1783,23 +1485,7 @@ public class InterviewsController : Controller
                                         {
                                             EmailTo = [HREmail],
                                             Subject = $"Interview Invitation ( {candidateNameresult} )",
-                                            EmailBody = $@"<html>
-                                           <body style='font-family: Arial, sans-serif;'>
-                                               <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                                   <p style='font-size: 18px; color: #333;'>
-                                                       Dear Sajeda,
-                                                   </p>
-                                                   <p style='font-size: 16px; color: #555;'>
-                                                       You are assigned to have a Final interview for candidate : {candidateNameresult} with position: {lastPositionName},<br><br>kindly <a href='https://apps.sssprocess.com:6134/'>Click here</a> to see the invitation details.
-                                                   </p>
-                                                   <p style='font-size: 14px; color: #777;'>
-                                                       Regards,
-                                                   </p>
-
-                                       <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                               </div>
-                                           </body>
-                                        </html>"
+                                            EmailBody = hrInvitationEmailBody
                                         };
                                         if (!string.IsNullOrEmpty(HREmail))
                                         {
@@ -1819,29 +1505,11 @@ public class InterviewsController : Controller
                                 {
                                     await _notificationsService.CreateInterviewNotificationForHRInterview(interviewsDTO.StatusId.Value, interviewsDTO.Notes, interviewsDTO.CandidateId, interviewsDTO.PositionId);
 
-                                    string userName = _emailService.GetLoggedInUserName();
-                                    string HREmail = await _emailService.GetHREmail();
                                     EmailDTOs emailModel = new EmailDTOs
                                     {
                                         EmailTo = [HREmail],
                                         Subject = $"Interview Rejection ({candidateNameresult})",
-                                        EmailBody = $@"<html>
-                                       <body style='font-family: Arial, sans-serif;'>
-                                           <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                                               <p style='font-size: 18px; color: #333;'>
-                                                   Dear Sajeda,
-                                               </p>
-                                               <p style='font-size: 16px; color: #555;'>
-                                                    The Second interview with {candidateNameresult} rejected by {userName}
-                                               </p>
-                                               <p style='font-size: 14px; color: #777;'>
-                                                   Regards,
-                                               </p>
-
-                                      <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                                           </div>
-                                       </body>
-                                    </html>"
+                                        EmailBody = hrRejectionEmailBody
                                     };
 
                                     if (!string.IsNullOrEmpty(HREmail))
@@ -1961,18 +1629,16 @@ public class InterviewsController : Controller
                             interview.PositionId
                         );
 
+                        string removalArchiEmailBody = ArchitectureInterviewAssignmentEmailTemplate.GetRemovalEmail(
+                                                                                                                architectureUser.UserName,
+                                                                                                                candidateName.FullName,
+                                                                                                                "CMS"
+                                                                                                              );
                         var emailModel = new EmailDTOs
                         {
                             EmailTo = [architectureEmail],
                             Subject = $"Interview Assignment Removed ({candidateName.FullName})",
-                            EmailBody = $@"<html>
-                                <body style='font-family: Arial, sans-serif;'>
-                                    <p style='font-size: 16px;'>Dear {architectureUser.UserName.Replace("_", " ")},</p>
-                                    <p style='font-size: 16px;'>Your assignment for the Architecture Interview with candidate <strong>{candidateName.FullName}</strong> has been removed.</p>
-                                    <p style='font-size: 14px;'>If you have any questions, please contact the HR department.</p>
-                                    <p>Thank you.</p>
-                                </body>
-                            </html>"
+                            EmailBody = removalArchiEmailBody
                         };
 
 
@@ -2017,18 +1683,19 @@ public class InterviewsController : Controller
                     var candidateName = await _candidateService.GetCandidateByIdAsync(interview.CandidateId);
                     var formattedDate = interview.Date.ToString("dd/MM/yyyy hh:mm tt");
 
+                    string assignmentArchiEmailBody = ArchitectureInterviewAssignmentEmailTemplate.GetAssignmentEmail(
+                                                                                                                  architectureUser.UserName,
+                                                                                                                  candidateName.FullName,
+                                                                                                                  formattedDate,
+                                                                                                                  $"https://apps.sssprocess.com:6134/interviews/{interviewId}/addingresult",
+                                                                                                                  "CMS"
+                                                                                                                );
+
                     var emailModel = new EmailDTOs
                     {
                         EmailTo = [architectureEmail],
                         Subject = $"New Architecture Interview Assigned ({candidateName.FullName})",
-                        EmailBody = $@"<html>
-                        <body style='font-family: Arial, sans-serif;'>
-                            <p style='font-size: 16px;'>Dear {architectureUser.UserName.Replace("_", " ")},</p>
-                            <p style='font-size: 16px;'>You have been assigned with the GM to interview {candidateName.FullName}, scheduled on {formattedDate}.</p>
-                            <p><a href='https://apps.sssprocess.com:6134/interviews/{interviewId}/addingresult'>Click here</a> for more details.</p>
-                            <p>Thank you.</p>
-                        </body>
-                    </html>"
+                        EmailBody = assignmentArchiEmailBody
                     };
 
                     await _emailService.SendEmailToInterviewer(architectureEmail, interview, emailModel);
@@ -2056,4 +1723,3 @@ public class InterviewsController : Controller
         return Json(new { exists = interviewExists });
     }
 }
-

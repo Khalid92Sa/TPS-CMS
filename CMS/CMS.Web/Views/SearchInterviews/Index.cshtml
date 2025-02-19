@@ -45,27 +45,22 @@
 
 @using (Html.BeginForm("index", "interviewsFilteration", FormMethod.Get))
 {
-<div class="col-md-3" style="margin-top: -11px;margin-bottom: 21px;margin-left: -8px;">    <label>&nbsp;</label>
-    <a asp-action="ExportFilteredData"
-       asp-route-positionFilter="@ViewBag.positionFilter"
-       asp-route-scoreFilter="@ViewBag.scoreFilter"
-       asp-route-statusFilter="@ViewBag.statusFilter"
-       asp-route-candidateFilter="@ViewBag.candidateFilter"
-       asp-route-interviewerFilter="@ViewBag.interviewerFilter"
-       asp-route-fromDate="@ViewBag.fromDate"
-       asp-route-toDate="@ViewBag.toDate"
-       asp-route-trackFilter="@ViewBag.TrackList"
-       class="btn btn-success btn-block">Export to Excel</a>
-</div>
+    <div style="width:10%;" class="col-md-3 mb-3" title="Export to Excel">
+        <a asp-action="ExportFilteredData"
+           asp-route-positionFilter="@ViewBag.positionFilter"
+           asp-route-scoreFilter="@ViewBag.scoreFilter"
+           asp-route-statusFilter="@ViewBag.statusFilter"
+           asp-route-candidateFilter="@ViewBag.candidateFilter"
+           asp-route-interviewerFilter="@ViewBag.interviewerFilter"
+           asp-route-fromDate="@ViewBag.fromDate"
+           asp-route-toDate="@ViewBag.toDate"
+           asp-route-trackFilter="@ViewBag.TrackList"
+           class="btn btn-success w-100">Export to Excel</a>
+    </div>
 
-   @*  <div class="filter-icon-container" style="margin-bottom: 15px;width: 10%;">
-        <button type="button" class="btn btn-secondary" id="toggleFilter" aria-expanded="false" title="Show Filters">
-            <i class="bx bx-filter" style="font-size: x-large;"></i> Filter
-        </button>
-    </div> *@
     <div class="collapse show" id="filterFields" style="margin-bottom: 15px;">
         <div class="form-group">
-            <div class="row">
+            <div class="row align-items-end">
                 <div class="col-md-3">
                     @Html.Label("Filter by Levels:")
                     @Html.DropDownList("positionFilter", ViewBag.PositionList as SelectList, "All Levels", new { @class = "form-control", id = "position-dropdown" })
@@ -82,26 +77,22 @@
                     @Html.Label("Filter by Candidate:")
                     <input type="text" id="candidateFilter" name="candidateFilter" class="form-control" placeholder="Search by Candidate Name" value="@ViewBag.candidateFilter">
                 </div>
-                <div class="col-md-3" style="margin-top: 25px;">
+                <div class="col-md-3">
                     @Html.Label("Filter by Interviewer:")
                     @Html.DropDownList("interviewerFilter", ViewBag.InterviewerList as SelectList, "All Interviewers", new { @class = "form-control" })
                 </div>
-                <div class="col-md-3" style="margin-top: 25px;">
+                <div class="col-md-3">
                     <label for="fromDate">From Date:</label>
                     <input type="date" id="fromDate" name="fromDate" class="form-control" value="@ViewBag.fromDate?.ToString("yyyy-MM-dd")">
                 </div>
-                <div class="col-md-3" style="margin-top: 25px;">
+                <div class="col-md-3">
                     <label for="toDate">To Date:</label>
                     <input type="date" id="toDate" name="toDate" class="form-control" value="@ViewBag.toDate?.ToString("yyyy-MM-dd")">
                 </div>
-                <div class="col-md-3" style="margin-top:52px;width: 8%;">
-                    <label>&nbsp;</label>
-                    <button type="submit" id="filterButton" class="btn btn-primary btn-block">Filter</button>
+                <div class="col-md-3 d-flex">
+                    <button type="submit" id="filterButton" class="btn btn-primary mt-4 w-50 me-2" title="Filter interviews">Filter</button>
+                    <button type="button" id="resetButton" class="btn btn-secondary mt-4 w-50" title="Reset Filters">Reset</button>
                 </div>
-                <div class="col-md-3" style="margin-top:52px;width: 7%;">
-                    <button type="button" id="resetButton" class="btn btn-secondary btn-block">Reset</button>
-                </div>
-
                 <div id="dateValidationMessage" style="color: red; margin-top: 5px;"></div>
             </div>
         </div>

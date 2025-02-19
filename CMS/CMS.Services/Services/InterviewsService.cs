@@ -1391,7 +1391,8 @@ public class InterviewsService : IInterviewsService
                                 FullName = interview.Candidate?.FullName,
                                 InterviewerId = interview.InterviewerId,
                                 Date = interview.Date,
-                                StatusId = interview.StatusId
+                                StatusId = interview.StatusId,
+                                PositionName = interview.Position.Name
                             });
                         }
                     }

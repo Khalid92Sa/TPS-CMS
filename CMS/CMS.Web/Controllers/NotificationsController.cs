@@ -385,26 +385,23 @@ public class NotificationsController : Controller
     {
         try
         {
-            if (User.IsInRole("HR Manager"))
+            string userId = _userManager.GetUserId(User); // Get the logged-in user's ID
+
+            if (string.IsNullOrEmpty(userId))
             {
-                await _notificationsService.MarkAllAsReadForRoleAsync("HR Manager");
-                return Json(new { success = true });
+                return Json(new { success = false, message = "User not found" });
             }
-            else if (User.IsInRole("General Manager"))
-            {
-                await _notificationsService.MarkAllAsReadForRoleAsync("General Manager");
-                return Json(new { success = true });
-            }
-            else
-            {
-                return Json(new { success = false, message = "Access denied" });
-            }
+
+            await _notificationsService.MarkAllAsReadForUserAsync(userId);
+
+            return Json(new { success = true });
         }
         catch (Exception)
         {
             return Json(new { success = false, message = "Internal server error" });
         }
     }
+
 
     [Route("UnRead")]
     public async Task<List<NotificationsDTO>> GetUnreadNotificationsAsync()

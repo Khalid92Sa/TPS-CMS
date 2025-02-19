@@ -183,42 +183,40 @@
         loadUnreadNotifications();
 
         // Mark all notifications as read
-        $("#readAllButton").click(function () {
-            $.ajax({
-                url: '@Url.Action("MarkAll", "notifications")',
-                type: 'POST',
-                success: function (response) {
-                    if (response.success) {
-                        Swal.fire({
-                            title: 'Success!',
-                            text: 'All notifications marked as read successfully.',
-                            icon: 'success',
-                            confirmButtonText: 'OK',
-                        });
-
-                        // Refresh both unread and read notifications
-                        loadUnreadNotifications();
-                        loadReadNotifications();
-                    } else {
-                        Swal.fire({
-                            title: 'Error!',
-                            text: response.message || 'Failed to mark all notifications as read.',
-                            icon: 'error',
-                            confirmButtonText: 'OK',
-                        });
-                    }
-                },
-                error: function (xhr, status, error) {
-                    console.error("Error marking all as read: " + error);
+    $("#readAllButton").click(function () {
+        $.ajax({
+            url: '@Url.Action("MarkAll", "notifications")',
+            type: 'POST',
+            success: function (response) {
+                if (response.success) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'All notifications marked as read successfully.',
+                        icon: 'success',
+                        confirmButtonText: 'OK',
+                    }).then(() => {
+                        location.reload(); // Refresh the page after confirmation
+                    });
+                } else {
                     Swal.fire({
                         title: 'Error!',
-                        text: 'An error occurred while marking notifications as read.',
+                        text: response.message || 'Failed to mark all notifications as read.',
                         icon: 'error',
                         confirmButtonText: 'OK',
                     });
                 }
-            });
+            },
+            error: function (xhr, status, error) {
+                console.error("Error marking all as read: " + error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An error occurred while marking notifications as read.',
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                });
+            }
         });
+    });
 
         // Load unread notifications
         $("#unread-tab").click(function () {

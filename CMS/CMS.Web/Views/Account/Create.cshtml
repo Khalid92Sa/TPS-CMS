@@ -41,8 +41,8 @@
             <form asp-action="Create" method="post" class="needs-validation" novalidate>
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-                <!-- Email -->
                 <div class="row">
+                    <!-- Email -->
                     <div class="col-md-6 mb-3">
                         <label asp-for="Email" class="form-label">
                             <span class="text-danger">*</span> Email
@@ -52,10 +52,8 @@
                         <div class="invalid-feedback">Please enter a valid email.</div>
                         <span id="emailError" class="text-danger"></span>
                     </div>
-                </div>
 
-                <!-- Username -->
-                <div class="row">
+                    <!-- Username -->
                     <div class="col-md-6 mb-3">
                         <label asp-for="UserName" class="form-label">
                             <span class="text-danger">*</span> Username
@@ -65,10 +63,8 @@
                         <div class="invalid-feedback">Please enter a username.</div>
                         <span id="userNameError" class="text-danger"></span>
                     </div>
-                </div>
 
-                <!-- Password -->
-                <div class="row">
+                    <!-- Password -->
                     <div class="col-md-6 mb-3">
                         <label asp-for="Password" class="form-label">
                             <span class="text-danger">*</span> Password
@@ -77,10 +73,8 @@
                         <div class="invalid-feedback">Please enter a password.</div>
                         <span id="passwordError" class="text-danger"></span>
                     </div>
-                </div>
 
-                <!-- Confirm Password -->
-                <div class="row">
+                    <!-- Confirm Password -->
                     <div class="col-md-6 mb-3">
                         <label asp-for="ConfirmPassword" class="form-label">
                             <span class="text-danger">*</span> Confirm Password
@@ -89,10 +83,8 @@
                         <div class="invalid-feedback">Passwords must match.</div>
                         <span id="confirmPasswordError" class="text-danger"></span>
                     </div>
-                </div>
 
-                <!-- Role Selection -->
-                <div class="row">
+                    <!-- Role Selection -->
                     <div class="col-md-6 mb-3">
                         <label asp-for="SelectedRole" class="form-label">
                             <span class="text-danger">*</span> Role
@@ -119,57 +111,57 @@
     $(function () {
         $('[data-toggle="tooltip"]').tooltip();
 
-    $('form').submit(function (e) {
-        var isValid = true;
+        $('form').submit(function (e) {
+            var isValid = true;
 
-        // Validate Email
-        var email = $('#email').val().trim();
-        if (!email) {
-            $('#email').addClass('is-invalid');
-            isValid = false;
-        } else {
+            // Validate Email
+            var email = $('#email').val().trim();
+            if (!email) {
+                $('#email').addClass('is-invalid');
+                isValid = false;
+            } else {
                 $('#email').removeClass('is-invalid').addClass('is-valid');
-        }
+            }
 
-        // Validate Username
-        var userName = $('#userName').val().trim();
-        if (!userName) {
-            $('#userName').addClass('is-invalid');
-            isValid = false;
-        } else {
+            // Validate Username
+            var userName = $('#userName').val().trim();
+            if (!userName) {
+                $('#userName').addClass('is-invalid');
+                isValid = false;
+            } else {
                 $('#userName').removeClass('is-invalid').addClass('is-valid');
-        }
+            }
 
-        // Validate Password
-        var password = $('#password').val().trim();
-        if (!password) {
-            $('#password').addClass('is-invalid');
-            isValid = false;
-        } else {
+            // Validate Password
+            var password = $('#password').val().trim();
+            if (!password) {
+                $('#password').addClass('is-invalid');
+                isValid = false;
+            } else {
                 $('#password').removeClass('is-invalid').addClass('is-valid');
-        }
+            }
 
-        // Validate Confirm Password
-        var confirmPassword = $('#confirmpassword').val().trim();
-        if (!confirmPassword || password !== confirmPassword) {
-            $('#confirmpassword').addClass('is-invalid');
-            isValid = false;
-        } else {
+            // Validate Confirm Password
+            var confirmPassword = $('#confirmpassword').val().trim();
+            if (!confirmPassword || password !== confirmPassword) {
+                $('#confirmpassword').addClass('is-invalid');
+                isValid = false;
+            } else {
                 $('#confirmpassword').removeClass('is-invalid').addClass('is-valid');
-        }
+            }
 
-        // Validate Role
-        var selectedRole = $('#selectedRole').val();
-        if (!selectedRole) {
-            $('#selectedRole').addClass('is-invalid');
-            isValid = false;
-        } else {
+            // Validate Role
+            var selectedRole = $('#selectedRole').val();
+            if (!selectedRole) {
+                $('#selectedRole').addClass('is-invalid');
+                isValid = false;
+            } else {
                 $('#selectedRole').removeClass('is-invalid').addClass('is-valid');
-        }
+            }
 
-        if (!isValid) {
-            e.preventDefault();
-        }
+            if (!isValid) {
+                e.preventDefault();
+            }
         });
     });
 </script>

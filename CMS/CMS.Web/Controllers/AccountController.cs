@@ -1,4 +1,5 @@
 ﻿using CMS.Application.DTOs;
+using CMS.Application.EmailTemplates;
 using CMS.Application.Helpers;
 using CMS.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -238,18 +239,13 @@ public class AccountController : Controller
                     if (!string.IsNullOrEmpty(collection.SelectedRole))
                         await _userManager.AddToRoleAsync(user, collection.SelectedRole);
 
+                    string emailBody = UserEmailTemplate.GetRegistrationEmailTemplate(user.UserName, user.Email, collection.Password);
+
                     EmailDTOs emailModel = new()
                     {
-                        EmailTo = new List<string> { user.Email },
+                        EmailTo = [user.Email],
                         Subject = "Welcome to CMS System",
-                        EmailBody = $"<p>Dear {user.UserName.Replace("_", " ")},</p>\n\n" +
-                                "<p>Your account details:</p>\n" +
-                                $"<ul>\n" +
-                                $"  <li>Username: {user.UserName}</li>\n" +
-                                $"  <li>Email: {user.Email}</li>\n" +
-                                $"  <li>Password: {collection.Password}</li>\n" +
-                                $"</ul>\n\n" +
-                                $"<p>Login to your account: <a href='https://apps.sssprocess.com:6134/'>Click here</a></p>"
+                        EmailBody = emailBody
                     };
 
                     //Send an Email to the user after creted it
@@ -352,18 +348,13 @@ public class AccountController : Controller
 
                     if (currentEmail != collection.Email || currentUsername != collection.UserName || passwordChangeResult.Succeeded || !currentUserRoles.SequenceEqual(new[] { collection.SelectedRole }))
                     {
+                        string emailBody = UserEmailTemplate.GetAccountUpdateEmailTemplate(user.UserName, user.Email, collection.Password);
+
                         EmailDTOs emailModel = new()
                         {
-                            EmailTo = new List<string> { user.Email },
+                            EmailTo = [user.Email],
                             Subject = "Account Details Updated for CMS system",
-                            EmailBody = $"<p>Dear {user.UserName.Replace("_", " ")},</p>\n\n" +
-                                "<p>Your account details have been updated:</p>\n" +
-                                $"<ul>\n" +
-                                $"  <li>Username: {user.UserName}</li>\n" +
-                                $"  <li>Email: {user.Email}</li>\n" +
-                                $"  <li>Password: {collection.Password}</li>\n" +
-                                $"</ul>\n\n" +
-                                $"<p>Login to your account: <a href='https://apps.sssprocess.com:6134/'>Click here</a></p>"
+                            EmailBody = emailBody
                         };
 
                         // Send an email only if there are changes
