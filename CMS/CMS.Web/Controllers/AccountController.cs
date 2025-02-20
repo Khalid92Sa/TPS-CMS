@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -224,9 +225,12 @@ public class AccountController : Controller
     {
         try
         {
+            if (await _accountService.EmailExistsAsync(collection.Email))
+                return Json(new { success = false, message = "Email already exists. Please use a different email." });
+
             if (ModelState.IsValid)
             {
-                IdentityUser user = new IdentityUser
+                IdentityUser user = new()
                 {
                     Email = collection.Email,
                     UserName = collection.UserName
@@ -307,9 +311,19 @@ public class AccountController : Controller
     {
         try
         {
+            IdentityUser user = await _userManager.FindByIdAsync(collection.RegisterrId);
+            if (user is null)
+                return Json(new { success = false, message = "User not found." });
+
+            // Only check if the email is different from the current one
+            if (!string.Equals(collection.Email, user.Email, StringComparison.OrdinalIgnoreCase) &&
+                await _userManager.FindByEmailAsync(collection.Email) != null)
+            {
+                return Json(new { success = false, message = "Email already exists. Please use a different email." });
+            }
+
             if (ModelState.IsValid)
             {
-                IdentityUser user = await _userManager.FindByIdAsync(collection.RegisterrId);
                 string currentEmail = user.Email;
                 string currentUsername = user.UserName;
                 IList<string> currentUserRoles = await _userManager.GetRolesAsync(user);
@@ -542,5 +556,13 @@ public class AccountController : Controller
         Task<Register> user = _accountService.GetUsersById(userId);
 
         return View(user);
+    }
+
+    [HttpGet]
+    [Route("checkEmailExists")]
+    public async Task<IActionResult> CheckEmailExists(string email)
+    {
+        bool emailExists = await _accountService.EmailExistsAsync(email);
+        return Json(new { exists = emailExists });
     }
 }

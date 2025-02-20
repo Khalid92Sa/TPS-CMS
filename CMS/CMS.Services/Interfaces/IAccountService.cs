@@ -21,4 +21,5 @@ public interface IAccountService
     Task<List<Register>> GetAllUsersWithRolesAsync();
     Task<Register> GetUsersById(string userId);
     Task SendRegistrationEmail(IdentityUser user, string password, EmailDTOs emailmodel);
+    Task<bool> EmailExistsAsync(string email);
 }

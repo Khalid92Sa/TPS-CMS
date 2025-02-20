@@ -111,52 +111,78 @@
     $(function () {
         $('[data-toggle="tooltip"]').tooltip();
 
+        let emailValid = false;
+
+        function debounce(func, delay) {
+            let timer;
+            return function () {
+                clearTimeout(timer);
+                timer = setTimeout(() => func.apply(this, arguments), delay);
+            };
+        }
+
+        $('#email').on('input', debounce(function () {
+            var email = $(this).val().trim();
+            if (email) {
+                $.ajax({
+                    url: '@Url.Action("CheckEmailExists", "Users")',
+                    type: 'GET',
+                    data: { email: email },
+                    success: function (response) {
+                        if (response.exists) {
+                            $('#email').addClass('is-invalid').removeClass('is-valid');
+                            $('#emailError').text('Email already exists. Please use a different email.');
+                            emailValid = false;
+                        } else {
+                            $('#email').removeClass('is-invalid').addClass('is-valid');
+                            $('#emailError').text('');
+                            emailValid = true;
+                        }
+                    },
+                    error: function () {
+                        $('#emailError').text('Error checking email. Please try again.');
+                        emailValid = false;
+                    }
+                });
+            }
+        }, 500));
+
         $('form').submit(function (e) {
-            var isValid = true;
+            let isValid = true;
 
-            // Validate Email
-            var email = $('#email').val().trim();
-            if (!email) {
-                $('#email').addClass('is-invalid');
-                isValid = false;
-            } else {
-                $('#email').removeClass('is-invalid').addClass('is-valid');
+            function validateField(selector, errorMsg) {
+                var value = $(selector).val().trim();
+                var errorElement = $(selector).siblings('.text-danger'); // Find existing error message
+                if (!value) {
+                    $(selector).addClass('is-invalid');
+                    if (errorElement.length === 0) {
+                        $(selector).after(`<span class="text-danger">${errorMsg}</span>`);
+                    }
+                    isValid = false;
+                } else {
+                    $(selector).removeClass('is-invalid').addClass('is-valid');
+                    errorElement.remove(); // Remove duplicate messages
+                }
             }
 
-            // Validate Username
-            var userName = $('#userName').val().trim();
-            if (!userName) {
-                $('#userName').addClass('is-invalid');
-                isValid = false;
-            } else {
-                $('#userName').removeClass('is-invalid').addClass('is-valid');
-            }
+            validateField('#email', 'Please enter a valid email.');
+            validateField('#userName', 'Please enter a username.');
+            validateField('#password', 'Please enter a password.');
+            validateField('#confirmpassword', 'Passwords must match.');
+            validateField('#selectedRole', 'Please select a role.');
 
-            // Validate Password
-            var password = $('#password').val().trim();
-            if (!password) {
-                $('#password').addClass('is-invalid');
-                isValid = false;
-            } else {
-                $('#password').removeClass('is-invalid').addClass('is-valid');
-            }
-
-            // Validate Confirm Password
-            var confirmPassword = $('#confirmpassword').val().trim();
-            if (!confirmPassword || password !== confirmPassword) {
+            // Check Password Match
+            if ($('#password').val().trim() !== $('#confirmpassword').val().trim()) {
                 $('#confirmpassword').addClass('is-invalid');
+                $('#confirmPasswordError').text('Passwords must match.');
                 isValid = false;
-            } else {
-                $('#confirmpassword').removeClass('is-invalid').addClass('is-valid');
             }
 
-            // Validate Role
-            var selectedRole = $('#selectedRole').val();
-            if (!selectedRole) {
-                $('#selectedRole').addClass('is-invalid');
+            // Prevent form submission if email is invalid
+            if (!emailValid) {
+                $('#email').addClass('is-invalid');
+                $('#emailError').text('Please enter a valid, unique email.');
                 isValid = false;
-            } else {
-                $('#selectedRole').removeClass('is-invalid').addClass('is-valid');
             }
 
             if (!isValid) {

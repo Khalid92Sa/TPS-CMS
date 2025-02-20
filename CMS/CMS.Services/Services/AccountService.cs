@@ -321,4 +321,6 @@ public class AccountService : IAccountService
             throw;
         }
     }
+
+    public async Task<bool> EmailExistsAsync(string email) => await _userManager.FindByEmailAsync(email) != null;
 }

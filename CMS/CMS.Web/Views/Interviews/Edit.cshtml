@@ -68,6 +68,11 @@
         }
 </style>
 
+<link href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+
 <div class="container mt-5">
     <div class="card shadow">
         <div class="card-header bg-primary text-white">
@@ -85,7 +90,7 @@
                         <label asp-for="CandidateId" class="form-label">
                             <span style="color:red;">*</span> Candidate Name
                         </label>
-                        @Html.DropDownListFor(model => model.CandidateId, (SelectList)ViewBag.candidateList, "Select a Name", new { @class = "form-control custom-dropdown", id = "CandidateId" })
+                        @Html.DropDownListFor(model => model.CandidateId, (SelectList)ViewBag.candidateList, "Select a Name", new { @class = "form-control custom-dropdown", id = "CandidateId", data_selectize = "true" })
                         <span id="candidateIdError" class="text-danger"></span>
                         <span asp-validation-for="CandidateId" class="text-danger"></span>
                     </div>
@@ -97,7 +102,7 @@
                         <label asp-for="PositionId" class="form-label">
                             <span style="color:red;">*</span> Level
                         </label>
-                        @Html.DropDownListFor(model => model.PositionId, (SelectList)ViewBag.positionList, "Select a Position", new { @class = "form-control custom-dropdown", id = "PositionId" })
+                        @Html.DropDownListFor(model => model.PositionId, (SelectList)ViewBag.positionList, "Select a Position", new { @class = "form-control custom-dropdown", id = "PositionId", data_selectize = "true" })
                         <span id="positionIdError" class="text-danger"></span>
                         <span asp-validation-for="PositionId" class="text-danger"></span>
                     </div>
@@ -109,7 +114,7 @@
                         <label asp-for="TrackId" class="form-label">
                             <span style="color:red;">*</span> Track
                         </label>
-                        <select asp-for="TrackId" asp-items="@(ViewBag.Tracks)" class="form-control custom-dropdown" id="TrackId">
+                        <select asp-for="TrackId" asp-items="@(ViewBag.Tracks)" class="form-control custom-dropdown" id="TrackId" data-selectize="true">
                             <option value="">-- Select a track --</option>
                         </select>
                         <span id="trackIdError" class="text-danger"></span>
@@ -127,7 +132,7 @@
                             <label asp-for="InterviewerId" class="form-label">
                                 <span style="color:red;">*</span> Interviewer #1
                             </label>
-                            <select asp-for="InterviewerId" asp-items="@(ViewBag.interviewersList)" class="form-control custom-dropdown" id="InterviewerId">
+                            <select asp-for="InterviewerId" asp-items="@(ViewBag.interviewersList)" class="form-control custom-dropdown" id="InterviewerId" data-selectize="true">
                                 <option value="">-- Select an Interviewer --</option>
                             </select>
                             <span id="interviewerIdError" class="text-danger">Please select an interviewer.</span>
@@ -139,7 +144,7 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label asp-for="SecondInterviewerId" class="form-label">Interviewer #2 (optional)</label>
-                            <select asp-for="SecondInterviewerId" asp-items="@(ViewBag.interviewersList)" class="form-control custom-dropdown">
+                            <select asp-for="SecondInterviewerId" asp-items="@(ViewBag.interviewersList)" class="form-control custom-dropdown" data-selectize="true">
                                 <option value="">-- Select Second Interviewer --</option>
                             </select>
                         </div>
@@ -150,7 +155,7 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label asp-for="ArchitectureInterviewerId" class="form-label">Architecture Interviewer (optional)</label>
-                        <select asp-for="ArchitectureInterviewerId" asp-items="@(ViewBag.architecturesList)" class="form-control custom-dropdown">
+                        <select asp-for="ArchitectureInterviewerId" asp-items="@(ViewBag.architecturesList)" class="form-control custom-dropdown" data-selectize="true">
                             <option value="">-- Select Architecture Interviewer --</option>
                         </select>
                     </div>
@@ -180,11 +185,16 @@
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
-
 <script>
     $(document).ready(function () {
+        // Apply Selectize.js to all dropdowns
+        $('[data-selectize="true"]').selectize({
+            allowEmptyOption: false,
+            searchField: 'text',
+            placeholder: "Start typing to search...",
+            selectOnTab: true,
+        });
+
         $('#editForm').submit(function (e) {
             e.preventDefault(); // Prevent form submission
 
