@@ -25,7 +25,7 @@ public interface IInterviewsRepository
     Task<Interviews> GetArchiInterviewForCandidate(int candidateId);
     Task<Interviews> GetinterviewerInterviewForCandidate(int candidateId);
     Task<int> GetInterviewCountForCandidate(int candidateId);
-    Task<bool> DeletePendingInterviews(int candidateId, int positionId, string userId);
+    Task<bool> DeletePendingInterviews(string nextInterviewStatusCode,int candidateId, int positionId, string userId);
     Task<string?> GetStatusOfNextInterview(int candidateId, int currentInterviewId);
     InterviewsDTO GetInterviewByCandidateIdWithParentId(int candidateId);
     Task<bool> DeletePendingInterviewsforStopCycle(int candidateId, int positionId);

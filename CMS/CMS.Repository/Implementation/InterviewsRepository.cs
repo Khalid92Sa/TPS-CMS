@@ -371,7 +371,7 @@ public class InterviewsRepository : IInterviewsRepository
         }
     }
 
-    public async Task<bool> DeletePendingInterviews(int candidateId, int positionId, string userId)
+    public async Task<bool> DeletePendingInterviews(string nextInterviewStatusCode, int candidateId, int positionId, string userId)
     {
         try
         {
@@ -420,6 +420,8 @@ public class InterviewsRepository : IInterviewsRepository
                 await _context.SaveChangesAsync();
                 return true;
             }
+            else if (nextInterviewStatusCode is null)
+                return true;
 
             return false;
         }

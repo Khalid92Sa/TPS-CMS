@@ -959,6 +959,7 @@ public class InterviewsController : Controller
 
                             // Get the current interview status
                             Domain.Entities.Interviews currentInterview = await _interviewsRepository.GetById(interviewsDTO.InterviewsId); // Assuming you have a method to get the interview by its ID
+                            string nextInterviewStatusCode = await _interviewsRepository.GetStatusOfNextInterview(interviewsDTO.CandidateId, interviewsDTO.InterviewsId);
 
                             // Check if the current interview status is not pending
                             if (currentInterview.Status.Code != Domain.Enums.StatusCode.Pending && currentInterview.Status.Code != Domain.Enums.StatusCode.Rejected)
@@ -969,7 +970,6 @@ public class InterviewsController : Controller
                                 if (newStatus.Code == Domain.Enums.StatusCode.Rejected && !User.IsInRole("HR Manager"))
                                 {
                                     // Check if the next interview is pending
-                                    string nextInterviewStatusCode = await _interviewsRepository.GetStatusOfNextInterview(interviewsDTO.CandidateId, interviewsDTO.InterviewsId);
 
                                     if (nextInterviewStatusCode != null && !nextInterviewStatusCode.Equals(Domain.Enums.StatusCode.Pending))
                                     {
@@ -983,7 +983,7 @@ public class InterviewsController : Controller
                                     }
                                     else
                                     {
-                                        bool interviewsDeleted = await _interviewsRepository.DeletePendingInterviews(interviewsDTO.CandidateId, interviewsDTO.PositionId, userId: User.FindFirstValue(ClaimTypes.NameIdentifier));
+                                        bool interviewsDeleted = await _interviewsRepository.DeletePendingInterviews(nextInterviewStatusCode, interviewsDTO.CandidateId, interviewsDTO.PositionId, userId: User.FindFirstValue(ClaimTypes.NameIdentifier));
                                     }
                                 }
                                 else
@@ -991,7 +991,8 @@ public class InterviewsController : Controller
 
                                     if ((interviewCount >= 1 && interviewCount <= 2) || ((interviewCount == 3 || interviewCount == 4) && User.IsInRole("General Manager")))
                                     {
-                                        bool interviewsDeleted = await _interviewsRepository.DeletePendingInterviews(interviewsDTO.CandidateId, interviewsDTO.PositionId, userId: User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+                                        bool interviewsDeleted = await _interviewsRepository.DeletePendingInterviews(nextInterviewStatusCode, interviewsDTO.CandidateId, interviewsDTO.PositionId, userId: User.FindFirstValue(ClaimTypes.NameIdentifier));
                                         if (!interviewsDeleted)
                                         {
                                             // Show a pop-up or handle the case where there are no pending interviews to delete
@@ -1023,7 +1024,7 @@ public class InterviewsController : Controller
                             string nextInterviewStatusCode = await _interviewsRepository.GetStatusOfNextInterview(interviewsDTO.CandidateId, interviewsDTO.InterviewsId);
                             if (nextInterviewStatusCode != null && nextInterviewStatusCode.Equals(Domain.Enums.StatusCode.Pending))
                             {
-                                bool interviewsDeleted = await _interviewsRepository.DeletePendingInterviews(interviewsDTO.CandidateId, interviewsDTO.PositionId, userId: User.FindFirstValue(ClaimTypes.NameIdentifier));
+                                bool interviewsDeleted = await _interviewsRepository.DeletePendingInterviews(nextInterviewStatusCode, interviewsDTO.CandidateId, interviewsDTO.PositionId, userId: User.FindFirstValue(ClaimTypes.NameIdentifier));
                             }
 
                             else if (nextInterviewStatusCode != null && (nextInterviewStatusCode.Equals(Domain.Enums.StatusCode.Approved) || nextInterviewStatusCode.Equals(Domain.Enums.StatusCode.Rejected)))
