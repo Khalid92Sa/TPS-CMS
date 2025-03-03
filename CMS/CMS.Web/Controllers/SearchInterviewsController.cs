@@ -80,7 +80,7 @@ public class SearchInterviewsController : Controller
             ViewBag.CurrentPage = pageNumber;
             ViewBag.PageSize = pageSize;
 
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
+            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
             {
                 Result<IEnumerable<PositionDTO>> positionsDTO = await _positionService.GetAll();
                 ViewBag.PositionList = new SelectList(positionsDTO.Value, "Id", "Name");

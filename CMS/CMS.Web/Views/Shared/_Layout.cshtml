@@ -399,7 +399,7 @@
                                     {
                                         <img class="rounded-circle header-profile-user" src="~/theme/images/users/interviewers.jpeg" alt="Header Avatar">
                                     }
-                                    else if (User.IsInRole("General Manager"))
+                                    else if (User.IsInRole("General Manager") || User.IsInRole("Viewer"))
                                     {
                                         <img class="rounded-circle header-profile-user" src="~/theme/images/users/General_Manager.png" alt="Header Avatar">
                                     }
@@ -512,7 +512,7 @@
                     Action = "Index",
                     Icon = "ri-dashboard-fill",
                     Label = "Dashboard",
-                    Roles = new[] {"Admin","General Manager","HR Manager"}
+                    Roles = new[] {"Admin","General Manager","HR Manager","Viewer"}
                     },
                     new
                     {
@@ -576,7 +576,7 @@
                     Action = "Index",
                     Icon = "bx bx-search-alt-2",
                     Label = "Interviews Filter",
-                    Roles = new[] {"Admin","HR Manager","General Manager"}
+                    Roles = new[] {"Admin","HR Manager","General Manager","Viewer"}
                     }
 
                     };

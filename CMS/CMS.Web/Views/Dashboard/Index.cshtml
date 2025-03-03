@@ -197,7 +197,22 @@
                                                                         <i class="ri-user-line me-2 text-success"></i> @candidate.Name
                                                                     </div>
                                                                     <div>
-                                                                        <span class="badge bg-success">@candidate.Status</span>
+                                                                        @if (candidate.Status == "Approved")
+                                                                        {
+                                                                            <span class="badge" style=" background-color: green !important;">Approved</span>
+                                                                        }
+                                                                        else if (candidate.Status == "Rejected")
+                                                                        {
+                                                                            <span class="badge" style="background-color: #F44336 !important;">Rejected</span>
+                                                                        }
+                                                                        else if (candidate.Status == "Pending")
+                                                                        {
+                                                                            <span class="badge" style="background-color: #cec03d !important;">Pending</span>
+                                                                        }
+                                                                        else if (candidate.Status == "On hold")
+                                                                        {
+                                                                            <span class="badge" style="background-color: #b88383 !important;">On Hold</span>
+                                                                        }
                                                                         <span class="badge bg-info">
                                                                             @(candidate.Status == "Pending" ? "for" : "by") @candidate.InterviewerName
                                                                         </span>

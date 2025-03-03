@@ -54,7 +54,7 @@ public class DashboardController : Controller
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("General Manager") || User.IsInRole("HR Manager"))
+            if (User.IsInRole("Admin") || User.IsInRole("General Manager") || User.IsInRole("HR Manager") || User.IsInRole("Viewer"))
             {
                 PerformanceReportDTO report = (await _reportingService.GetBusinessPerformanceReport()).Value;
 
@@ -213,7 +213,7 @@ public class DashboardController : Controller
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
+            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
             {
                 string HrId = "";
 
@@ -279,7 +279,7 @@ public class DashboardController : Controller
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
+            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
             {
                 List<CandidateDTO> pendingCandidates = await _statusRepository.GetPendingCandidatesByCode(Domain.Enums.StatusCode.Pending);
 
@@ -339,7 +339,7 @@ public class DashboardController : Controller
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
+            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
             {
                 List<CandidateDTO> rejectedCandidates = await _statusRepository.GetCandidatesByCode(Domain.Enums.StatusCode.Rejected);
                 if (!string.IsNullOrEmpty(candidateName))
@@ -399,7 +399,7 @@ public class DashboardController : Controller
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
+            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
             {
                 List<CandidateDTO> onHoldCandidates = await _statusRepository.GetCandidatesByCode(Domain.Enums.StatusCode.OnHold);
 
@@ -460,7 +460,7 @@ public class DashboardController : Controller
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager"))
+            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
             {
                 List<CandidateDTO> stoppedCyclesCandidates = await _statusRepository.GetStoppedCyclesCandidatesByNote();
 

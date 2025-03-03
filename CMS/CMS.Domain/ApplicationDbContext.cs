@@ -36,13 +36,15 @@ public class ApplicationDbContext : IdentityDbContext
 
 
         IdentityRole adminRole = new IdentityRole { Id = "b024cbbe-f64e-4d1b-9c6e-05ac0f0e3ebb", Name = "Admin", NormalizedName = "Admin".ToUpper() };
+        IdentityRole viewerRole = new IdentityRole { Id = "e82b73d1-c5a1-44cf-b68f-e29e2f3cb803", Name = "Viewer", NormalizedName = "Viewer".ToUpper() }; // Viewer Role
+
         builder.Entity<IdentityRole>().HasData(
              adminRole,
+             viewerRole,
              new IdentityRole { Id = "1eecb40c-c701-4445-89d4-d1aa7d70460d", Name = "General Manager", NormalizedName = "General Manager".ToUpper() },
              new IdentityRole { Id = "226cca69-f046-4d15-8b81-9b9ba34f2214", Name = "HR Manager", NormalizedName = "HR ManagerF".ToUpper() },
              new IdentityRole { Id = "91c3461a-7da3-4033-b907-b104b903d793", Name = "Interviewer", NormalizedName = "Interviewer".ToUpper() },
              new IdentityRole { Id = "3F476A40-97F4-42C6-A226-602AED74A4BC", Name = "Solution Architecture", NormalizedName = "Solution Architecture".ToUpper() }
-
         );
 
         IdentityUser adminUser = new IdentityUser { Id = "c6585ab9-8b5f-4332-a174-92429db8add2", UserName = "admin", NormalizedUserName = "admin".ToUpper(), Email = "admin@admin.com", NormalizedEmail = "admin@admin.com".ToUpper(), EmailConfirmed = true };
@@ -52,6 +54,15 @@ public class ApplicationDbContext : IdentityDbContext
 
         builder.Entity<IdentityUser>().HasData(adminUser);
         builder.Entity<IdentityUserRole<string>>().HasData(new IdentityUserRole<string> { RoleId = adminRole.Id, UserId = adminUser.Id });
+
+        // Adding Viewer User
+        IdentityUser viewerUser = new IdentityUser { Id = "d852b320-72b4-4e94-94c3-0c643f960f64", UserName = "viewer", NormalizedUserName = "viewer".ToUpper(), Email = "viewer@viewer.com", NormalizedEmail = "viewer@viewer.com".ToUpper(), EmailConfirmed = true };
+        string viewerPassword = hasher.HashPassword(viewerUser, "viewer123");
+        viewerUser.PasswordHash = viewerPassword;
+
+        builder.Entity<IdentityUser>().HasData(viewerUser);
+        builder.Entity<IdentityUserRole<string>>().HasData(new IdentityUserRole<string> { RoleId = viewerRole.Id, UserId = viewerUser.Id });
+
         builder.ApplyConfiguration(new PositionMapper());
         builder.ApplyConfiguration(new StatusMapper());
         builder.ApplyConfiguration(new StatusSeed());
