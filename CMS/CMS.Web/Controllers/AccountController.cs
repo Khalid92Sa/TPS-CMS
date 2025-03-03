@@ -44,7 +44,7 @@ public class AccountController : Controller
         {
             if (_signInManager.IsSignedIn(User))
             {
-                if (User.IsInRole("HR Manager") || User.IsInRole("Admin") || User.IsInRole("General Manager"))
+                if (User.IsInRole("HR Manager") || User.IsInRole("Admin") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
                     return Redirect(Url.Action("index", "dashboard"));
 
                 else if (User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture"))
@@ -76,7 +76,7 @@ public class AccountController : Controller
                 {
                     if (_signInManager.IsSignedIn(User))
                     {
-                        if (User.IsInRole("HR Manager") || User.IsInRole("Admin") || User.IsInRole("General Manager"))
+                        if (User.IsInRole("HR Manager") || User.IsInRole("Admin") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
                             return Redirect(Url.Action("index", "dashboard"));
 
                         else if (User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture"))
