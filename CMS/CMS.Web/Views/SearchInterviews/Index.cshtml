@@ -170,7 +170,7 @@
 
                         <td>
                             <a class="bx bx-detail" style="font-size:x-large" asp-action="Details" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Details"></a>
-                            @if (item.ParentId == null && item.StatusName == StatusCode.GetName("PND"))
+                            @if (item.ParentId == null && item.StatusName == StatusCode.GetName("PND") && !User.IsInRole("Viewer"))
                             {
                                 <span> | </span>  <a class="ri-delete-bin-2-line text-danger" style="font-size:x-large" asp-action="Delete" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Delete"></a>
                             }

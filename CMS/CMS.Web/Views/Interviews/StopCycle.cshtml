@@ -2,22 +2,20 @@
 
 @{
     ViewData["Title"] = "Stop Cycle";
-    Layout = "~/Views/Shared/_Layout.cshtml"; // Update the layout path as per your project structure
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <style>
-    /* Disable validation icons for valid inputs */
     .was-validated .form-control:valid,
     .form-control.is-valid {
-        background-image: none !important; /* Remove the checkmark icon */
+        background-image: none !important;
     }
 
     .was-validated .form-control:invalid,
     .form-control.is-invalid {
-        background-image: none !important; /* Remove the exclamation mark icon */
+        background-image: none !important;
     }
 
-    /* Optional: Fix padding to ensure no extra space remains */
     .form-control {
         padding-right: 0.75rem !important;
     }
@@ -42,14 +40,14 @@
 
                         <div class="mb-4">
                             <label asp-for="StopCycleNote" class="form-label"><span style="color: red;">*</span> Reason for Stopping</label>
-                            <textarea placeholder="Please provide a detailed explanation..." id="Note" asp-for="StopCycleNote" class="form-control rounded-pill shadow-sm" rows="4" style="resize: none; border: 2px solid #d1d3e2; padding: 15px;" required></textarea>
+                            <textarea placeholder="Please provide a detailed explanation..." id="Note" asp-for="StopCycleNote" class="form-control rounded-pill shadow-sm" rows="4" style="resize: none; border: 2px solid #d1d3e2; padding: 23px;" required></textarea>
                             <div class="invalid-feedback">
                                 Please provide a reason for stopping the cycle.
                             </div>
                         </div>
 
                         <div class="text-center mt-4">
-                            <button type="submit" class="btn btn-danger btn-lg rounded-pill px-5 shadow-sm" style="background: linear-gradient(45deg, #e74a3b, #ff6b6b); border: none;">Stop</button>
+                            <button type="submit" class="btn btn-danger btn-lg rounded-pill px-4 shadow-sm" style="background: linear-gradient(45deg, #e74a3b, #ff6b6b); border: none;">Stop</button>
                             <a class="btn btn-secondary btn-lg rounded-pill px-4 shadow-sm" asp-action="Index">Back</a>
                         </div>
                     </form>
@@ -71,10 +69,8 @@
     (function () {
         'use strict';
 
-        // Fetch all the forms we want to apply custom Bootstrap validation styles to
         var forms = document.querySelectorAll('.needs-validation');
 
-        // Loop over them and prevent submission
         Array.prototype.slice.call(forms)
             .forEach(function (form) {
                 form.addEventListener('submit', function (event) {
@@ -82,7 +78,7 @@
                         event.preventDefault();
                         event.stopPropagation();
                     } else {
-                        event.preventDefault(); // Prevent submission to show confirmation
+                        event.preventDefault();
                         Swal.fire({
                             title: 'Are you sure?',
                             text: 'You are about to stop the cycle. This action cannot be undone.',
@@ -93,7 +89,7 @@
                             confirmButtonText: 'Yes, stop it!'
                         }).then((result) => {
                             if (result.isConfirmed) {
-                                form.submit(); // If confirmed, submit the form
+                                form.submit();
                             }
                         });
                     }

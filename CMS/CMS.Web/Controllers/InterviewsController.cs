@@ -269,7 +269,7 @@ public class InterviewsController : Controller
     {
         try
         {
-            if (_signInManager.IsSignedIn(User))
+            if (_signInManager.IsSignedIn(User) && (User.IsInRole("HR Manager") || User.IsInRole("Admin")))
             {
                 Result<InterviewsDTO> result = await _interviewsService.GetInterviewDetails(id);
                 InterviewsDTO interviewsDTO = result.Value;
@@ -295,7 +295,7 @@ public class InterviewsController : Controller
     {
         try
         {
-            if (_signInManager.IsSignedIn(User))
+            if (_signInManager.IsSignedIn(User) && (User.IsInRole("HR Manager") || User.IsInRole("Admin")))
             {
                 if (string.IsNullOrWhiteSpace(collection.StopCycleNote))
                     ModelState.AddModelError("StopCycleNote", "Please add a note.");
