@@ -197,7 +197,7 @@
                         <label asp-for="Date" class="form-label">
                             <span style="color:red;">*</span> Date
                         </label>
-                        <input asp-for="Date" class="form-control" required />
+                        <input asp-for="Date" onclick="this.showPicker()" class="form-control" required />
                         <span id="Date-error" class="text-danger">Please select a date.</span>
                         <span asp-validation-for="Date" class="text-danger"></span>
                     </div>

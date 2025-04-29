@@ -87,8 +87,6 @@ public class CandidatesController : Controller
 
                 PaginatedList<CandidateDTO> paginatedList = new(paginatedCandidates, totalCount, pageNumber, pageSize);
 
-                ViewBag.CandidatesCount = candidates.Count();
-
                 return View(paginatedList);
             }
 
