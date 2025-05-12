@@ -131,6 +131,11 @@ builder.Services.AddMiniProfiler(options =>
     options.ShouldProfile = request => true;
     options.PopupMaxTracesToShow = 20;
     options.PopupShowTimeWithChildren = true;
+    options.IgnoredPaths.Add("/lib");
+    options.IgnoredPaths.Add("/css");
+    options.IgnoredPaths.Add("/js");
+    options.IgnoredPaths.Add("/theme/fonts/hkgrotesk-regul");
+    options.IgnoredPaths.Add("/Notifications");
 }).AddEntityFramework();
 
 builder.Services.AddRazorPages()
