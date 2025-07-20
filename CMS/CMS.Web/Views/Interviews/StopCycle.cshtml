@@ -48,7 +48,12 @@
 
                         <div class="text-center mt-4">
                             <button type="submit" class="btn btn-danger btn-lg rounded-pill px-4 shadow-sm" style="background: linear-gradient(45deg, #e74a3b, #ff6b6b); border: none;">Stop</button>
-                            <a class="btn btn-secondary btn-lg rounded-pill px-4 shadow-sm" asp-action="Index">Back</a>
+                            <a class="btn btn-secondary btn-lg rounded-pill px-4 shadow-sm" asp-action="Index"
+                               asp-route-statusFilter="@ViewBag.statusFilter"
+                               asp-route-candidateFilter="@ViewBag.candidateFilter"
+                               asp-route-trackFilter="@ViewBag.trackFilter"
+                               asp-route-pageNumber="@ViewBag.PageNumber"
+                               asp-route-pageSize="@ViewBag.PageSize">Back</a>
                         </div>
                     </form>
                 </div>

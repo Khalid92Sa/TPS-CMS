@@ -170,7 +170,11 @@
                                         @if ((item.InterviewerRole == "Interviewer" || item.InterviewerRole == "General Manager" || item.InterviewerRole == "Solution Architecture") && item.StatusName == StatusCode.GetName("PND")  && item.ParentId ==null)
                                         {
                                             <input type="hidden" name="StatusId" value="@item.StatusId" />
-                                            <a class="bx bxs-edit-alt" style="font-size:x-large" asp-action="Edit" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit"></a>
+                                            <a class="bx bxs-edit-alt" style="font-size:x-large" asp-action="Edit" asp-route-statusFilter="@ViewBag.statusFilter"
+                                               asp-route-candidateFilter="@ViewBag.candidateFilter"
+                                               asp-route-trackFilter="@ViewBag.trackFilter"
+                                               asp-route-pageNumber="@ViewBag.PageNumber"
+                                               asp-route-pageSize="@ViewBag.PageSize" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit"></a>
                                             <a class="ri-delete-bin-2-line text-danger" style="font-size:x-large" asp-action="Delete" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Delete"></a>
                                         }
 
@@ -207,11 +211,21 @@
 
                                         @if (item.StatusName != StatusCode.GetName("PND"))
                                         {
-                                            <a class="ri-shut-down-line disabled" style="font-size: x-large" asp-action="StopCycle" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Stop Cycle"></a>
+                                            <a class="ri-shut-down-line disabled" style="font-size: x-large" asp-action="StopCycle"
+                                               asp-route-statusFilter="@ViewBag.statusFilter"
+                                               asp-route-candidateFilter="@ViewBag.candidateFilter"
+                                               asp-route-trackFilter="@ViewBag.trackFilter"
+                                               asp-route-pageNumber="@ViewBag.PageNumber"
+                                               asp-route-pageSize="@ViewBag.PageSize" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Stop Cycle"></a>
                                         }
                                         else if(item.ParentId != null)
                                         {
-                                            <a class="ri-shut-down-line" style="font-size: x-large" asp-action="StopCycle" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Stop Cycle"></a>
+                                            <a class="ri-shut-down-line" style="font-size: x-large" asp-action="StopCycle"
+                                               asp-route-statusFilter="@ViewBag.statusFilter"
+                                               asp-route-candidateFilter="@ViewBag.candidateFilter"
+                                               asp-route-trackFilter="@ViewBag.trackFilter"
+                                               asp-route-pageNumber="@ViewBag.PageNumber"
+                                               asp-route-pageSize="@ViewBag.PageSize" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Stop Cycle"></a>
                                         }
                                        
                                     </td>

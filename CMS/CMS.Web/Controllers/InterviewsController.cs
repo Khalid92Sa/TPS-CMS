@@ -267,11 +267,22 @@ public class InterviewsController : Controller
         }
     }
 
+    [HttpGet]
     [Route("{id}/stopCycle")]
-    public async Task<IActionResult> StopCycle(int id)
+    public async Task<IActionResult> StopCycle(int id, int? statusFilter,
+        string candidateFilter,
+        int? trackFilter,
+        int pageNumber = 1,
+        int pageSize = 5)
     {
         try
         {
+            ViewBag.statusFilter = statusFilter;
+            ViewBag.candidateFilter = candidateFilter;
+            ViewBag.trackFilter = trackFilter;
+            ViewBag.PageNumber = pageNumber;
+            ViewBag.PageSize = pageSize;
+
             if (_signInManager.IsSignedIn(User) && (User.IsInRole("HR Manager") || User.IsInRole("Admin")))
             {
                 Result<InterviewsDTO> result = await _interviewsService.GetInterviewDetails(id);
@@ -337,6 +348,7 @@ public class InterviewsController : Controller
             throw;
         }
     }
+
     [Route("{id}/details")]
     public async Task<ActionResult> Details(
         int id,
@@ -565,10 +577,20 @@ public class InterviewsController : Controller
 
 
     [Route("{id}/update")]
-    public async Task<ActionResult> Edit(int id)
+    public async Task<ActionResult> Edit(int id, int? statusFilter,
+        string candidateFilter,
+        int? trackFilter,
+        int pageNumber = 1,
+        int pageSize = 5)
     {
         try
         {
+            ViewBag.statusFilter = statusFilter;
+            ViewBag.candidateFilter = candidateFilter;
+            ViewBag.trackFilter = trackFilter;
+            ViewBag.PageNumber = pageNumber;
+            ViewBag.PageSize = pageSize;
+
             if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
             {
                 if (id <= 0)

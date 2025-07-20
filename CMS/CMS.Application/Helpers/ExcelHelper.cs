@@ -13,7 +13,7 @@ namespace CMS.Application.Helpers
         public static async Task<byte[]> GenerateExcelFileAsync(
             IEnumerable<InterviewsDTO> data,
             Func<int, Task<double?>> getScoreCallback,
-            Func<int, Task<string>> getAllStatusesCallback // ✅ NEW
+            Func<int, Task<string>> getAllStatusesCallback
         )
         {
             try
@@ -23,7 +23,6 @@ namespace CMS.Application.Helpers
                 using var package = new ExcelPackage();
                 var worksheet = package.Workbook.Worksheets.Add("Interviews");
 
-                // Define headers
                 string[] headers = {
                     "Candidate Name", "Position", "Track",
                     "Interviewer/s Name", "Date and Time",
@@ -31,7 +30,6 @@ namespace CMS.Application.Helpers
                 };
                 int[] columnWidths = { 25, 20, 20, 30, 18, 10, 40, 50 };
 
-                // Add headers
                 for (int i = 0; i < headers.Length; i++)
                 {
                     var cell = worksheet.Cells[1, i + 1];
@@ -57,7 +55,6 @@ namespace CMS.Application.Helpers
                         interviewers += " && " + item.SecondInterviewerName;
                     }
 
-                    // ✅ Get full statuses history for this candidate
                     string allStatuses = await getAllStatusesCallback(item.CandidateId);
 
                     worksheet.Cells[row, 1].Value = item.FullName;
@@ -66,15 +63,18 @@ namespace CMS.Application.Helpers
                     worksheet.Cells[row, 4].Value = interviewers;
                     worksheet.Cells[row, 5].Style.Numberformat.Format = "yyyy-mm-dd";
                     worksheet.Cells[row, 5].Value = item.Date;
-                    worksheet.Cells[row, 6].Value = score ;
-                    worksheet.Cells[row, 7].Value = allStatuses; // ✅ All statuses combined
+                    if (score != null)
+                        worksheet.Cells[row, 6].Value = score;
+                    else
+                        worksheet.Cells[row, 6].Value = "N/A";
+                    worksheet.Cells[row, 7].Value = allStatuses;
                     worksheet.Cells[row, 8].Value = item.Notes;
 
                     for (int col = 1; col <= headers.Length; col++)
                     {
                         worksheet.Cells[row, col].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
                         worksheet.Cells[row, col].Style.VerticalAlignment = ExcelVerticalAlignment.Center;
-                        if (col == 7 || col == 8) // Wrap text for statuses & notes
+                        if (col == 7 || col == 8)
                         {
                             worksheet.Cells[row, col].Style.WrapText = true;
                         }
