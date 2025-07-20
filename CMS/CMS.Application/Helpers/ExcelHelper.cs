@@ -10,7 +10,11 @@ namespace CMS.Application.Helpers
 {
     public static class ExcelHelper
     {
-        public static async Task<byte[]> GenerateExcelFileAsync(IEnumerable<InterviewsDTO> data, Func<int, Task<double?>> getScoreCallback)
+        public static async Task<byte[]> GenerateExcelFileAsync(
+            IEnumerable<InterviewsDTO> data,
+            Func<int, Task<double?>> getScoreCallback,
+            Func<int, Task<string>> getAllStatusesCallback // ✅ NEW
+        )
         {
             try
             {
@@ -20,10 +24,14 @@ namespace CMS.Application.Helpers
                 var worksheet = package.Workbook.Worksheets.Add("Interviews");
 
                 // Define headers
-                string[] headers = { "Candidate Name", "Position", "Track", "Interviewer/s Name", "Date and Time", "Score", "Status", "Notes" };
-                int[] columnWidths = { 25, 20, 20, 30, 18, 10, 15, 50 }; // Adjusted column widths
+                string[] headers = {
+                    "Candidate Name", "Position", "Track",
+                    "Interviewer/s Name", "Date and Time",
+                    "Score", "Statuses (All)", "Notes"
+                };
+                int[] columnWidths = { 25, 20, 20, 30, 18, 10, 40, 50 };
 
-                // Add headers and apply styling
+                // Add headers
                 for (int i = 0; i < headers.Length; i++)
                 {
                     var cell = worksheet.Cells[1, i + 1];
@@ -34,7 +42,7 @@ namespace CMS.Application.Helpers
                     cell.Style.Font.Color.SetColor(Color.White);
                     cell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
                     cell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
-                    worksheet.Column(i + 1).Width = columnWidths[i]; // Set column width
+                    worksheet.Column(i + 1).Width = columnWidths[i];
                 }
 
                 int row = 2;
@@ -43,8 +51,14 @@ namespace CMS.Application.Helpers
                     double? score = await getScoreCallback(item.InterviewsId);
 
                     string interviewers = item.InterviewerName;
-                    if (!string.IsNullOrEmpty(item.SecondInterviewerName) && item.SecondInterviewerName != "User not found")
+                    if (!string.IsNullOrEmpty(item.SecondInterviewerName) &&
+                        item.SecondInterviewerName != "User not found")
+                    {
                         interviewers += " && " + item.SecondInterviewerName;
+                    }
+
+                    // ✅ Get full statuses history for this candidate
+                    string allStatuses = await getAllStatusesCallback(item.CandidateId);
 
                     worksheet.Cells[row, 1].Value = item.FullName;
                     worksheet.Cells[row, 2].Value = item.Name;
@@ -52,19 +66,15 @@ namespace CMS.Application.Helpers
                     worksheet.Cells[row, 4].Value = interviewers;
                     worksheet.Cells[row, 5].Style.Numberformat.Format = "yyyy-mm-dd";
                     worksheet.Cells[row, 5].Value = item.Date;
-                    worksheet.Cells[row, 5].Value = item.Date;
-                    if (score != null)
-                        worksheet.Cells[row, 6].Value = score;
-                    else
-                        worksheet.Cells[row, 6].Value = "N/A"; worksheet.Cells[row, 7].Value = item.StatusName;
+                    worksheet.Cells[row, 6].Value = score ;
+                    worksheet.Cells[row, 7].Value = allStatuses; // ✅ All statuses combined
                     worksheet.Cells[row, 8].Value = item.Notes;
 
-                    // Center align data and wrap text for Notes column
                     for (int col = 1; col <= headers.Length; col++)
                     {
                         worksheet.Cells[row, col].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
                         worksheet.Cells[row, col].Style.VerticalAlignment = ExcelVerticalAlignment.Center;
-                        if (col == 8) // Wrap text for Notes column
+                        if (col == 7 || col == 8) // Wrap text for statuses & notes
                         {
                             worksheet.Cells[row, col].Style.WrapText = true;
                         }
@@ -73,11 +83,10 @@ namespace CMS.Application.Helpers
                     row++;
                 }
 
-                // Auto-fit rows for better visibility of wrapped text in the Notes column
                 worksheet.Cells.AutoFitColumns();
-                worksheet.Column(8).Width = columnWidths[7]; // Keep wider width for notes column
+                worksheet.Column(7).Width = columnWidths[6];
+                worksheet.Column(8).Width = columnWidths[7];
 
-                // Apply border styles to all cells
                 using (var range = worksheet.Cells[1, 1, row - 1, headers.Length])
                 {
                     range.Style.Border.Top.Style = ExcelBorderStyle.Thin;

@@ -123,12 +123,24 @@ public class SearchInterviewsController : Controller
                         paginatedInterviews,
                         async (interviewId) =>
                         {
-                            Result<InterviewsDTO> interviewResult = await _searchInterviewsService.GetById(interviewId);
+                            var interviewResult = await _searchInterviewsService.GetById(interviewId);
                             return interviewResult.IsSuccess ? interviewResult.Value.FirstInterviewScore : (double?)null;
+                        },
+                        async (candidateId) =>
+                        {
+                            var allInterviewsResult = await _searchInterviewsService.GetAllByCandidateId(candidateId);
+                            if (!allInterviewsResult.IsSuccess) return "N/A";
+
+                            // ✅ Combine all statuses: "Approved by John | Rejected by Sarah | Pending by Ahmed"
+                            return string.Join(" | ", allInterviewsResult.Value
+                                .OrderByDescending(x => x.Date)
+                                .Select(x => $"{x.StatusName} by {x.InterviewerName}"));
                         });
 
-                    return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Interviews.xlsx");
+                    string fileName = $"Interviews_Report_{DateTime.Now:yyyy-MM-dd_HHmmss}.xlsx";
+                    return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
                 }
+
                 else
                     return View(paginatedInterviews);
 
@@ -285,29 +297,41 @@ public class SearchInterviewsController : Controller
             throw;
         }
     }
-
     [Route("exportFilteredData")]
-    public async Task<ActionResult> ExportFilteredData(string positionFilter, int? scoreFilter, int? statusFilter, string candidateFilter, string interviewerFilter, DateTime? fromDate, DateTime? toDate, int? trackFilter)
+    public async Task<ActionResult> ExportFilteredData(
+       string positionFilter, int? scoreFilter, int? statusFilter,
+       string candidateFilter, string interviewerFilter,
+       DateTime? fromDate, DateTime? toDate, int? trackFilter)
     {
-        try
-        {
-            IEnumerable<InterviewsDTO> filteredInterviews = await ApplyFiltersAndRetrieveData(positionFilter, scoreFilter, statusFilter, candidateFilter, interviewerFilter, fromDate, toDate, trackFilter, 1, int.MaxValue);
+        var filteredData = await ApplyFiltersAndRetrieveData(
+            positionFilter, scoreFilter, statusFilter,
+            candidateFilter, interviewerFilter,
+            fromDate, toDate, trackFilter, 1, int.MaxValue
+        );
 
-            byte[] excelData = await ExcelHelper.GenerateExcelFileAsync(filteredInterviews, async (interviewId) =>
+        byte[] excelData = await ExcelHelper.GenerateExcelFileAsync(
+            filteredData,
+            async (interviewId) =>
             {
-                Result<InterviewsDTO> scoreResult = await _searchInterviewsService.GetById(interviewId);
+                var scoreResult = await _searchInterviewsService.GetById(interviewId);
                 return scoreResult.IsSuccess ? scoreResult.Value.FirstInterviewScore : (double?)null;
+            },
+            async (candidateId) =>
+            {
+                // ✅ NEW: build full statuses string
+                var allInterviewsResult = await _searchInterviewsService.GetAllByCandidateId(candidateId);
+                if (!allInterviewsResult.IsSuccess) return "N/A";
+
+                return string.Join(" | ", allInterviewsResult.Value
+                    .OrderByDescending(x => x.Date)
+                    .Select(x => $"{x.StatusName} ({x.InterviewerName})"));
             });
 
-            string fileName = "Interviews_Report_" + DateTime.Now.ToString("yyyy-MM-dd_HHmmss") + ".xlsx";
-
-            return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        string fileName = $"Interviews_Report_{DateTime.Now:yyyy-MM-dd_HHmmss}.xlsx";
+        return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
+
+
 
     [Route("{id}/details")]
     public async Task<ActionResult> Details(int id)

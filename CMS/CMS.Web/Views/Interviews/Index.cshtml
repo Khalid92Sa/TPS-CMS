@@ -155,7 +155,17 @@
                                         <td hidden></td>
                                     }
                                     <td>
-                                        <a class="bx bx-detail" style="font-size:x-large" asp-action="Details" asp-route-id="@item.InterviewsId" asp-route-previousAction="Index" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="Details"></a>
+                                        <a class="bx bx-detail" style="font-size:x-large"
+                                           asp-action="Details"
+                                           asp-route-id="@item.InterviewsId"
+                                           asp-route-statusFilter="@ViewBag.statusFilter"
+                                           asp-route-candidateFilter="@ViewBag.candidateFilter"
+                                           asp-route-trackFilter="@ViewBag.trackFilter"
+                                           asp-route-pageNumber="@ViewBag.PageNumber"
+                                           asp-route-pageSize="@ViewBag.PageSize"
+                                           data-bs-toggle="tooltip"
+                                           data-bs-placement="left"
+                                           data-bs-original-title="Details"></a>
 
                                         @if ((item.InterviewerRole == "Interviewer" || item.InterviewerRole == "General Manager" || item.InterviewerRole == "Solution Architecture") && item.StatusName == StatusCode.GetName("PND")  && item.ParentId ==null)
                                         {

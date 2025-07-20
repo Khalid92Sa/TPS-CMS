@@ -559,4 +559,17 @@ public class SearchInterviewsService : ISearchInterviewsService
         // No parent interview, return the current interview's score
         return interview?.Score;
     }
+    public async Task<Result<List<InterviewsDTO>>> GetAllByCandidateId(int candidateId)
+    {
+        var result = await GetAll();
+        if (!result.IsSuccess)
+            return Result<List<InterviewsDTO>>.Failure(result.Error);
+
+        var interviews = result.Value
+            .Where(i => i.CandidateId == candidateId)
+            .ToList();
+
+        return Result<List<InterviewsDTO>>.Success(interviews);
+    }
+
 }

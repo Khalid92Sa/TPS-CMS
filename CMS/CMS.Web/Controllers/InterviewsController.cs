@@ -160,6 +160,9 @@ public class InterviewsController : Controller
         {
             ViewBag.statusFilter = statusFilter;
             ViewBag.candidateFilter = candidateFilter;
+            ViewBag.trackFilter = trackFilter;
+            ViewBag.PageNumber = pageNumber;
+            ViewBag.PageSize = pageSize;
 
             if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
             {
@@ -334,13 +337,27 @@ public class InterviewsController : Controller
             throw;
         }
     }
-
     [Route("{id}/details")]
-    public async Task<ActionResult> Details(int id, string previousAction)
+    public async Task<ActionResult> Details(
+        int id,
+        string previousAction,
+        int? statusFilter,
+        string candidateFilter,
+        int? trackFilter,
+        int pageNumber = 1,
+        int pageSize = 5)
     {
         try
         {
-            ViewBag.PreviousAction = previousAction;
+            ViewBag.PreviousAction = previousAction ?? "Index";
+
+            // ✅ Pass filters back to view for Back to List button
+            ViewBag.statusFilter = statusFilter;
+            ViewBag.candidateFilter = candidateFilter;
+            ViewBag.trackFilter = trackFilter;
+            ViewBag.PageNumber = pageNumber;
+            ViewBag.PageSize = pageSize;
+
             Result<InterviewsDTO> result = await _interviewsService.GetInterviewDetailsWithAdditionalInfo(id);
 
             await LoadSelectionLists();
@@ -351,7 +368,6 @@ public class InterviewsController : Controller
                 interviewsDTO.InterviewerName = await _interviewsService.GetInterviewerName(interviewsDTO.InterviewerId);
                 return View(interviewsDTO);
             }
-
             else
             {
                 ModelState.AddModelError("", result.Error);
@@ -363,6 +379,7 @@ public class InterviewsController : Controller
             throw;
         }
     }
+
 
     [Route("{id}/showHistory")]
     public async Task<ActionResult> ShowHistory(int id)

@@ -21,5 +21,5 @@ public interface ISearchInterviewsService
     Task<Result<List<InterviewsDTO>>> MyInterviews(int? companyFilter, int? trackFilter);
     Task<string> GetInterviewerName(string id);
     Task<Result<List<InterviewsDTO>>> ShowHistory(int id);
-
+    Task<Result<List<InterviewsDTO>>> GetAllByCandidateId(int candidateId);
 }
