@@ -60,7 +60,7 @@ public class CandidatesController : Controller
                 IEnumerable<CandidateDTO> candidates = await _candidateService.GetAllCandidatesAsync();
 
                 Result<List<TrackDTO>> tracks = await _trackService.GetAll();
-                ViewBag.TrackList = new SelectList(tracks.Value, "Id", "Name");
+                ViewBag.TrackList = new SelectList(tracks.Value.OrderBy(x => x.Name), "Id", "Name");
 
                 if (!string.IsNullOrEmpty(Phone))
                     candidates = candidates.Where(i => i.Phone.ToString().Contains(Phone))
@@ -132,7 +132,7 @@ public class CandidatesController : Controller
         try
         {
             Result<IEnumerable<PositionDTO>> positions = await _positionService.GetAll();
-            ViewBag.positions = new SelectList(positions.Value, "Id", "Name");
+            ViewBag.positions = new SelectList(positions.Value.OrderBy(x => x.Name), "Id", "Name");
 
             Result<List<CompanyDTO>> CompaniesDTOs = await _companyService.GetAll();
             ViewBag.CompaniesDTOs = new SelectList(CompaniesDTOs.Value, "Id", "Name");
@@ -141,7 +141,7 @@ public class CandidatesController : Controller
             ViewBag.CountryDTOs = new SelectList(Country.Value, "Id", "Name");
 
             Result<List<TrackDTO>> tracks = await _trackService.GetAll();
-            ViewBag.Tracks = new SelectList(tracks.Value, "Id", "Name");
+            ViewBag.Tracks = new SelectList(tracks.Value.OrderBy(x => x.Name), "Id", "Name");
 
             return View();
         }
@@ -244,7 +244,7 @@ public class CandidatesController : Controller
                 return NotFound();
 
             Result<IEnumerable<PositionDTO>> positions = await _positionService.GetAll();
-            ViewBag.positions = new SelectList(positions.Value, "Id", "Name");
+            ViewBag.positions = new SelectList(positions.Value.OrderBy(x => x.Name), "Id", "Name");
 
             Result<List<CompanyDTO>> CompaniesDTOs = await _companyService.GetAll();
             ViewBag.CompaniesDTOs = new SelectList(CompaniesDTOs.Value, "Id", "Name");
@@ -253,7 +253,7 @@ public class CandidatesController : Controller
             ViewBag.CountryDTOs = new SelectList(Country.Value, "Id", "Name");
 
             Result<List<TrackDTO>> tracks = await _trackService.GetAll();
-            ViewBag.Tracks = new SelectList(tracks.Value, "Id", "Name");
+            ViewBag.Tracks = new SelectList(tracks.Value.OrderBy(x => x.Name), "Id", "Name");
 
             return View(candidate);
         }

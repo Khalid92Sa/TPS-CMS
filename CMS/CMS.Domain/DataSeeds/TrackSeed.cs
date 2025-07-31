@@ -15,7 +15,8 @@ public class TrackSeed : IEntityTypeConfiguration<Track>
                          new Track { Id = 4, Name = "PM" },
                          new Track { Id = 5, Name = "IT" },
                          new Track { Id = 6, Name = "Frontend" },
-                         new Track { Id = 7, Name = "UI/UX" }
+                         new Track { Id = 7, Name = "UI/UX" },
+                         new Track { Id = 8, Name = "Ai" }
                          //new Track { Id = 8, Name = "Finance" },
                          //new Track { Id = 9, Name = "BI" },
                          //new Track { Id = 10, Name = "SharePoint" }

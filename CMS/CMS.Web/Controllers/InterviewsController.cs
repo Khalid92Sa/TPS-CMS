@@ -180,8 +180,8 @@ public class InterviewsController : Controller
                     return View(new PaginatedList<InterviewsDTO>([], 0, pageNumber, pageSize));
                 }
 
-                ViewBag.TrackList = new SelectList(tracksResult.Value, "Id", "Name");
-
+                ViewBag.TrackList = new SelectList(tracksResult.Value.OrderBy(x => x.Name), "Id", "Name");
+             
                 List<StatusDTO> statuses = statusesResult.Value;
                 ViewBag.StatusList = new SelectList(statuses, "Id", "Name");
 
@@ -456,7 +456,8 @@ public class InterviewsController : Controller
         try
         {
             Result<IEnumerable<PositionDTO>> positions = await _positionService.GetAll();
-            ViewBag.positionList = new SelectList(positions.Value, "Id", "Name");
+            IOrderedEnumerable<PositionDTO> sortedPositions = positions.Value.OrderBy(x => x.Name);
+            ViewBag.positionList = new SelectList(sortedPositions, "Id", "Name");
 
             IEnumerable<CandidateDTO> candidates = await _candidateService.GetAllCandidatesAsync();
             IOrderedEnumerable<CandidateDTO> sortedCandidates = candidates.OrderByDescending(x => x.Id);
@@ -472,7 +473,7 @@ public class InterviewsController : Controller
             ViewBag.statusList = new SelectList(statuses.Value, "Id", "Name");
 
             Result<List<TrackDTO>> tracks = await _trackService.GetAll();
-            ViewBag.Tracks = new SelectList(tracks.Value, "Id", "Name");
+            ViewBag.Tracks = new SelectList(tracks.Value.OrderBy(x => x.Name), "Id", "Name");
         }
         catch (Exception)
         {

@@ -83,7 +83,7 @@ public class SearchInterviewsController : Controller
             if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
             {
                 Result<IEnumerable<PositionDTO>> positionsDTO = await _positionService.GetAll();
-                ViewBag.PositionList = new SelectList(positionsDTO.Value, "Id", "Name");
+                ViewBag.PositionList = new SelectList(positionsDTO.Value.OrderBy(x => x.Name), "Id", "Name");
 
                 Result<List<StatusDTO>> statusesResult = await _StatusService.GetAll();
                 if (!statusesResult.IsSuccess)
@@ -102,7 +102,7 @@ public class SearchInterviewsController : Controller
                 ViewBag.InterviewerList = new SelectList(interviewersDTO, "Id", "Name");
 
                 Result<List<TrackDTO>> tracks = await _trackService.GetAll();
-                ViewBag.TrackListDropdown = new SelectList(tracks.Value, "Id", "Name");
+                ViewBag.TrackListDropdown = new SelectList(tracks.Value.OrderBy(x => x.Name), "Id", "Name");
 
                 TempData["PositionFilter"] = positionFilter;
                 TempData["ScoreFilter"] = scoreFilter;
@@ -397,7 +397,7 @@ public class SearchInterviewsController : Controller
                 return NotFound();
 
             Result<IEnumerable<PositionDTO>> positionDTOs = await _positionService.GetAll();
-            ViewBag.positionDTOs = new SelectList(positionDTOs.Value, "Id", "Name");
+            ViewBag.positionDTOs = new SelectList(positionDTOs.Value.OrderBy(x => x.Name), "Id", "Name");
 
             IEnumerable<CandidateDTO> candidateDTOs = await _candidateService.GetAllCandidatesAsync();
             ViewBag.candidateDTOs = new SelectList(candidateDTOs, "Id", "FullName");
