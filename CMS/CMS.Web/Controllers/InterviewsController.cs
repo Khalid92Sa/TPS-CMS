@@ -1,4 +1,5 @@
-﻿using CMS.Application.DTOs;
+﻿using CMS.Application.CustomRoleAuth;
+using CMS.Application.DTOs;
 using CMS.Application.EmailTemplates;
 using CMS.Application.Extensions;
 using CMS.Application.Helpers;
@@ -79,12 +80,11 @@ public class InterviewsController : Controller
 
 
     [Route("myInterviews")]
+    [AuthorizeRoles("HR Manager", "Interviewer", "General Manager", "Solution Architecture")]
     public async Task<ActionResult> MyInterviews(int? statusFilter, int? companyFilter, int? trackFilter, int pageNumber = 1, int pageSize = 5)
     {
         try
         {
-            if (User.IsInRole("Interviewer") || User.IsInRole("General Manager") || User.IsInRole("HR Manager") || User.IsInRole("Solution Architecture"))
-            {
                 Result<List<StatusDTO>> statusesResult = await _StatusService.GetAll();
                 if (!statusesResult.IsSuccess)
                 {
@@ -100,7 +100,7 @@ public class InterviewsController : Controller
                 }
 
                 List<CompanyDTO> companies = companiesResult.Value;
-                ViewBag.CompanyList = new SelectList(companies, "Id", "Name");
+                ViewBag.CompanyList = new SelectList(companies.OrderBy(x => x.Name), "Id", "Name");
 
                 List<StatusDTO> statuses = statusesResult.Value;
                 ViewBag.StatusList = new SelectList(statuses, "Id", "Name");
@@ -116,7 +116,7 @@ public class InterviewsController : Controller
                 }
 
                 List<TrackDTO> tracks = tracksResult.Value;
-                ViewBag.TrackList = new SelectList(tracks, "Id", "Name");
+                ViewBag.TrackList = new SelectList(tracks.OrderBy(x => x.Name), "Id", "Name");
 
                 Result<List<InterviewsDTO>> result = await _interviewsService.MyInterviews(companyFilter, trackFilter);
                 if (!result.IsSuccess)
@@ -138,14 +138,6 @@ public class InterviewsController : Controller
                     .ToList();
 
                 return View(new PaginatedList<InterviewsDTO>(paginatedInterviews, interviewsDTOs.Count, pageNumber, pageSize));
-            }
-            else
-            {
-                if (User.Identity.IsAuthenticated)
-                    return View("AccessDenied");
-                else
-                    return RedirectToAction("login", "users");
-            }
         }
         catch (Exception)
         {
@@ -154,6 +146,7 @@ public class InterviewsController : Controller
     }
 
     [Route("index")]
+    [AuthorizeRoles("Admin", "HR Manager")]
     public async Task<ActionResult> Index(int? statusFilter, string candidateFilter, int? trackFilter, int pageNumber = 1, int pageSize = 5)
     {
         try
@@ -164,8 +157,6 @@ public class InterviewsController : Controller
             ViewBag.PageNumber = pageNumber;
             ViewBag.PageSize = pageSize;
 
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
-            {
                 Result<List<StatusDTO>> statusesResult = await _StatusService.GetAll();
                 if (!statusesResult.IsSuccess)
                 {
@@ -205,14 +196,6 @@ public class InterviewsController : Controller
                 ViewBag.ArchiId = archiId;
 
                 return View(filteredInterviews);
-            }
-            else
-            {
-                if (User.Identity.IsAuthenticated)
-                    return View("AccessDenied");
-                else
-                    return RedirectToAction("login", "users");
-            }
         }
         catch (Exception)
         {
@@ -269,6 +252,7 @@ public class InterviewsController : Controller
 
     [HttpGet]
     [Route("{id}/stopCycle")]
+    [AuthorizeRoles("Admin", "HR Manager")]
     public async Task<IActionResult> StopCycle(int id, int? statusFilter,
         string candidateFilter,
         int? trackFilter,
@@ -428,22 +412,13 @@ public class InterviewsController : Controller
     }
 
     [Route("create")]
+    [AuthorizeRoles("Admin", "HR Manager")]
     public async Task<ActionResult> Create()
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
-            {
                 await LoadSelectionLists();
                 return View();
-            }
-            else
-            {
-                if (User.Identity.IsAuthenticated)
-                    return View("AccessDenied");
-                else
-                    return RedirectToAction("login", "users");
-            }
         }
         catch (Exception)
         {
@@ -578,6 +553,7 @@ public class InterviewsController : Controller
 
 
     [Route("{id}/update")]
+    [AuthorizeRoles("Admin", "HR Manager")]
     public async Task<ActionResult> Edit(int id, int? statusFilter,
         string candidateFilter,
         int? trackFilter,
@@ -592,8 +568,6 @@ public class InterviewsController : Controller
             ViewBag.PageNumber = pageNumber;
             ViewBag.PageSize = pageSize;
 
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
-            {
                 if (id <= 0)
                     return NotFound();
 
@@ -609,18 +583,7 @@ public class InterviewsController : Controller
                 await LoadSelectionLists();
 
                 return View(interviewDTO);
-            }
-            else
-            {
-                if (User.Identity.IsAuthenticated)
-                {
-                    return View("AccessDenied");
-                }
-                else
-                {
-                    return RedirectToAction("login", "users");
-                }
-            }
+           
         }
         catch (Exception)
         {
@@ -751,6 +714,7 @@ public class InterviewsController : Controller
 
 
     [Route("{id}/delete")]
+    [AuthorizeRoles("Admin", "HR Manager")]
     public async Task<ActionResult> Delete(int id)
     {
         try

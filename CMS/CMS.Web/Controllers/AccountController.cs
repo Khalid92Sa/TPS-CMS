@@ -1,4 +1,5 @@
-﻿using CMS.Application.DTOs;
+﻿using CMS.Application.CustomRoleAuth;
+using CMS.Application.DTOs;
 using CMS.Application.EmailTemplates;
 using CMS.Application.Helpers;
 using CMS.Services.Interfaces;
@@ -143,12 +144,11 @@ public class AccountController : Controller
     }
 
     [Route("index")]
+    [AuthorizeRoles("Admin", "HR Manager")]
     public async Task<IActionResult> Index(string userName, int pageNumber = 1, int pageSize = 5)
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
-            {
                 ViewBag.userNameFilter = userName;
 
                 List<Register> usersWithRoles = await _accountService.GetAllUsersWithRolesAsync();
@@ -165,16 +165,6 @@ public class AccountController : Controller
                 PaginatedList<Register> paginatedList = new(paginatedUsers, usersWithRoles.Count, pageNumber, pageSize);
 
                 return View(paginatedList);
-            }
-
-            else if (User.Identity.IsAuthenticated)
-            {
-                return View("AccessDenied");
-            }
-            else
-            {
-                return Redirect(Url.Action("login", "users"));
-            }
         }
         catch (Exception)
         {
@@ -183,6 +173,7 @@ public class AccountController : Controller
     }
 
     [Route("{id}/details")]
+    [AuthorizeRoles("Admin", "HR Manager")]
     public async Task<IActionResult> Details(string id)
     {
         try
@@ -197,6 +188,7 @@ public class AccountController : Controller
     }
 
     [Route("create")]
+    [AuthorizeRoles("Admin", "HR Manager")]
     public IActionResult Create()
     {
         try
@@ -277,6 +269,7 @@ public class AccountController : Controller
     }
 
     [Route("{id}/update")]
+    [AuthorizeRoles("Admin", "HR Manager")]
     public async Task<IActionResult> Edit(string id)
     {
         try
@@ -396,6 +389,7 @@ public class AccountController : Controller
     }
 
     [Route("{id}/delete")]
+    [AuthorizeRoles("Admin", "HR Manager")]
     public async Task<IActionResult> Delete(string id)
     {
         try

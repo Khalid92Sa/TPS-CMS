@@ -11,4 +11,5 @@ public class TrackDTO
     public string Name { get; set; }
     public List<InterviewsDTO> InterviewsDTO { get; set; }
     public List<CandidateDTO> Candidates { get; set; }
+    public int CandidateCount { get; set; }
 }

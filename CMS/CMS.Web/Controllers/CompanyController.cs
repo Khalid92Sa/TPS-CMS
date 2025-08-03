@@ -1,4 +1,5 @@
-﻿using CMS.Application.DTOs;
+﻿using CMS.Application.CustomRoleAuth;
+using CMS.Application.DTOs;
 using CMS.Application.Extensions;
 using CMS.Application.Helpers;
 using CMS.Services.Interfaces;
@@ -13,6 +14,7 @@ using System.Threading.Tasks;
 namespace CMS.Web.Controllers;
 
 [Route("companies")]
+[AuthorizeRoles("Admin", "HR Manager")]
 public class CompanyController : Controller
 {
     private readonly ICompanyService _companyService;
@@ -87,8 +89,6 @@ public class CompanyController : Controller
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
-            {
                 ViewBag.companyNameFilter = companyName;
 
                 Result<List<CompanyDTO>> result = await _companyService.GetAll();
@@ -114,14 +114,6 @@ public class CompanyController : Controller
                     ModelState.AddModelError(string.Empty, result.Error);
                     return View();
                 }
-            }
-            else
-            {
-                if (User.Identity.IsAuthenticated)
-                    return View("AccessDenied");
-                else
-                    return RedirectToAction("login", "users");
-            }
         }
         catch (Exception)
         {

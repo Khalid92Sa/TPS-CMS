@@ -1,4 +1,5 @@
-﻿using CMS.Application.DTOs;
+﻿using CMS.Application.CustomRoleAuth;
+using CMS.Application.DTOs;
 using CMS.Application.Extensions;
 using CMS.Application.Helpers;
 using CMS.Services.Interfaces;
@@ -13,6 +14,7 @@ using System.Threading.Tasks;
 namespace CMS.Web.Controllers;
 
 [Route("countries")]
+[AuthorizeRoles("Admin", "HR Manager")]
 public class CountryController : Controller
 {
     private readonly ICountryService _countryService;
@@ -25,8 +27,6 @@ public class CountryController : Controller
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
-            {
                 ViewBag.countryNameFilter = countryName;
 
                 Result<List<CountryDTO>> result = await _countryService.GetAll();
@@ -52,15 +52,6 @@ public class CountryController : Controller
                     ModelState.AddModelError(string.Empty, result.Error);
                     return View();
                 }
-            }
-            else if (User.Identity.IsAuthenticated)
-            {
-                return View("AccessDenied");
-            }
-            else
-            {
-                return RedirectToAction("login", "users");
-            }
         }
         catch (Exception)
         {

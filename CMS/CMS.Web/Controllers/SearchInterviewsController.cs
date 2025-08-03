@@ -1,4 +1,5 @@
-﻿using CMS.Application.DTOs;
+﻿using CMS.Application.CustomRoleAuth;
+using CMS.Application.DTOs;
 using CMS.Application.Extensions;
 using CMS.Application.Helpers;
 using CMS.Services.Interfaces;
@@ -18,6 +19,7 @@ using System.Threading.Tasks;
 namespace CMS.Web.Controllers;
 
 [Route("interviewsFilteration")]
+[AuthorizeRoles("Admin", "HR Manager", "General Manager", "Viewer")]
 public class SearchInterviewsController : Controller
 {
 
@@ -80,8 +82,6 @@ public class SearchInterviewsController : Controller
             ViewBag.CurrentPage = pageNumber;
             ViewBag.PageSize = pageSize;
 
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
-            {
                 Result<IEnumerable<PositionDTO>> positionsDTO = await _positionService.GetAll();
                 ViewBag.PositionList = new SelectList(positionsDTO.Value.OrderBy(x => x.Name), "Id", "Name");
 
@@ -143,15 +143,6 @@ public class SearchInterviewsController : Controller
 
                 else
                     return View(paginatedInterviews);
-
-            }
-            else
-            {
-                if (User.Identity.IsAuthenticated)
-                    return View("AccessDenied");
-                else
-                    return RedirectToAction("login", "users");
-            }
         }
         catch (Exception)
         {

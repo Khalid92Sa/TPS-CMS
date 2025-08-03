@@ -1,4 +1,5 @@
-﻿using CMS.Application.DTOs;
+﻿using CMS.Application.CustomRoleAuth;
+using CMS.Application.DTOs;
 using CMS.Application.Extensions;
 using CMS.Application.Helpers;
 using CMS.Domain.Entities;
@@ -18,6 +19,7 @@ using System.Threading.Tasks;
 namespace CMS.Web.Controllers;
 
 [Route("candidates")]
+[AuthorizeRoles("Admin", "HR Manager")]
 public class CandidatesController : Controller
 {
     private readonly ICandidateService _candidateService;
@@ -55,8 +57,6 @@ public class CandidatesController : Controller
         {
             ViewBag.candidateFilter = FullName;
 
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
-            {
                 IEnumerable<CandidateDTO> candidates = await _candidateService.GetAllCandidatesAsync();
 
                 Result<List<TrackDTO>> tracks = await _trackService.GetAll();
@@ -88,13 +88,6 @@ public class CandidatesController : Controller
                 PaginatedList<CandidateDTO> paginatedList = new(paginatedCandidates, totalCount, pageNumber, pageSize);
 
                 return View(paginatedList);
-            }
-
-            else if (User.Identity.IsAuthenticated)
-                return View("AccessDenied");
-
-            else
-                return Redirect(Url.Action("login", "users"));
         }
         catch (Exception)
         {

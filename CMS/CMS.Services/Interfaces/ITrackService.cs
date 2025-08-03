@@ -8,4 +8,7 @@ public interface ITrackService
 {
     Task<Result<List<TrackDTO>>> GetAll();
     Task<Result<TrackDTO>> GetById(int id);
+    Task<Result<TrackDTO>> Create(TrackDTO dto);
+    Task<Result<bool>> Update(TrackDTO dto);
+    Task<Result<bool>> Delete(int id);
 }

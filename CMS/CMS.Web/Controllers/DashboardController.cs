@@ -1,4 +1,5 @@
-﻿using CMS.Application.DTOs;
+﻿using CMS.Application.CustomRoleAuth;
+using CMS.Application.DTOs;
 using CMS.Application.Extensions;
 using CMS.Application.Helpers;
 using CMS.Domain;
@@ -18,6 +19,7 @@ using System.Threading.Tasks;
 namespace CMS.Web.Controllers;
 
 [Route("dashboard")]
+[AuthorizeRoles("Admin", "HR Manager", "General Manager","Viewer")]
 public class DashboardController : Controller
 {
     private readonly IReportingService _reportingService;
@@ -54,8 +56,6 @@ public class DashboardController : Controller
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("General Manager") || User.IsInRole("HR Manager") || User.IsInRole("Viewer"))
-            {
                 PerformanceReportDTO report = (await _reportingService.GetBusinessPerformanceReport()).Value;
 
                 double totalPercentage = 0;
@@ -93,14 +93,6 @@ public class DashboardController : Controller
                 ViewBag.TreeData = treeData;
 
                 return View(report);
-            }
-            else
-            {
-                if (User.Identity.IsAuthenticated)
-                    return View("AccessDenied");
-                else
-                    return RedirectToAction("login", "users");
-            }
         }
         catch (Exception)
         {
@@ -213,8 +205,6 @@ public class DashboardController : Controller
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
-            {
                 string HrId = "";
 
                 IdentityRole Hr = await _roleManager.FindByNameAsync("HR Manager");
@@ -264,9 +254,6 @@ public class DashboardController : Controller
                 ViewBag.CompanyList = new SelectList(companies, "Id", "Name");
 
                 return View(paginatedAcceptedCandidates);
-            }
-            else
-                return View("AccessDenied");
         }
         catch (Exception)
         {
@@ -279,8 +266,6 @@ public class DashboardController : Controller
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
-            {
                 List<CandidateDTO> pendingCandidates = await _statusRepository.GetPendingCandidatesByCode(Domain.Enums.StatusCode.Pending);
 
                 if (!string.IsNullOrEmpty(candidateName))
@@ -324,9 +309,6 @@ public class DashboardController : Controller
                 ViewBag.CompanyList = new SelectList(companies, "Id", "Name");
 
                 return View(paginatedPendingCandidates);
-            }
-            else
-                return View("AccessDenied");
         }
         catch (Exception)
         {
@@ -339,8 +321,6 @@ public class DashboardController : Controller
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
-            {
                 List<CandidateDTO> rejectedCandidates = await _statusRepository.GetCandidatesByCode(Domain.Enums.StatusCode.Rejected);
                 if (!string.IsNullOrEmpty(candidateName))
                 {
@@ -384,9 +364,6 @@ public class DashboardController : Controller
                 ViewBag.CompanyList = new SelectList(companies, "Id", "Name");
 
                 return View(paginatedRejectedCandidatess);
-            }
-            else
-                return View("AccessDenied");
         }
         catch (Exception)
         {
@@ -399,8 +376,6 @@ public class DashboardController : Controller
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
-            {
                 List<CandidateDTO> onHoldCandidates = await _statusRepository.GetCandidatesByCode(Domain.Enums.StatusCode.OnHold);
 
                 if (!string.IsNullOrEmpty(candidateName))
@@ -444,9 +419,6 @@ public class DashboardController : Controller
                 ViewBag.CompanyList = new SelectList(companies, "Id", "Name");
 
                 return View(paginatedOnHoldCandidatess);
-            }
-            else
-                return View("AccessDenied");
         }
         catch (Exception)
         {
@@ -460,8 +432,6 @@ public class DashboardController : Controller
     {
         try
         {
-            if (User.IsInRole("Admin") || User.IsInRole("HR Manager") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
-            {
                 List<CandidateDTO> stoppedCyclesCandidates = await _statusRepository.GetStoppedCyclesCandidatesByNote();
 
                 if (!string.IsNullOrEmpty(candidateName))
@@ -505,9 +475,6 @@ public class DashboardController : Controller
                 ViewBag.CompanyList = new SelectList(companies, "Id", "Name");
 
                 return View(paginatedStoppedCyclesCandidates);
-            }
-            else
-                return View("AccessDenied");
         }
         catch (Exception)
         {

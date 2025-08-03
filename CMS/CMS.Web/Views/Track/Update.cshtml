@@ -1,0 +1,89 @@
+﻿@model CMS.Application.DTOs.TrackDTO
+
+@{
+    ViewData["Title"] = "Edit Track";
+}
+
+<style>
+    .card-header {
+        color: white;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        border: none;
+        color: white;
+    }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
+            color: white;
+            transition: background 0.3s ease;
+        }
+
+    .btn-secondary {
+        background-color: gray;
+        border-color: gray;
+    }
+
+        .btn-secondary:hover {
+            background-color: darkgray !important;
+            border-color: darkgray !important;
+        }
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 style="color:white !important;">Edit Track</h2>
+        </div>
+        <div class="card-body">
+            <form asp-action="Update" class="needs-validation" novalidate>
+                <div class="row">
+                    <!-- Track Name -->
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Name" class="form-label">
+                            <span class="text-danger">*</span> Track Name
+                            <i class="fas fa-info-circle" data-toggle="tooltip" title="Enter the track name."></i>
+                        </label>
+                        <input asp-for="Name" class="form-control" placeholder="Enter track name" />
+                        <div class="invalid-feedback">Track name is required.</div>
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-success px-4">Update Track</button>
+                    <a class="btn btn-secondary" asp-action="Index">Back to list</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+<script>
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+
+        $('form').submit(function (e) {
+            var isValid = true;
+            var name = $('#Name').val().trim();
+
+            // Validate Name
+            if (!name) {
+                $('#Name').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $('#Name').removeClass('is-invalid').addClass('is-valid');
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+    });
+</script>

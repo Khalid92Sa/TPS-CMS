@@ -1,0 +1,90 @@
+﻿@model CMS.Application.DTOs.TrackDTO
+@{
+    ViewData["Title"] = "Confirm Delete";
+}
+
+<div class="container my-5">
+    <div class="card shadow border-0 rounded-lg">
+        <div class="card-header text-dark text-center py-4 border-bottom" style="background: linear-gradient(135deg, #486fc7, #319ca7);">
+            <h4 class="mb-0" style="color:white;">Confirm Deletion</h4>
+        </div>
+
+        <div class="card-body px-4 py-5">
+            <div class="alert alert-light text-center shadow-sm border border-warning rounded-lg">
+                <h5 class="mb-3 text-danger">Are you sure you want to delete this track?</h5>
+                <p class="text-muted">
+                    This action cannot be undone. <br />
+                    <strong>All candidates related to this track will also be deleted.</strong>
+                </p>
+            </div>
+
+            <div class="row justify-content-center">
+                <div class="col-lg-8" style="margin-left:20%;">
+                    <!-- Track Name -->
+                    <dl class="row align-items-center mb-4">
+                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Track Name:</dt>
+                        <dd class="col-sm-8">@Html.DisplayFor(model => model.Name)</dd>
+                    </dl>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="text-center mt-4">
+                    <form id="deleteForm" method="post" asp-action="DeleteConfirmed" asp-route-id="@Model.Id">
+                        @Html.AntiForgeryToken()
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-danger px-4" onclick="showSwalConfirm()">Delete</button>
+                            <a class="btn btn-secondary" asp-action="Index">Back to list</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SweetAlert2 Script -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function showSwalConfirm() {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'This action will permanently delete the track and related candidates!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e3342f',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.getElementById('deleteForm');
+                const url = form.action;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: 'Track and related candidates were successfully deleted.',
+                            confirmButtonColor: '#405189'
+                        }).then(() => {
+                            window.location.href = '@Url.Action("Index", "Track")';
+                        });
+                    } else {
+                        Swal.fire('Error', 'Something went wrong while deleting.', 'error');
+                    }
+                })
+                .catch(() => {
+                    Swal.fire('Error', 'Server error occurred.', 'error');
+                });
+            }
+        });
+    }
+</script>
+
