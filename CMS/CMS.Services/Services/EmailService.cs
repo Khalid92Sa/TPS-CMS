@@ -32,6 +32,7 @@ public class EmailService : IEmailService
     private readonly bool _useDefaultCredentials;
     private readonly bool _enableSsl;
     private readonly string _fromEmail;
+    private readonly string _ccEmail;
 
     public EmailService(
         IHttpContextAccessor httpContextAccessor,
@@ -58,6 +59,7 @@ public class EmailService : IEmailService
         _useDefaultCredentials = _configuration.GetValue<bool>("EmailSettings:UseDefaultCredentials");
         _enableSsl = _configuration.GetValue<bool>("EmailSettings:EnableSsl");
         _fromEmail = _configuration["EmailSettings:FromEmail"];
+        _ccEmail = _configuration["EmailSettings:CcEmail"];
     }
 
 
@@ -196,6 +198,11 @@ public class EmailService : IEmailService
             message.Subject = emailToResend.Subject;
             message.IsBodyHtml = true;
 
+            if (!string.IsNullOrEmpty(_ccEmail))
+            {
+                message.CC.Add(_ccEmail);
+            }
+
             await smtp.SendMailAsync(message);
         }
         catch (Exception)
@@ -273,6 +280,11 @@ public class EmailService : IEmailService
             message.Subject = emailModel.Subject;
             message.IsBodyHtml = true;
 
+            if (!string.IsNullOrEmpty(_ccEmail))
+            {
+                message.CC.Add(_ccEmail);
+            }
+
             await smtp.SendMailAsync(message);
             _logger.LogInformation("Email has been sent successfully to:" + emailModel.EmailTo.FirstOrDefault());
         }
@@ -320,6 +332,11 @@ public class EmailService : IEmailService
             message.Body = emailModel.EmailBody;
             message.Subject = emailModel.Subject;
             message.IsBodyHtml = true;
+
+            if (!string.IsNullOrEmpty(_ccEmail))
+            {
+                message.CC.Add(_ccEmail);
+            }
 
             await smtp.SendMailAsync(message);
         }
