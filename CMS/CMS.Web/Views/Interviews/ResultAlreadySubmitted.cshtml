@@ -1,0 +1,14 @@
+@model CMS.Application.DTOs.InterviewsDTO
+@{
+    ViewData["Title"] = "Interview Result Already Submitted";
+}
+
+<div class="container mt-4">
+    <div class="alert alert-info" role="alert">
+        <strong>The result is already submitted.</strong>
+        <div class="mt-2">
+            Would you like to open the result view?
+            <a class="btn btn-primary btn-sm ms-2" href="@Url.Action("Details", "Interviews", new { id = Model.InterviewsId })">Open Result View</a>
+        </div>
+    </div>
+</div>

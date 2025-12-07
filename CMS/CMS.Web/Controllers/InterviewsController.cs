@@ -854,6 +854,19 @@ public class InterviewsController : Controller
                 Result<InterviewsDTO> result = await _interviewsService.GetInterviewDetails(id);
                 InterviewsDTO InterviewsDTO = result.Value;
 
+                if (InterviewsDTO != null && InterviewsDTO.StatusId.HasValue)
+                {
+                    Result<StatusDTO> currentStatusResult = await _StatusService.GetById(InterviewsDTO.StatusId.Value);
+                    if (currentStatusResult.IsSuccess && currentStatusResult.Value != null)
+                    {
+                        string code = currentStatusResult.Value.Code;
+                        if (!string.Equals(code, Domain.Enums.StatusCode.Pending, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return View("ResultAlreadySubmitted", InterviewsDTO);
+                        }
+                    }
+                }
+
                 return View(InterviewsDTO);
             }
             else
