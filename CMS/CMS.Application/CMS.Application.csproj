@@ -4,12 +4,6 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="SQL_SCRIPTS\01_CreateConfigrationTables.sql" />
-    <Compile Include="SQL_SCRIPTS\03_InsertDataToWorkflowConfig.sql" />
-    <Compile Include="SQL_SCRIPTS\04_UpdateOldData.sql" />
-  </ItemGroup>
-
 	<ItemGroup>
 		<PackageReference Include="EPPlus" Version="7.5.3" />
 		<PackageReference Include="Hangfire.Console" Version="1.4.3" />

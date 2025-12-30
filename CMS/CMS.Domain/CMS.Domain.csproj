@@ -53,6 +53,12 @@
     <Compile Remove="Migrations\20240108063447_test.Designer.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="SQL_SCRIPTS\01_CreateConfigrationTables.sql" />
+    <Compile Include="SQL_SCRIPTS\03_InsertDataToWorkflowConfig.sql" />
+    <Compile Include="SQL_SCRIPTS\04_UpdateOldData.sql" />
+  </ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.8" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.8" />
