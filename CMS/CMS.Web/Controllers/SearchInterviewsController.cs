@@ -288,6 +288,113 @@ public class SearchInterviewsController : Controller
             throw;
         }
     }
+
+    [Route("{id}/hrFirstDetails")]
+    public async Task<ActionResult> HRFirstDetails(
+        int id,
+        string positionFilter,
+        int? scoreFilter,
+        int? statusFilter,
+        string candidateFilter,
+        string interviewerFilter,
+        DateTime? fromDate,
+        DateTime? toDate,
+        int? trackFilterDropdown)
+    {
+        try
+        {
+            ViewBag.PreviousAction = "Index";
+
+            ViewBag.positionFilter = positionFilter;
+            ViewBag.scoreFilter = scoreFilter;
+            ViewBag.statusFilter = statusFilter;
+            ViewBag.candidateFilter = candidateFilter;
+            ViewBag.interviewerFilter = interviewerFilter;
+            ViewBag.fromDate = fromDate;
+            ViewBag.toDate = toDate;
+            ViewBag.TrackList = trackFilterDropdown;
+
+            Result<List<InterviewsDTO>> result = await _searchInterviewsService.GetHRFirstFlowInterviewDetails(id);
+
+            if (result.IsSuccess)
+            {
+                List<InterviewsDTO> interviewsDTOs = result.Value;
+                
+                if (interviewsDTOs.Any())
+                {
+                    var firstInterview = interviewsDTOs.First();
+                    ViewBag.CandidateName = firstInterview.FullName;
+                    ViewBag.PositionName = firstInterview.Name;
+                    ViewBag.TrackName = firstInterview.TrackName;
+                    ViewBag.CandidateCVAttachmentId = firstInterview.CandidateCVAttachmentId;
+                }
+
+                return View(interviewsDTOs);
+            }
+            else
+            {
+                ModelState.AddModelError(string.Empty, result.Error);
+                return View(new List<InterviewsDTO>());
+            }
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    [Route("{id}/showHistoryForHRFirstFlow")]
+    public async Task<ActionResult> ShowHistoryForHRFirstFlow(int id)
+    {
+        try
+        {
+            string positionFilter = TempData["PositionFilter"] as string;
+            int? scoreFilter = TempData["ScoreFilter"] as int?;
+            int? statusFilter = TempData["StatusFilter"] as int?;
+            string candidateFilter = TempData["CandidateFilter"] as string;
+            string interviewerFilter = TempData["InterviewerFilter"] as string;
+            DateTime? fromDate = TempData["FromDate"] as DateTime?;
+            DateTime? toDate = TempData["ToDate"] as DateTime?;
+            int? trackFilterDropdown = TempData["TrackFilterDropdown"] as int?;
+
+            // Pass filter values to the view
+            ViewBag.PositionFilter = positionFilter;
+            ViewBag.ScoreFilter = scoreFilter;
+            ViewBag.StatusFilter = statusFilter;
+            ViewBag.CandidateFilter = candidateFilter;
+            ViewBag.InterviewerFilter = interviewerFilter;
+            ViewBag.FromDate = fromDate;
+            ViewBag.ToDate = toDate;
+            ViewBag.TrackList = trackFilterDropdown;
+
+            Result<List<InterviewsDTO>> result = await _searchInterviewsService.ShowHistoryForHRFirstFlow(id);
+
+            if (result.IsSuccess)
+            {
+                List<InterviewsDTO> interviewsDTOs = result.Value;
+                Result<InterviewsDTO> interviews = await _searchInterviewsService.GetById(id);
+                InterviewsDTO interviewsResult = interviews.Value;
+
+                if (interviewsResult != null)
+                {
+                    int candidateId = interviewsResult.CandidateId;
+                    CandidateDTO candidate = await _candidateService.GetCandidateByIdAsync(candidateId);
+                    ViewBag.CandidateName = candidate.FullName;
+                }
+
+                return View(interviewsDTOs);
+            }
+            else
+            {
+                ModelState.AddModelError(string.Empty, result.Error);
+                return View();
+            }
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
     [Route("exportFilteredData")]
     public async Task<ActionResult> ExportFilteredData(
        string positionFilter, int? scoreFilter, int? statusFilter,

@@ -151,8 +151,20 @@
                                 
                                 
                                 <td>
-                                    <a class="bx bx-detail" style="font-size:x-large" asp-action="Details" asp-route-id="@item.InterviewsId" asp-route-previousAction="MyInterviews"></a> 
-                                   
+                                    @if (item.StartFromHR)
+                                    {
+                                        <a class="bx bx-detail" style="font-size:x-large" 
+                                           asp-action="HRFirstDetails" 
+                                           asp-route-id="@item.InterviewsId" 
+                                           asp-route-previousAction="MyInterviews"
+                                           asp-route-statusFilter="@ViewBag.statusFilter"
+                                           asp-route-companyFilter="@ViewBag.companyFilter"
+                                           asp-route-trackFilter="@ViewBag.trackFilter"></a>
+                                    }
+                                    else
+                                    {
+                                        <a class="bx bx-detail" style="font-size:x-large" asp-action="Details" asp-route-id="@item.InterviewsId" asp-route-previousAction="MyInterviews"></a>
+                                    }
                                 </td>
                                 @if (item.isUpdated == false && item.StatusName == StatusCode.GetName("REJ"))
                                 {
@@ -165,7 +177,14 @@
                                 <td>
                                             <input type="hidden" name="InterviewerId" value="@item.InterviewerId" />
 
-                                            <a class="bx bx-plus" style="font-size:x-large" asp-action="UpdateAfterInterview" asp-route-id="@item.InterviewsId" asp-route-iddd="@item.EvalutaionFormId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Add result"> </a>
+                                            <a class="bx bx-plus" style="font-size:x-large" 
+                                               asp-action="UpdateAfterInterview" 
+                                               asp-route-id="@item.InterviewsId" 
+                                               asp-route-iddd="@item.EvalutaionFormId"
+                                               asp-route-statusFilter="@ViewBag.statusFilter"
+                                               asp-route-companyFilter="@ViewBag.companyFilter"
+                                               asp-route-trackFilter="@ViewBag.trackFilter"
+                                               data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Add result"> </a>
                                     </td>
                                 }
                                 else
@@ -174,14 +193,34 @@
                                 }
                                    
                                 }
-                                <td><a class="bx bx-history" style="font-size:x-large" asp-action="ShowHistory" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="View Candidate History"></a></td>
+                                @if (item.StartFromHR)
+                                {
+                                    <td><a class="bx bx-history" style="font-size:x-large" 
+                                           asp-action="ShowHistoryForHRFirstFlow" 
+                                           asp-route-id="@item.InterviewsId"
+                                           asp-route-previousAction="MyInterviews"
+                                           asp-route-statusFilter="@ViewBag.statusFilter"
+                                           asp-route-companyFilter="@ViewBag.companyFilter"
+                                           asp-route-trackFilter="@ViewBag.trackFilter"
+                                           data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="View Candidate History"></a></td>
+                                }
+                                else
+                                {
+                                    <td><a class="bx bx-history" style="font-size:x-large" asp-action="ShowHistory" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="View Candidate History"></a></td>
+                                }
                                 <td>
                                     <input type="hidden" name="StatusId" value="@item.StatusId" />
                                     @if (User.IsInRole("Interviewer"))
                                     {
                                         @if (item.Score != null)
                                         {
-                                            <a class="bx bxs-edit-alt" style="font-size:x-large" asp-action="UpdateAfterInterviewForEdit" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit"></a>
+                                            <a class="bx bxs-edit-alt" style="font-size:x-large" 
+                                               asp-action="UpdateAfterInterviewForEdit" 
+                                               asp-route-id="@item.InterviewsId"
+                                               asp-route-statusFilter="@ViewBag.statusFilter"
+                                               asp-route-companyFilter="@ViewBag.companyFilter"
+                                               asp-route-trackFilter="@ViewBag.trackFilter"
+                                               data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit"></a>
                                         }
                                         else
                                         {
@@ -196,7 +235,13 @@
                                         }
                                         else
                                         {
-                                            <a class="bx bxs-edit-alt" style="font-size:x-large" asp-action="UpdateAfterInterviewForEdit" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit"></a>
+                                            <a class="bx bxs-edit-alt" style="font-size:x-large" 
+                                               asp-action="UpdateAfterInterviewForEdit" 
+                                               asp-route-id="@item.InterviewsId"
+                                               asp-route-statusFilter="@ViewBag.statusFilter"
+                                               asp-route-companyFilter="@ViewBag.companyFilter"
+                                               asp-route-trackFilter="@ViewBag.trackFilter"
+                                               data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit"></a>
                                         }
                                     }
                                 </td>

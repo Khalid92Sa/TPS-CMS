@@ -23,6 +23,7 @@ public class InterviewsDTO
     public int PositionId { get; set; }
 
     public string modifiedBy { set; get; }
+    public DateTime ModifiedOn { set; get; }
 
     public string PositionName { get; set; }
 
@@ -97,4 +98,10 @@ public class InterviewsDTO
     public string? HRNotes { get; set; }
 
     public string? firstNote { get; set; }
+
+    public int? WorkflowStageId { get; set; }
+
+    public string? StageName { get; set; }
+
+    public bool StartFromHR { get; set; } = false;
 }

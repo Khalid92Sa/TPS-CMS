@@ -10,6 +10,153 @@
         max-width: 100%;
         overflow-y: hidden;
     }
+
+    /* File Upload Modal Styles */
+    .file-upload-area {
+        border: 2px dashed #cbd5e0;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+    }
+
+        .file-upload-area:hover {
+            border-color: #486fc7;
+            background-color: #f0f4ff;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #319ca7;
+            background-color: #e6f7ff;
+            transform: scale(1.02);
+        }
+
+    .file-upload-icon {
+        font-size: 3rem;
+        color: #486fc7;
+        margin-bottom: 1rem;
+    }
+
+    .file-upload-text {
+        color: #4a5568;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .file-upload-hint {
+        color: #718096;
+        font-size: 0.875rem;
+    }
+
+    .file-input-hidden {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .file-preview-container {
+        margin-top: 1rem;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .file-preview-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem;
+        background-color: white;
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .file-preview-info {
+        display: flex;
+        align-items: center;
+        flex: 1;
+    }
+
+    .file-preview-icon {
+        font-size: 1.5rem;
+        color: #486fc7;
+        margin-right: 0.75rem;
+    }
+
+    .file-preview-details {
+        flex: 1;
+    }
+
+    .file-preview-name {
+        font-weight: 500;
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+    }
+
+    .file-preview-size {
+        font-size: 0.875rem;
+        color: #718096;
+    }
+
+    .file-remove-btn {
+        background: none;
+        border: none;
+        color: #e53e3e;
+        font-size: 1.25rem;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        transition: color 0.2s;
+    }
+
+        .file-remove-btn:hover {
+            color: #c53030;
+        }
+
+    .upload-cv-btn {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.875rem;
+    }
+
+        .upload-cv-btn:hover {
+            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(72, 111, 199, 0.3);
+            color: white;
+        }
+
+    .modal-header {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        color: white;
+        border-bottom: none;
+    }
+
+    .modal-header .btn-close {
+        filter: invert(1);
+    }
+
+    .upload-progress {
+        display: none;
+        margin-top: 1rem;
+    }
+
+    .progress-bar {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+    }
 </style>
 @model IEnumerable<CMS.Application.DTOs.CandidateDTO>
 @{
@@ -106,13 +253,9 @@
 
 
                                     <td>
-                                        <form asp-action="UpdateAttachment" asp-route-id="@candidate.Id" enctype="multipart/form-data">
-                                            <div class="form-group" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Upload CV">
-                                                <input type="file" id="file" name="file" class="form-control-file hidden-file-input" data-candidate-id="@candidate.Id" accept=".pdf, .docx, .png, .jpg" />
-                                                <br />
-                                                <span id="fileError" class="text-danger"></span>
-                                            </div>
-                                        </form>
+                                        <button type="button" class="upload-cv-btn" data-bs-toggle="modal" data-bs-target="#uploadCVModal" data-candidate-id="@candidate.Id" data-candidate-name="@candidate.FullName" title="Upload CV">
+                                            <i class="bx bx-cloud-upload"></i> Upload CV
+                                        </button>
                                     </td>
 
                                     <td>
@@ -133,6 +276,74 @@
 
     </div><!--end col-->
 </div><!--end row-->
+
+<!-- Upload CV Modal -->
+<div class="modal fade" id="uploadCVModal" tabindex="-1" aria-labelledby="uploadCVModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadCVModalLabel">
+                    <i class="bx bx-file-blank" style="color:white;"></i> <span style="color:white;">Upload CV</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <p class="text-muted mb-3">
+                        <strong id="candidateNameDisplay"></strong>
+                    </p>
+                </div>
+                <form id="uploadCVForm" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="modalCandidateId" name="candidateId" />
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <input type="file" id="modalFileInput" name="file" class="file-input-hidden" accept=".pdf,.docx,.png,.jpg" />
+                        <div class="file-upload-icon">
+                            <i class="bx bx-cloud-upload"></i>
+                        </div>
+                        <div class="file-upload-text">
+                            <strong>Click to upload</strong> or drag and drop
+                        </div>
+                        <div class="file-upload-hint">
+                            PDF, DOCX, PNG, JPG (Max size: 9MB)
+                        </div>
+                    </div>
+                    <div id="filePreviewContainer" class="file-preview-container" style="display: none;">
+                        <div class="file-preview-item" id="filePreviewItem">
+                            <div class="file-preview-info">
+                                <div class="file-preview-icon">
+                                    <i class="bx bx-file"></i>
+                                </div>
+                                <div class="file-preview-details">
+                                    <div class="file-preview-name" id="fileName"></div>
+                                    <div class="file-preview-size" id="fileSize"></div>
+                                </div>
+                            </div>
+                            <button type="button" class="file-remove-btn" id="removeFileBtn" title="Remove file">
+                                <i class="bx bx-x"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="upload-progress" id="uploadProgress">
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <p class="text-center mt-2 text-muted">Uploading...</p>
+                    </div>
+                    <span id="fileError" class="text-danger d-block mt-2"></span>
+                </form>
+            </div>
+            <div class="modal-footer d-flex justify-content-start">
+                <button type="button" class="btn btn-success" id="uploadSubmitBtn" disabled>
+                    <i class="bx bx-upload"></i> Upload CV
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
 <script>
     $(document).ready(function () {
@@ -155,28 +366,8 @@
 
 <script>
     $(document).ready(function () {
-
         $('.phonenumber').on('input', function () {
             this.value = this.value.replace(/[^0-9+]/g, '');
-        });
-
-        $('.hidden-file-input').change(function () {
-            const fileInput = $(this);
-            const candidateId = fileInput.data('candidate-id');
-            const selectedFile = fileInput[0].files[0];
-            const cvColumn = $('#cvColumn_' + candidateId);
-
-            if (selectedFile) {
-                cvColumn.html('Uploading...');
-
-                fileInput.closest('form').submit();
-
-                setTimeout(function () {
-                    cvColumn.html('<a asp-controller="Attachments" asp-action="Download" asp-route-id="' + candidateId + '">Download CV</a>');
-                }, 3000);
-            } else {
-                cvColumn.html('No CV Available');
-            }
         });
 
         $('#resetButton').on('click', function () {
@@ -185,8 +376,271 @@
             $('#trackFilter').val(''); 
             window.location.href = '@Url.Action("Index", "Candidates")';
         });
+
+        // Modal and File Upload Functionality
+        const modal = $('#uploadCVModal');
+        const fileInput = $('#modalFileInput');
+        const fileUploadArea = $('#fileUploadArea');
+        const filePreviewContainer = $('#filePreviewContainer');
+        const fileName = $('#fileName');
+        const fileSize = $('#fileSize');
+        const removeFileBtn = $('#removeFileBtn');
+        const fileError = $('#fileError');
+        const uploadSubmitBtn = $('#uploadSubmitBtn');
+        const uploadProgress = $('#uploadProgress');
+        const candidateNameDisplay = $('#candidateNameDisplay');
+        const modalCandidateId = $('#modalCandidateId');
+        const allowedExtensions = [".pdf", ".docx", ".png", ".jpg"];
+        const fileSizeLimit = 9 * 1024 * 1024; // 9MB limit
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Validate file format and size
+        function validateFile(file) {
+            if (!file) {
+                return { valid: false, error: 'Please select a file.' };
+            }
+
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            if (!allowedExtensions.includes(fileExtension)) {
+                return { valid: false, error: 'Invalid file format. Allowed formats: PDF, DOCX, PNG, JPG.' };
+            } else if (file.size > fileSizeLimit) {
+                return { valid: false, error: 'File size exceeds 9MB.' };
+            }
+            return { valid: true };
+        }
+
+        // Show file preview
+        function showFilePreview(file) {
+            const validation = validateFile(file);
+            if (!validation.valid) {
+                fileError.text(validation.error);
+                fileUploadArea.css('border-color', '#e53e3e');
+                uploadSubmitBtn.prop('disabled', true);
+                return;
+            }
+
+            fileName.text(file.name);
+            fileSize.text(formatFileSize(file.size));
+            filePreviewContainer.show();
+            fileUploadArea.css('border-color', '#48bb78');
+            fileUploadArea.css('background-color', '#f0fff4');
+            fileError.text('');
+            uploadSubmitBtn.prop('disabled', false);
+        }
+
+        // Hide file preview
+        function hideFilePreview() {
+            filePreviewContainer.hide();
+            fileInput.val('');
+            fileUploadArea.css('border-color', '#cbd5e0');
+            fileUploadArea.css('background-color', '#f8f9fa');
+            fileError.text('');
+            uploadSubmitBtn.prop('disabled', true);
+        }
+
+        // Handle Bootstrap modal show event to set data when modal opens
+        modal.on('show.bs.modal', function (event) {
+            const button = $(event.relatedTarget);
+            const candidateId = button.data('candidate-id');
+            const candidateName = button.data('candidate-name');
+            
+            if (candidateId && candidateName) {
+                modalCandidateId.val(candidateId);
+                candidateNameDisplay.text('Upload CV for: ' + candidateName);
+            }
+            hideFilePreview();
+            uploadProgress.hide();
+            $('.progress-bar').css('width', '0%');
+        });
+
+        // File input change
+        fileInput.on('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                showFilePreview(file);
+            } else {
+                hideFilePreview();
+            }
+        });
+
+        // Remove file button
+        removeFileBtn.on('click', function (e) {
+            e.stopPropagation();
+            hideFilePreview();
+        });
+
+        // Drag and drop functionality
+        fileUploadArea.on('dragover', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).addClass('dragover');
+        });
+
+        fileUploadArea.on('dragleave', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('dragover');
+        });
+
+        fileUploadArea.on('drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('dragover');
+
+            const files = e.originalEvent.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput[0].files = dataTransfer.files;
+                showFilePreview(file);
+            }
+        });
+
+        // Click on upload area to trigger file input
+        fileUploadArea.on('click', function (e) {
+            if (!$(e.target).closest('.file-preview-container').length && !$(e.target).is('.file-remove-btn')) {
+                fileInput.click();
+            }
+        });
+
+        // Upload form submission
+        uploadSubmitBtn.on('click', function () {
+            const file = fileInput[0].files[0];
+            const candidateId = modalCandidateId.val();
+
+            if (!file) {
+                fileError.text('Please select a file.');
+                fileUploadArea.css('border-color', '#e53e3e');
+                return;
+            }
+
+            const validation = validateFile(file);
+            if (!validation.valid) {
+                fileError.text(validation.error);
+                fileUploadArea.css('border-color', '#e53e3e');
+                return;
+            }
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Add anti-forgery token
+            const token = $('input[name="__RequestVerificationToken"]').val();
+            if (token) {
+                formData.append('__RequestVerificationToken', token);
+            }
+
+            // Show progress
+            uploadSubmitBtn.prop('disabled', true);
+            uploadProgress.show();
+            fileError.text('');
+
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(function () {
+                progress += 10;
+                $('.progress-bar').css('width', progress + '%');
+                if (progress >= 90) {
+                    clearInterval(progressInterval);
+                }
+            }, 200);
+
+            // Submit via AJAX - route is {id}/updateAttachment
+            const uploadUrl = '/Candidates/' + candidateId + '/updateAttachment';
+            $.ajax({
+                url: uploadUrl,
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (response, textStatus, xhr) {
+                    clearInterval(progressInterval);
+                    $('.progress-bar').css('width', '100%');
+                    
+                    setTimeout(function () {
+                        // Close modal using Bootstrap method
+                        try {
+                            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                const bsModalInstance = bootstrap.Modal.getInstance(modal[0]);
+                                if (bsModalInstance) {
+                                    bsModalInstance.hide();
+                                } else {
+                                    modal.modal('hide');
+                                }
+                            } else {
+                                modal.modal('hide');
+                            }
+                        } catch (e) {
+                            modal.modal('hide');
+                        }
+                        
+                        // Show success message
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: 'CV uploaded successfully.',
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(function () {
+                                // Reload page to get updated CV
+                                location.reload();
+                            });
+                        } else {
+                            // Fallback if SweetAlert2 is not loaded
+                            alert('CV uploaded successfully!');
+                            location.reload();
+                        }
+                    }, 500);
+                },
+                error: function (xhr, status, error) {
+                    clearInterval(progressInterval);
+                    uploadProgress.hide();
+                    uploadSubmitBtn.prop('disabled', false);
+                    fileError.text('Upload failed. Please try again.');
+                    fileUploadArea.css('border-color', '#e53e3e');
+                    
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Upload Failed',
+                            text: 'An error occurred while uploading the CV. Please try again.',
+                        });
+                    } else {
+                        alert('Upload failed. Please try again.');
+                    }
+                }
+            });
+        });
+
+        // Reset modal when closed
+        modal.on('hidden.bs.modal', function () {
+            hideFilePreview();
+            uploadProgress.hide();
+            $('.progress-bar').css('width', '0%');
+            fileError.text('');
+            uploadSubmitBtn.prop('disabled', true);
+        });
+        
+        // Also handle hide event for Bootstrap 4 compatibility
+        modal.on('hide.bs.modal', function () {
+            // Allow modal to close
+            return true;
+        });
     });
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 
 <script>
     function removeTrailingSpaces() {

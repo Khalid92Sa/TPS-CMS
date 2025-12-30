@@ -59,18 +59,14 @@ public class SearchInterviewsService : ISearchInterviewsService
         {
             List<IdentityRole> allRoles = await _roleManager.Roles.ToListAsync();
 
-            List<UsersDTO> allUsers = new List<UsersDTO>();
+            List<UsersDTO> allUsers = [];
 
-            // Iterate through each role
             foreach (IdentityRole role in allRoles)
             {
-                // Check if the current role is not the "Admin" role
                 if (!string.Equals(role.Name, "Admin", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Get users for the current role
                     IList<IdentityUser> usersInRole = await _userManager.GetUsersInRoleAsync(role.Name);
 
-                    // Convert users to UsersDTO and add to the list
                     List<UsersDTO> usersDtoList = usersInRole.Select(user => new UsersDTO
                     {
                         Id = user.Id,
@@ -192,6 +188,7 @@ public class SearchInterviewsService : ISearchInterviewsService
                     CandidateId = c.CandidateId,
                     FullName = c.Candidate.FullName,
                     AttachmentId = c.AttachmentId,
+                    StartFromHR = c.StartFromHR
                 };
 
                 interviewsDTO.Add(com);
@@ -246,6 +243,12 @@ public class SearchInterviewsService : ISearchInterviewsService
                 SecondInterviewerName = SeconduserName,
                 ArchitectureInterviewerId = interview.ArchitectureInterviewerId,
                 ArchitectureInterviewerName = archiName,
+                StartFromHR = interview.StartFromHR,
+                WorkflowStageId = interview.WorkflowStageId,
+                StageName = interview.WorkflowStage?.Name,
+                CreatedOn = interview.CreatedOn,
+                ModifiedOn = interview.ModifiedOn,
+                modifiedBy = interview.ModifiedBy
             };
             return Result<InterviewsDTO>.Success(interviewDTO);
         }
@@ -536,7 +539,7 @@ public class SearchInterviewsService : ISearchInterviewsService
             {
                 IList<string> roles = await _userManager.GetRolesAsync(user);
 
-                if (roles.Any())
+                if (roles != null && roles.Count > 0)
                     return roles[0];
             }
 
@@ -553,10 +556,8 @@ public class SearchInterviewsService : ISearchInterviewsService
         Interviews interview = await _interviewsRepository.GetById(interviewId);
 
         if (interview?.ParentId != null)
-            // If there is a parent interview, recursively fetch the first interview's score
             return await GetFirstInterviewScore(interview.ParentId.Value);
 
-        // No parent interview, return the current interview's score
         return interview?.Score;
     }
     public async Task<Result<List<InterviewsDTO>>> GetAllByCandidateId(int candidateId)
@@ -570,6 +571,220 @@ public class SearchInterviewsService : ISearchInterviewsService
             .ToList();
 
         return Result<List<InterviewsDTO>>.Success(interviews);
+    }
+
+    public async Task<Result<List<InterviewsDTO>>> ShowHistoryForHRFirstFlow(int id)
+    {
+        List<InterviewsDTO> interviewsDTOs = [];
+        try
+        {
+            Result<InterviewsDTO> currentInterviewResult = await GetById(id);
+            InterviewsDTO currentInterview = currentInterviewResult.Value;
+
+            if (currentInterview == null)
+                return Result<List<InterviewsDTO>>.Failure(null, "Interview not found");
+
+            Interviews interviewEntity = await _interviewsRepository.GetById(id);
+            if (interviewEntity == null || !interviewEntity.StartFromHR)
+                return Result<List<InterviewsDTO>>.Failure(null, "This is not an HR-First flow interview");
+
+            InterviewsDTO rootInterview = currentInterview;
+            while (rootInterview.ParentId != null)
+            {
+                Result<InterviewsDTO> parentInterviewResult = await GetById((int)rootInterview.ParentId);
+                rootInterview = parentInterviewResult.Value;
+            }
+
+            List<Interviews> allInterviews = await _interviewsRepository.GetInterviewsByCandidateIdAsync(rootInterview.CandidateId);
+
+            IdentityRole gmRole = await _roleManager.FindByNameAsync("General Manager");
+            var gmUsers = gmRole != null ? await _userManager.GetUsersInRoleAsync(gmRole.Name) : new List<IdentityUser>();
+            var gmUserIds = gmUsers.Select(u => u.Id).ToList();
+
+            InterviewsDTO hrInterview = null;
+            List<InterviewsDTO> interviewerInterviews = [];
+            List<InterviewsDTO> gmInterviews = [];
+
+            Interviews currentInterviewEntity = await _interviewsRepository.GetById(id);
+            if (currentInterviewEntity == null)
+                return Result<List<InterviewsDTO>>.Failure(null, "Current interview not found");
+
+            var includedInterviewIds = new HashSet<int> { currentInterviewEntity.InterviewsId };
+            
+            Interviews? ancestor = currentInterviewEntity;
+            while (ancestor != null && ancestor.ParentId != null)
+            {
+                var parent = allInterviews.FirstOrDefault(i => i.InterviewsId == ancestor.ParentId.Value);
+                if (parent == null)
+                    break;
+                
+                includedInterviewIds.Add(parent.InterviewsId);
+                ancestor = parent;
+            }
+
+            var allHRFirstFlowInterviews = new List<Interviews>();
+            foreach (Interviews interview in allInterviews)
+            {
+                if (!interview.StartFromHR)
+                    continue;
+
+                if (includedInterviewIds.Contains(interview.InterviewsId))
+                {
+                    allHRFirstFlowInterviews.Add(interview);
+                }
+            }
+
+            foreach (Interviews interview in allHRFirstFlowInterviews)
+            {
+                string userName = await GetInterviewerName(interview.InterviewerId);
+                string secondUserName = await GetInterviewerName(interview.SecondInterviewerId);
+                string archiName = await GetArchitectureName(interview.ArchitectureInterviewerId);
+                string interviewerRole = await GetInterviewerRole(interview.InterviewerId);
+                CandidateDTO candidate = await _candidateService.GetCandidateByIdAsync(interview.CandidateId);
+                Result<CompanyDTO> companyResult = await _companyService.GetById(candidate.CompanyId);
+
+                InterviewsDTO interviewDTO = new InterviewsDTO
+                {
+                    InterviewsId = interview.InterviewsId,
+                    Score = interview.Score,
+                    StatusId = interview.StatusId,
+                    StatusName = interview.Status?.Name,
+                    Date = interview.Date,
+                    PositionId = interview.PositionId,
+                    Name = interview.Position?.Name,
+                    TrackId = interview.TrackId,
+                    TrackName = interview.Track?.Name,
+                    EvalutaionFormId = interview.Position?.EvaluationId,
+                    Notes = interview.Notes,
+                    StopCycleNote = interview.StopCycleNote,
+                    ParentId = interview.ParentId,
+                    InterviewerId = interview.InterviewerId,
+                    InterviewerName = userName,
+                    CandidateId = interview.CandidateId,
+                    FullName = interview.Candidate?.FullName,
+                    CandidateCVAttachmentId = interview.Candidate?.CVAttachmentId,
+                    AttachmentId = interview.AttachmentId,
+                    InterviewerRole = interviewerRole,
+                    ActualExperience = interview.ActualExperience,
+                    SecondInterviewerId = interview.SecondInterviewerId,
+                    SecondInterviewerName = secondUserName,
+                    ArchitectureInterviewerId = interview.ArchitectureInterviewerId,
+                    ArchitectureInterviewerName = archiName,
+                    WorkflowStageId = interview.WorkflowStageId,
+                    StageName = interview.WorkflowStage?.Name,
+                    StartFromHR = interview.StartFromHR,
+                    CreatedOn = interview.CreatedOn,
+                    modifiedBy = interview.ModifiedBy,
+                    ModifiedOn = interview.ModifiedOn,
+                    CompanyName = companyResult.IsSuccess ? companyResult.Value.Name : null
+                };
+
+                if (interview.ParentId == null)
+                {
+                    hrInterview = interviewDTO;
+                }
+                else
+                {
+                    bool isGMInterview = (interview.InterviewerId != null && gmUserIds.Contains(interview.InterviewerId)) ||
+                                        (interview.SecondInterviewerId != null && gmUserIds.Contains(interview.SecondInterviewerId));
+
+                    if (isGMInterview)
+                    {
+                        gmInterviews.Add(interviewDTO);
+                    }
+                    else
+                    {
+                        interviewerInterviews.Add(interviewDTO);
+                    }
+                }
+            }
+
+            if (hrInterview != null)
+                interviewsDTOs.Add(hrInterview);
+
+            interviewerInterviews = [.. interviewerInterviews.OrderBy(i => i.Date).ThenBy(i => i.InterviewsId)];
+            interviewsDTOs.AddRange(interviewerInterviews);
+
+            gmInterviews = [.. gmInterviews.OrderBy(i => i.Date).ThenBy(i => i.InterviewsId)];
+            interviewsDTOs.AddRange(gmInterviews);
+
+            return Result<List<InterviewsDTO>>.Success(interviewsDTOs);
+        }
+        catch (Exception ex)
+        {
+            return Result<List<InterviewsDTO>>.Failure(null, $"Unable to get HR-First flow interview history: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<List<InterviewsDTO>>> GetHRFirstFlowInterviewDetails(int interviewId)
+    {
+        try
+        {
+            if (interviewId <= 0)
+                return Result<List<InterviewsDTO>>.Failure(null, "Invalid interview id");
+
+            Interviews currentInterview = await _interviewsRepository.GetById(interviewId);
+            if (currentInterview == null)
+                return Result<List<InterviewsDTO>>.Failure(null, "Interview not found");
+
+            if (!currentInterview.StartFromHR)
+                return Result<List<InterviewsDTO>>.Failure(null, "This is not an HR-First flow interview");
+
+            List<Interviews> allInterviews = await _interviewsRepository.GetInterviewsByCandidateIdAsync(currentInterview.CandidateId);
+
+            List<InterviewsDTO> interviewsDTOs = new List<InterviewsDTO>();
+
+            foreach (Interviews interview in allInterviews)
+            {
+                string userName = await GetInterviewerName(interview.InterviewerId);
+                string secondUserName = await GetInterviewerName(interview.SecondInterviewerId);
+                string archiName = await GetArchitectureName(interview.ArchitectureInterviewerId);
+                string interviewerRole = await GetInterviewerRole(interview.InterviewerId);
+
+                InterviewsDTO interviewDTO = new InterviewsDTO
+                {
+                    InterviewsId = interview.InterviewsId,
+                    Score = interview.Score,
+                    StatusId = interview.StatusId,
+                    StatusName = interview.Status?.Name,
+                    Date = interview.Date,
+                    PositionId = interview.PositionId,
+                    Name = interview.Position?.Name,
+                    TrackId = interview.TrackId,
+                    TrackName = interview.Track?.Name,
+                    EvalutaionFormId = interview.Position?.EvaluationId,
+                    Notes = interview.Notes,
+                    StopCycleNote = interview.StopCycleNote,
+                    ParentId = interview.ParentId,
+                    InterviewerId = interview.InterviewerId,
+                    InterviewerName = userName,
+                    CandidateId = interview.CandidateId,
+                    FullName = interview.Candidate?.FullName,
+                    CandidateCVAttachmentId = interview.Candidate?.CVAttachmentId,
+                    AttachmentId = interview.AttachmentId,
+                    InterviewerRole = interviewerRole,
+                    ActualExperience = interview.ActualExperience,
+                    SecondInterviewerId = interview.SecondInterviewerId,
+                    SecondInterviewerName = secondUserName,
+                    ArchitectureInterviewerId = interview.ArchitectureInterviewerId,
+                    ArchitectureInterviewerName = archiName,
+                    WorkflowStageId = interview.WorkflowStageId,
+                    StageName = interview.WorkflowStage?.Name,
+                    StartFromHR = interview.StartFromHR,
+                    CreatedOn = interview.CreatedOn,
+                    modifiedBy = interview.ModifiedBy,
+                    ModifiedOn = interview.ModifiedOn
+                };
+
+                interviewsDTOs.Add(interviewDTO);
+            }
+
+            return Result<List<InterviewsDTO>>.Success(interviewsDTOs);
+        }
+        catch (Exception ex)
+        {
+            return Result<List<InterviewsDTO>>.Failure(null, $"Unable to get HR-First flow interview details: {ex.Message}");
+        }
     }
 
 }

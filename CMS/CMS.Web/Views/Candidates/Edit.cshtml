@@ -27,9 +27,127 @@
         border-color: gray;
     }
 
-        .btn-secondary:hover {
-            background-color: darkgray !important;
-            border-color: darkgray !important;
+    .btn-secondary:hover {
+        background-color: darkgray !important;
+        border-color: darkgray !important;
+    }
+
+    /* File Upload Area Styles */
+    .file-upload-container {
+        margin-top: 1.5rem;
+    }
+
+    .file-upload-area {
+        border: 2px dashed #cbd5e0;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+    }
+
+        .file-upload-area:hover {
+            border-color: #486fc7;
+            background-color: #f0f4ff;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #319ca7;
+            background-color: #e6f7ff;
+            transform: scale(1.02);
+        }
+
+    .file-upload-icon {
+        font-size: 3rem;
+        color: #486fc7;
+        margin-bottom: 1rem;
+    }
+
+    .file-upload-text {
+        color: #4a5568;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .file-upload-hint {
+        color: #718096;
+        font-size: 0.875rem;
+    }
+
+    .file-input-hidden {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .file-preview-container {
+        margin-top: 1rem;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .file-preview-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem;
+        background-color: white;
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+        .file-preview-item:last-child {
+            margin-bottom: 0;
+        }
+
+    .file-preview-info {
+        display: flex;
+        align-items: center;
+        flex: 1;
+    }
+
+    .file-preview-icon {
+        font-size: 1.5rem;
+        color: #486fc7;
+        margin-right: 0.75rem;
+    }
+
+    .file-preview-details {
+        flex: 1;
+    }
+
+    .file-preview-name {
+        font-weight: 500;
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+    }
+
+    .file-preview-size {
+        font-size: 0.875rem;
+        color: #718096;
+    }
+
+    .file-remove-btn {
+        background: none;
+        border: none;
+        color: #e53e3e;
+        font-size: 1.25rem;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        transition: color 0.2s;
+    }
+
+        .file-remove-btn:hover {
+            color: #c53030;
         }
 </style>
 
@@ -127,18 +245,45 @@
             </form>
 
             <!-- Upload CV Form (if needed) -->
-            <form asp-action="UpdateAttachment" asp-route-id="@Model.Id" enctype="multipart/form-data" class="mt-5">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="file" class="form-label">Upload CV</label>
-                        <input type="file" id="file" name="file" class="form-control-file" onchange="validateFileFormat()" required />
-                        <span id="fileError" class="text-danger"></span>
+            <form asp-action="UpdateAttachment" asp-route-id="@Model.Id" enctype="multipart/form-data" class="mt-5" id="uploadForm">
+                <div class="file-upload-container">
+                    <div class="mb-3">
+                        <label class="form-label">Upload CV</label>
+                        <div class="file-upload-area" id="fileUploadArea">
+                            <input type="file" id="file" name="file" class="file-input-hidden" accept=".pdf,.docx,.png,.jpg" required />
+                            <div class="file-upload-icon">
+                                <i class="bx bx-cloud-upload"></i>
+                            </div>
+                            <div class="file-upload-text">
+                                <strong>Click to upload</strong> or drag and drop
+                            </div>
+                            <div class="file-upload-hint">
+                                PDF, DOCX, PNG, JPG (Max size: 9MB)
+                            </div>
+                        </div>
+                        <div id="filePreviewContainer" class="file-preview-container" style="display: none;">
+                            <div class="file-preview-item" id="filePreviewItem">
+                                <div class="file-preview-info">
+                                    <div class="file-preview-icon">
+                                        <i class="bx bx-file"></i>
+                                    </div>
+                                    <div class="file-preview-details">
+                                        <div class="file-preview-name" id="fileName"></div>
+                                        <div class="file-preview-size" id="fileSize"></div>
+                                    </div>
+                                </div>
+                                <button type="button" class="file-remove-btn" id="removeFileBtn" title="Remove file">
+                                    <i class="bx bx-x"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <span id="fileError" class="text-danger d-block mt-2"></span>
                     </div>
                 </div>
 
                 <!-- Upload Button -->
                 <div class="d-flex justify-content-between mt-4">
-                    <button type="submit" class="btn btn-primary" id="uploadButton" disabled>Upload</button>
+                    <button type="submit" class="btn btn-success px-4" id="uploadButton" disabled>Upload</button>
                     <a class="btn btn-secondary" asp-action="Index">Back to List</a>
                 </div>
             </form>
@@ -147,6 +292,7 @@
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
 <script>
     $(document).ready(function () {
@@ -158,9 +304,127 @@
             this.value = this.value.replace(/[^0-9.]/g, '');
         });
 
-        $('form').submit(function (e) {
+        // File Upload Area Functionality
+        const fileInput = $('#file');
+        const fileUploadArea = $('#fileUploadArea');
+        const filePreviewContainer = $('#filePreviewContainer');
+        const fileName = $('#fileName');
+        const fileSize = $('#fileSize');
+        const removeFileBtn = $('#removeFileBtn');
+        const fileError = $('#fileError');
+        const uploadButton = $('#uploadButton');
+        const allowedExtensions = [".pdf", ".docx", ".png", ".jpg"];
+        const fileSizeLimit = 9 * 1024 * 1024; // 9MB limit
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Validate file format and size
+        function validateFile(file) {
+            if (!file) {
+                fileError.text('Please select a file.');
+                uploadButton.prop('disabled', true);
+                return false;
+            }
+
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            if (!allowedExtensions.includes(fileExtension)) {
+                fileError.text('Invalid file format. Allowed formats: PDF, DOCX, PNG, JPG.');
+                uploadButton.prop('disabled', true);
+                return false;
+            } else if (file.size > fileSizeLimit) {
+                fileError.text('File size exceeds 9MB.');
+                uploadButton.prop('disabled', true);
+                return false;
+            } else {
+                fileError.text('');
+                uploadButton.prop('disabled', false);
+                return true;
+            }
+        }
+
+        // Show file preview
+        function showFilePreview(file) {
+            if (validateFile(file)) {
+                fileName.text(file.name);
+                fileSize.text(formatFileSize(file.size));
+                filePreviewContainer.show();
+                fileUploadArea.css('border-color', '#48bb78');
+                fileUploadArea.css('background-color', '#f0fff4');
+            }
+        }
+
+        // Hide file preview
+        function hideFilePreview() {
+            filePreviewContainer.hide();
+            fileInput.val('');
+            fileUploadArea.css('border-color', '#cbd5e0');
+            fileUploadArea.css('background-color', '#f8f9fa');
+            fileError.text('');
+            uploadButton.prop('disabled', true);
+        }
+
+        // File input change
+        fileInput.on('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                showFilePreview(file);
+            } else {
+                hideFilePreview();
+            }
+        });
+
+        // Remove file button
+        removeFileBtn.on('click', function (e) {
+            e.stopPropagation();
+            hideFilePreview();
+        });
+
+        // Drag and drop functionality
+        fileUploadArea.on('dragover', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).addClass('dragover');
+        });
+
+        fileUploadArea.on('dragleave', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('dragover');
+        });
+
+        fileUploadArea.on('drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('dragover');
+
+            const files = e.originalEvent.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                // Create a FileList-like object
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput[0].files = dataTransfer.files;
+                showFilePreview(file);
+            }
+        });
+
+        // Click on upload area to trigger file input
+        fileUploadArea.on('click', function (e) {
+            if (!$(e.target).closest('.file-preview-container').length && !$(e.target).is('.file-remove-btn')) {
+                fileInput.click();
+            }
+        });
+
+        // Form submission validation for edit form
+        $('form:first').submit(function (e) {
             var isValid = true;
-            var fileInput = $('#file')[0];
 
             // Validate Full Name
             if (!$('#FullName').val().trim()) {
@@ -206,20 +470,22 @@
                 e.preventDefault();
             }
         });
-    });
 
-    function validateFileFormat(input) {
-        const allowedExtensions = [".pdf", ".docx", ".png", ".jpg"];
-        const file = input.files[0];
-
-        if (file) {
-            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-            if (!allowedExtensions.includes(fileExtension) || file.size > 9 * 1024 * 1024) {
-                $('#fileError').text('Invalid file format or size exceeds 9MB.');
-                input.value = '';
-            } else {
-                $('#fileError').text('');
+        // Form submission validation for upload form
+        $('#uploadForm').on('submit', function (e) {
+            const file = fileInput[0].files[0];
+            if (!file) {
+                e.preventDefault();
+                fileError.text('Please select a file.');
+                fileUploadArea.css('border-color', '#e53e3e');
+                return false;
             }
-        }
-    }
+            if (!validateFile(file)) {
+                e.preventDefault();
+                fileUploadArea.css('border-color', '#e53e3e');
+                return false;
+            }
+            fileUploadArea.css('border-color', '#cbd5e0');
+        });
+    });
 </script>

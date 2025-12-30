@@ -34,5 +34,10 @@ public class InterviewsMapper : IEntityTypeConfiguration<Interviews>
             .WithMany()
             .HasForeignKey(interview => interview.AttachmentId)
             .HasConstraintName("FK_Interviews_Attachments");
+
+        builder.HasOne(interview => interview.WorkflowStage)
+            .WithMany()
+            .HasForeignKey(interview => interview.WorkflowStageId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

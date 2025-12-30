@@ -89,10 +89,8 @@
                     <tbody>
                         @if (Model != null)
                         {
-                            // Sort the interviews by CreatedOn date in descending order
                             var sortedInterviews = Model.OrderByDescending(x => x.CreatedOn).ToList();
 
-                            // Loop through the sorted interviews
                             for (var i = 0; i < sortedInterviews.Count(); i++)
                             {
                                 var item = sortedInterviews[i];
@@ -155,19 +153,36 @@
                                         <td hidden></td>
                                     }
                                     <td>
-                                        <a class="bx bx-detail" style="font-size:x-large"
-                                           asp-action="Details"
-                                           asp-route-id="@item.InterviewsId"
-                                           asp-route-statusFilter="@ViewBag.statusFilter"
-                                           asp-route-candidateFilter="@ViewBag.candidateFilter"
-                                           asp-route-trackFilter="@ViewBag.trackFilter"
-                                           asp-route-pageNumber="@ViewBag.PageNumber"
-                                           asp-route-pageSize="@ViewBag.PageSize"
-                                           data-bs-toggle="tooltip"
-                                           data-bs-placement="left"
-                                           data-bs-original-title="Details"></a>
+                                        @if (item.StartFromHR)
+                                        {
+                                            <a class="bx bx-detail" style="font-size:x-large"
+                                               asp-action="HRFirstDetails"
+                                               asp-route-id="@item.InterviewsId"
+                                               asp-route-statusFilter="@ViewBag.statusFilter"
+                                               asp-route-candidateFilter="@ViewBag.candidateFilter"
+                                               asp-route-trackFilter="@ViewBag.trackFilter"
+                                               asp-route-pageNumber="@ViewBag.PageNumber"
+                                               asp-route-pageSize="@ViewBag.PageSize"
+                                               data-bs-toggle="tooltip"
+                                               data-bs-placement="left"
+                                               data-bs-original-title="Details"></a>
+                                        }
+                                        else
+                                        {
+                                            <a class="bx bx-detail" style="font-size:x-large"
+                                               asp-action="Details"
+                                               asp-route-id="@item.InterviewsId"
+                                               asp-route-statusFilter="@ViewBag.statusFilter"
+                                               asp-route-candidateFilter="@ViewBag.candidateFilter"
+                                               asp-route-trackFilter="@ViewBag.trackFilter"
+                                               asp-route-pageNumber="@ViewBag.PageNumber"
+                                               asp-route-pageSize="@ViewBag.PageSize"
+                                               data-bs-toggle="tooltip"
+                                               data-bs-placement="left"
+                                               data-bs-original-title="Details"></a>
+                                        }
 
-                                        @if ((item.InterviewerRole == "Interviewer" || item.InterviewerRole == "General Manager" || item.InterviewerRole == "Solution Architecture") && item.StatusName == StatusCode.GetName("PND")  && item.ParentId ==null)
+                                        @if (((item.InterviewerRole == "Interviewer" || item.InterviewerRole == "General Manager" || item.InterviewerRole == "Solution Architecture") && item.StatusName == StatusCode.GetName("PND") && item.ParentId == null) || (item.StatusName == StatusCode.GetName("PND") && item.InterviewerRole == "HR Manager" && item.WorkflowStageId == (short)EnumWorkflowStage.HRInitialInterview))
                                         {
                                             <input type="hidden" name="StatusId" value="@item.StatusId" />
                                             <a class="bx bxs-edit-alt" style="font-size:x-large" asp-action="Edit" asp-route-statusFilter="@ViewBag.statusFilter"
@@ -250,16 +265,15 @@
             info: false,
             ordering: false,
             scrollCollapse: true,
-            scrollY: '50vh',  // Ensures proper height management
-            scrollX: true,     // Enables horizontal scrolling to prevent misalignment
-            autoWidth: false,  // Prevents columns from being resized incorrectly
-            fixedHeader: true, // Keeps column headers aligned correctly
+            scrollY: '50vh',
+            scrollX: true, 
+            autoWidth: false,
+            fixedHeader: true,
             columnDefs: [
-                { targets: 'hidden', visible: false } // Ensures hidden columns remain hidden
+                { targets: 'hidden', visible: false }
             ]
         });
 
-        // Reset button functionality
         $('#resetButton').on('click', function () {
             $('#statusFilter').val('');
             $('#candidateFilter').val('');
@@ -273,11 +287,11 @@
 <script>
     function removeTrailingSpaces() {
         var candidateFilter = document.getElementById("candidateFilter");
-        candidateFilter.value = candidateFilter.value.trim(); // Remove trailing spaces
+        candidateFilter.value = candidateFilter.value.trim();
     }
 
     function validateForm() {
-        removeTrailingSpaces(); // Remove trailing spaces from candidate name
+        removeTrailingSpaces();
         return true;
     }
 </script>

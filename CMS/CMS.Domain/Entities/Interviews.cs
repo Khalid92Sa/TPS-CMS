@@ -58,4 +58,13 @@ public class Interviews : BaseEntity
     public virtual Track Track { get; set; }
 
     public string? StopCycleNote { get; set; }
+
+    public int? WorkflowStageId { get; set; }
+    public virtual WorkflowStage WorkflowStage { get; set; }
+
+    /// <summary>
+    /// If true, workflow starts from HR → Interviewers → GM (reverse workflow)
+    /// If false, normal workflow: Interviewers → GM → HR
+    /// </summary>
+    public bool StartFromHR { get; set; } = false;
 }

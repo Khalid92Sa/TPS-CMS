@@ -24,8 +24,10 @@ public class HomeController : Controller
         return View();
     }
 
+    [AllowAnonymous]
     public IActionResult NotFound()
     {
+        Response.StatusCode = 404;
         return View();
     }
 }

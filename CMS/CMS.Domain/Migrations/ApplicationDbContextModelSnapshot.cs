@@ -63,7 +63,7 @@ namespace CMS.Domain.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Attachments");
+                    b.ToTable("Attachments", (string)null);
                 });
 
             modelBuilder.Entity("CMS.Domain.Entities.Candidate", b =>
@@ -129,7 +129,7 @@ namespace CMS.Domain.Migrations
 
                     b.HasIndex("TrackId");
 
-                    b.ToTable("Candidates");
+                    b.ToTable("Candidates", (string)null);
                 });
 
             modelBuilder.Entity("CMS.Domain.Entities.CarrerOffer", b =>
@@ -178,7 +178,7 @@ namespace CMS.Domain.Migrations
 
                     b.HasIndex("PositionId");
 
-                    b.ToTable("CarrerOffers");
+                    b.ToTable("CarrerOffers", (string)null);
                 });
 
             modelBuilder.Entity("CMS.Domain.Entities.Company", b =>
@@ -227,7 +227,7 @@ namespace CMS.Domain.Migrations
 
                     b.HasIndex("CountryId");
 
-                    b.ToTable("Companies");
+                    b.ToTable("Companies", (string)null);
                 });
 
             modelBuilder.Entity("CMS.Domain.Entities.Country", b =>
@@ -262,7 +262,7 @@ namespace CMS.Domain.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Countries");
+                    b.ToTable("Countries", (string)null);
                 });
 
             modelBuilder.Entity("CMS.Domain.Entities.Interviews", b =>
@@ -351,7 +351,7 @@ namespace CMS.Domain.Migrations
 
                     b.HasIndex("TrackId");
 
-                    b.ToTable("Interviews");
+                    b.ToTable("Interviews", (string)null);
                 });
 
             modelBuilder.Entity("CMS.Domain.Entities.Logs", b =>
@@ -382,7 +382,7 @@ namespace CMS.Domain.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Logs");
+                    b.ToTable("Logs", (string)null);
                 });
 
             modelBuilder.Entity("CMS.Domain.Entities.Notifications", b =>
@@ -439,7 +439,7 @@ namespace CMS.Domain.Migrations
 
                     b.HasIndex("TemplatesId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("CMS.Domain.Entities.Position", b =>
@@ -479,7 +479,7 @@ namespace CMS.Domain.Migrations
 
                     b.HasIndex("EvaluationId");
 
-                    b.ToTable("Positions");
+                    b.ToTable("Positions", (string)null);
                 });
 
             modelBuilder.Entity("CMS.Domain.Entities.Status", b =>
@@ -518,7 +518,7 @@ namespace CMS.Domain.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Statuses");
+                    b.ToTable("Statuses", (string)null);
 
                     b.HasData(
                         new
@@ -600,7 +600,7 @@ namespace CMS.Domain.Migrations
 
                     b.HasKey("TemplatesId");
 
-                    b.ToTable("Templates");
+                    b.ToTable("Templates", (string)null);
                 });
 
             modelBuilder.Entity("CMS.Domain.Entities.Track", b =>
@@ -617,7 +617,7 @@ namespace CMS.Domain.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Tracks");
+                    b.ToTable("Tracks", (string)null);
 
                     b.HasData(
                         new

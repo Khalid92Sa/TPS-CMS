@@ -70,8 +70,14 @@ builder.Services.AddScoped(typeof(ITrackRepository), typeof(TrackRepository));
 builder.Services.AddScoped<ITrackService, TrackService>();
 
 builder.Services.AddScoped(typeof(IInterviewsRepository), typeof(InterviewsRepository));
+builder.Services.AddScoped(typeof(ISelectedInterviewersRepository), typeof(SelectedInterviewersRepository));
 builder.Services.AddTransient<IInterviewsService, InterviewsService>();
 builder.Services.AddTransient<ISearchInterviewsService, SearchInterviewsService>();
+
+// Dynamic Workflow Services
+builder.Services.AddScoped(typeof(IWorkflowRepository), typeof(CMS.Repository.Implementation.WorkflowRepository));
+builder.Services.AddTransient<IWorkflowService, WorkflowService>();
+builder.Services.AddTransient<IDynamicWorkflowService, DynamicWorkflowService>();
 
 builder.Services.AddScoped(typeof(INotificationsRepository), typeof(NotificationsRepository));
 builder.Services.AddTransient<INotificationsService, NotificationsService>();
@@ -162,7 +168,6 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
 
@@ -170,6 +175,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();

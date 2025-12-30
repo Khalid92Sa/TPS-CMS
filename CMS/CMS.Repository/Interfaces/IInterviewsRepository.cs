@@ -35,4 +35,8 @@ public interface IInterviewsRepository
     Task<Interviews> GetThirdInterviewAsync(int candidateId);
     Task<bool> DoesInterviewExistForCandidateAsync(int candidateId);
     Task<List<Interviews>> GetFirstInterviews();
+    Task<List<Interviews>> GetInterviewsByCandidateIdAsync(int candidateId);
+    Task<List<Interviews>> GetChildInterviewsByParentIdAsync(int parentInterviewId);
+    Task<bool> DeleteChildInterviewsAndNotificationsAsync(int parentInterviewId, int candidateId);
+    Task<bool> DeleteNotificationsByCandidateAndReceiversAsync(int candidateId, List<string> receiverIds);
 }

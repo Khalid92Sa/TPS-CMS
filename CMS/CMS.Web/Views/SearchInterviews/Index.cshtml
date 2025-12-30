@@ -166,10 +166,43 @@
                                 <p>No CV Available</p>
                             </td>
                         }
-                        <td><a class="bx bx-history" style="font-size:x-large" asp-action="ShowHistory" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="View Candidate History"></a></td>
+
+                         @if (item.StartFromHR)
+                         {
+                            <td><a class="bx bx-history" style="font-size:x-large" asp-action="ShowHistoryForHRFirstFlow" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="View Candidate History"></a></td>
+                         }
+                         else
+                         {
+                            <td><a class="bx bx-history" style="font-size:x-large" asp-action="ShowHistory" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="View Candidate History"></a></td>
+                         }
 
                         <td>
-                            <a class="bx bx-detail" style="font-size:x-large" asp-action="Details" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Details"></a>
+                            @if (item.StartFromHR)
+                                        {
+                                            <a class="bx bx-detail" style="font-size:x-large"
+                                               asp-action="HRFirstDetails"
+                                               asp-route-id="@item.InterviewsId"
+                                               asp-route-positionFilter="@ViewBag.positionFilter"
+                                               asp-route-scoreFilter="@ViewBag.scoreFilter"
+                                               asp-route-statusFilter="@ViewBag.statusFilter"
+                                               asp-route-candidateFilter="@ViewBag.candidateFilter"
+                                               asp-route-interviewerFilter="@ViewBag.interviewerFilter"
+                                               asp-route-fromDate="@ViewBag.fromDate"
+                                               asp-route-toDate="@ViewBag.toDate"
+                                               asp-route-trackFilterDropdown="@ViewBag.TrackList"
+                                               data-bs-toggle="tooltip"
+                                               data-bs-placement="left"
+                                data-bs-original-title="Details"></a>
+                            }
+                            else
+                            {
+                             <a class="bx bx-detail" style="font-size:x-large" 
+                                               asp-action="Details" 
+                                               asp-route-id="@item.InterviewsId" 
+                                               data-bs-toggle="tooltip" 
+                                               data-bs-placement="bottom" 
+                                               data-bs-original-title="Details"></a>
+                            }
                             @if (item.ParentId == null && item.StatusName == StatusCode.GetName("PND") && !User.IsInRole("Viewer"))
                             {
                                 <span> | </span>  <a class="ri-delete-bin-2-line text-danger" style="font-size:x-large" asp-action="Delete" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Delete"></a>
@@ -195,12 +228,12 @@
             info: false,
             ordering: false,
             scrollCollapse: true,
-            scrollY: '50vh',  // Ensures proper height management
-            scrollX: true,     // Enables horizontal scrolling to prevent misalignment
-            autoWidth: false,  // Prevents columns from being resized incorrectly
-            fixedHeader: true, // Keeps column headers aligned correctly
+            scrollY: '50vh',  
+            scrollX: true,    
+            autoWidth: false, 
+            fixedHeader: true,
             columnDefs: [
-                { targets: 'hidden', visible: false } // Ensures hidden columns remain hidden
+                { targets: 'hidden', visible: false }
             ]
         });
 
@@ -209,37 +242,51 @@
 
         function removeTrailingSpaces() {
             var candidateFilter = document.getElementById("candidateFilter");
-            candidateFilter.value = candidateFilter.value.trim(); // Remove trailing spaces
+            candidateFilter.value = candidateFilter.value.trim(); 
         }
 
         function validateDates() {
             removeTrailingSpaces();
-            var fromDate = new Date(document.getElementById("fromDate").value);
-            var toDate = new Date(document.getElementById("toDate").value);
+            var fromDateValue = document.getElementById("fromDate").value;
+            var toDateValue = document.getElementById("toDate").value;
             var validationMessageElement = document.getElementById("dateValidationMessage");
 
-            if (fromDate > toDate) {
-                validationMessageElement.textContent = "* 'From Date' should be less than or equal to 'To Date'.";
-                $('#fromDate').css('border-color', 'red'); // Highlight "fromDate"
-                $('#toDate').css('border-color', 'red');   // Highlight "toDate"
-                return false; // Return false to prevent further action
+            // Clear previous validation
+            validationMessageElement.textContent = '';
+            $('#fromDate').css('border-color', '');
+            $('#toDate').css('border-color', '');
+
+            // Only validate if both dates are provided
+            if (fromDateValue && toDateValue) {
+                var fromDate = new Date(fromDateValue);
+                var toDate = new Date(toDateValue);
+
+                if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+                    validationMessageElement.textContent = "* Please enter valid dates.";
+                    $('#fromDate').css('border-color', 'red');
+                    $('#toDate').css('border-color', 'red');
+                    return false;
+                }
+
+                if (fromDate > toDate) {
+                    validationMessageElement.textContent = "* 'From Date' should be less than or equal to 'To Date'.";
+                    $('#fromDate').css('border-color', 'red');
+                    $('#toDate').css('border-color', 'red');  
+                    return false;
+                }
             }
 
-            // Reset styles if validation is successful
-            validationMessageElement.textContent = ''; // Clear validation message
-            $('#fromDate').css('border-color', '');  // Reset border color
-            $('#toDate').css('border-color', '');    // Reset border color
-            return true; // Return true if validation passed
+            return true;
         }
 
         function buildQueryString() {
-            const positionFilter = $('#position-dropdown').val();
-            const trackFilter = $('#track-dropdown').val();
-            const statusFilter = $('#statusFilter').val();
-            const candidateFilter = $('#candidateFilter').val();
-            const interviewerFilter = $('#interviewerFilter').val();
-            const fromDate = $('#fromDate').val();
-            const toDate = $('#toDate').val();
+            const positionFilter = $('#position-dropdown').val() || '';
+            const trackFilter = $('#track-dropdown').val() || '';
+            const statusFilter = $('#statusFilter').val() || '';
+            const candidateFilter = $('#candidateFilter').val() || '';
+            const interviewerFilter = $('#interviewerFilter').val() || '';
+            const fromDate = $('#fromDate').val() || '';
+            const toDate = $('#toDate').val() || '';
 
             let queryString = `?positionFilter=${encodeURIComponent(positionFilter)}`;
             queryString += `&trackFilterDropdown=${encodeURIComponent(trackFilter)}`;
@@ -252,33 +299,61 @@
             window.location.href = '/interviewsfilteration/index' + queryString;
         }
 
-        // Show loading overlay before filtering or resetting
         function showLoading() {
-            $('#loadingOverlay').fadeIn(); // Show loading icon
+            $('#loadingOverlay').fadeIn(); 
         }
 
-        $('#filterButton, #resetButton').on('click', function (e) {
+        function hideLoading() {
+            $('#loadingOverlay').fadeOut();
+        }
+
+        // Handle form submission
+        $('form').on('submit', function (e) {
             e.preventDefault();
             showLoading();
 
-            if ($(this).attr('id') === 'filterButton') {
-                if (!validateDates()) {
-                    $('#loadingOverlay').fadeOut(); // Hide if validation fails
-                    return;
-                }
-                buildQueryString();
-            } else {
-                // Reset filters
-                $('#position-dropdown')[0].selectize.clear();
-                $('#track-dropdown')[0].selectize.clear();
-                $('#statusFilter').val('');
-                $('#candidateFilter').val('');
-                $('#interviewerFilter').val('');
-                $('#fromDate').val('');
-                $('#toDate').val('');
-
-                window.location.href = '/interviewsfilteration/index';
+            if (!validateDates()) {
+                hideLoading();
+                return false;
             }
+            
+            buildQueryString();
+            return false;
+        });
+
+        $('#filterButton').on('click', function (e) {
+            e.preventDefault();
+            showLoading();
+
+            if (!validateDates()) {
+                hideLoading();
+                return false;
+            }
+            
+            buildQueryString();
+        });
+
+        $('#resetButton').on('click', function (e) {
+            e.preventDefault();
+            showLoading();
+
+            // Clear selectize dropdowns if they exist
+            var positionSelectize = $('#position-dropdown')[0].selectize;
+            if (positionSelectize) {
+                positionSelectize.clear();
+            }
+            var trackSelectize = $('#track-dropdown')[0].selectize;
+            if (trackSelectize) {
+                trackSelectize.clear();
+            }
+            
+            $('#statusFilter').val('');
+            $('#candidateFilter').val('');
+            $('#interviewerFilter').val('');
+            $('#fromDate').val('');
+            $('#toDate').val('');
+
+            window.location.href = '/interviewsfilteration/index';
         });
 
         function checkFilters() {
@@ -289,14 +364,8 @@
                 $('#interviewerFilter').val() ||
                 $('#fromDate').val() ||
                 $('#toDate').val();
-
-            // if (hasFilters) {
-            //    $('#filterFields').collapse('show');
-            //    $('#toggleFilter').attr('aria-expanded', 'true');
-            // }
         }
 
-        // Call the checkFilters function on page load
         checkFilters();
     });
 

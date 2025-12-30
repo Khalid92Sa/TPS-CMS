@@ -84,7 +84,6 @@ public class NotificationsService : INotificationsService
             List<Notifications> notificationsGM = await _notificationsRepository.GetSpacificNotificationsforGeneral();
             List<Notifications> notificationsArchi = await _notificationsRepository.GetSpacificNotificationsforArchi();
 
-            // Get role information
             IdentityRole Hr = await _roleManager.FindByNameAsync("HR Manager");
             string HrId = (await _userManager.GetUsersInRoleAsync(Hr.Name)).FirstOrDefault()?.Id;
 
@@ -96,12 +95,9 @@ public class NotificationsService : INotificationsService
 
             string userRole = await GetLoggedInUserRoleAsync();
 
-            // Determine the appropriate notifications to return based on the user's role
             if (userRole == "HR Manager" && HrId != null)
             {
-                List<NotificationsDTO> notificationsDTOList = notificationsHR.Where(notification => notification.ReceiverId == HrId
-                                                                                   // && notification.IsRead
-                                                                                   )
+                List<NotificationsDTO> notificationsDTOList = notificationsHR.Where(notification => notification.ReceiverId == HrId)
                                                                              .Select(notification => new NotificationsDTO
                                                                              {
                                                                                  NotificationsId = notification.NotificationsId,
@@ -153,8 +149,7 @@ public class NotificationsService : INotificationsService
                 return notificationsDTOList;
             }
 
-            // Default return value if no conditions are met
-            return new List<NotificationsDTO>();
+            return [];
         }
         catch (Exception)
         {
@@ -603,8 +598,7 @@ public class NotificationsService : INotificationsService
             string candidateName = await GetCandidateName(CandidateId);
             string positionName = await GetPositionName(positionId);
 
-            // Create the notification for the manager.
-            Notifications notification = new Notifications
+            Notifications notification = new()
             {
                 SendDate = DateTime.Now,
                 CandidateId = CandidateId,
@@ -678,8 +672,7 @@ public class NotificationsService : INotificationsService
             string candidateName = await GetCandidateName(CandidateId);
             string positionName = await GetPositionName(positionId);
 
-            // Create the notification for the manager.
-            Notifications notification = new Notifications
+            Notifications notification = new()
             {
                 SendDate = DateTime.Now,
                 CandidateId = CandidateId,
@@ -757,16 +750,18 @@ public class NotificationsService : INotificationsService
                 }
                 else
                 {
-                    string secondInterviewerName = await GetInterviewerName(selectedInterviewerIds[1]);
+                    string secondInterviewerName = selectedInterviewerIds != null && selectedInterviewerIds.Count > 1 
+                        ? await GetInterviewerName(selectedInterviewerIds[1]) 
+                        : "Unknown Interviewer";
 
-                    if (selectedInterviewerIds.Count == 2 && secondInterviewerName != "Unknown Interviewer")
+                    if (selectedInterviewerIds != null && selectedInterviewerIds.Count == 2 && secondInterviewerName != "Unknown Interviewer")
                     {
-                        if (selectedInterviewerId == selectedInterviewerIds[0])
+                        if (selectedInterviewerIds.Count > 0 && selectedInterviewerId == selectedInterviewerIds[0])
                         {
                             notification.Title = $"New interview invitation for {candidateName}";
                             notification.BodyDesc = $"You and {secondInterviewerName} have been selected for a First Interview with {candidateName} for the {positionName} position on {formattedDate}. Get ready to shine! 💼🚀";
                         }
-                        else
+                        else if (selectedInterviewerIds.Count > 0)
                         {
                             string firstInterviewerName = await GetInterviewerName(selectedInterviewerIds[0]);
                             notification.Title = $"New interview invitation for {candidateName}";
@@ -885,24 +880,11 @@ public class NotificationsService : INotificationsService
             string candidateName = await GetCandidateName(CandidateId);
             string positionName = await GetPositionName(positionId);
 
-            Notifications notification = new Notifications
-            {
-                ReceiverId = HrId,
-                SendDate = DateTime.Now,
-                IsReceived = true,
-                IsRead = false,
-                Title = "",
-                BodyDesc = notes,
-                CreatedOn = DateTime.Now,
-                CreatedBy = currentUser.Id,
-                CandidateId = CandidateId,
-            };
-
-            if (statusstatus.Code == Domain.Enums.StatusCode.Approved)
-                notification.Title = $"You have a Final Interview with {candidateName} for the {positionName} position. Get ready to shine! 💼🚀 ";
-
-            else
-                notification.Title = $"{candidateName} Rejected by {userName} for position {positionName}";
+            var rootInterview = await _dbContext.Interviews
+                .Where(i => i.CandidateId == CandidateId && i.ParentId == null)
+                .FirstOrDefaultAsync();
+            
+            bool isHRFirstFlow = rootInterview?.StartFromHR == true;
 
             if (statusstatus.Code == Domain.Enums.StatusCode.Approved)
             {
@@ -920,8 +902,42 @@ public class NotificationsService : INotificationsService
                 };
 
                 await _notificationsRepository.Create(hrNotification);
+
+                if (!isHRFirstFlow)
+                {
+                    Notifications notification = new()
+                    {
+                        ReceiverId = HrId,
+                        SendDate = DateTime.Now,
+                        IsReceived = true,
+                        IsRead = false,
+                        Title = $"You have a Final Interview with {candidateName} for the {positionName} position. Get ready to shine! 💼🚀 ",
+                        BodyDesc = notes,
+                        CreatedOn = DateTime.Now,
+                        CreatedBy = currentUser.Id,
+                        CandidateId = CandidateId,
+                    };
+
+                    await _notificationsRepository.Create(notification);
+                }
             }
-            await _notificationsRepository.Create(notification);
+            else
+            {
+                Notifications notification = new()
+                {
+                    ReceiverId = HrId,
+                    SendDate = DateTime.Now,
+                    IsReceived = true,
+                    IsRead = false,
+                    Title = $"{candidateName} Rejected by {userName} for position {positionName}",
+                    BodyDesc = notes,
+                    CreatedOn = DateTime.Now,
+                    CreatedBy = currentUser.Id,
+                    CandidateId = CandidateId,
+                };
+
+                await _notificationsRepository.Create(notification);
+            }
         }
         catch (Exception)
         {
@@ -1189,8 +1205,7 @@ public class NotificationsService : INotificationsService
             var candidateName = await GetCandidateName(CandidateId);
             var positionName = await GetPositionName(positionId);
 
-            // Create the notification for the manager.
-            var notification = new Notifications
+            Notifications notification = new()
             {
                 SendDate = DateTime.Now,
                 CandidateId = CandidateId,
@@ -1230,8 +1245,7 @@ public class NotificationsService : INotificationsService
             var candidateName = await GetCandidateName(CandidateId);
             var positionName = await GetPositionName(positionId);
 
-            // Create the notification for the manager.
-            var notification = new Notifications
+            Notifications notification = new()
             {
                 SendDate = DateTime.Now,
                 CandidateId = CandidateId,
@@ -1303,8 +1317,7 @@ public class NotificationsService : INotificationsService
                 return notificationsDTOList;
             }
 
-            // Default return value if no conditions are met
-            return new List<NotificationsDTO>();
+            return [];
         }
         catch (Exception)
         {

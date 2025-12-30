@@ -20,17 +20,20 @@ public class InterviewsRepository : IInterviewsRepository
     private readonly UserManager<IdentityUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IStatusRepository _statusRepository;
 
     public InterviewsRepository(
         ApplicationDbContext context,
         UserManager<IdentityUser> userManager,
         RoleManager<IdentityRole> roleManager,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IStatusRepository statusRepository)
     {
         _context = context;
         _userManager = userManager;
         _roleManager = roleManager;
         _httpContextAccessor = httpContextAccessor;
+        _statusRepository = statusRepository;
     }
 
     public async Task<int> Delete(int id)
@@ -123,7 +126,18 @@ public class InterviewsRepository : IInterviewsRepository
                                                                         .Include(c => c.Candidate)
                                                                         .Include(c => c.Status)
                                                                         .Include(c => c.Track)
-                                                                        .Where(c => c.InterviewerId == userId || c.SecondInterviewerId == userId)
+                                                                        .Where(c => 
+                                                                            (
+                                                                                (c.InterviewerId == userId || c.SecondInterviewerId == userId) ||
+                                                                                (c.ArchitectureInterviewerId == userId && 
+                                                                                 (
+                                                                                     (c.StartFromHR == true && c.WorkflowStageId == (int)EnumWorkflowStage.GMFinalReview) ||
+                                                                                     (c.StartFromHR == false && c.WorkflowStageId.HasValue && c.WorkflowStageId >= (int)EnumWorkflowStage.ManagementReview) ||
+                                                                                     c.ModifiedBy == userId
+                                                                                 )) ||
+                                                                                c.ModifiedBy == userId
+                                                                            )
+                                                                        )
                                                                         .AsQueryable();
 
             if (companyFilter.HasValue)
@@ -209,7 +223,6 @@ public class InterviewsRepository : IInterviewsRepository
         }
     }
 
-    //Get HrManager Email
     public async Task<string> GetHREmail()
     {
         try
@@ -394,10 +407,8 @@ public class InterviewsRepository : IInterviewsRepository
 
             if (pendingInterviews.Count > 0)
             {
-                // Delete pending interviews
                 _context.Interviews.RemoveRange(pendingInterviews);
 
-                // Delete associated notifications created by the user who approved the interview
                 foreach (string createdByUser in approvedInterviewsCreatedByUser)
                 {
                     string HrId = "";
@@ -531,14 +542,10 @@ public class InterviewsRepository : IInterviewsRepository
     {
         try
         {
-            // Find the user with the specified role
             IList<IdentityUser> usersWithRole = await _userManager.GetUsersInRoleAsync(roleName);
 
-            // Get the user IDs of users with the specified role
             List<string> userIds = usersWithRole.Select(u => u.Id).ToList();
 
-            // Retrieve the interview where the candidate is the interviewee
-            // and the interviewer has the specified role
             Interviews interview = await _context.Interviews
                                                  .Include(i => i.Interviewer)
                                                  .FirstOrDefaultAsync(i => i.CandidateId == candidateId &&
@@ -574,5 +581,147 @@ public class InterviewsRepository : IInterviewsRepository
     public async Task<List<Interviews>> GetFirstInterviews() => await _context.Interviews
                                                                               .Where(i => i.ParentId == null)
                                                                               .ToListAsync();
+
+    public async Task<List<Interviews>> GetInterviewsByCandidateIdAsync(int candidateId)
+    {
+        try
+        {
+            return await _context.Interviews
+                                .Include(i => i.Position)
+                                .Include(i => i.Candidate)
+                                .Include(i => i.Status)
+                                .Include(i => i.Track)
+                                .Include(i => i.Interviewer)
+                                .Include(i => i.WorkflowStage)
+                                .Where(i => i.CandidateId == candidateId)
+                                .OrderBy(i => i.WorkflowStageId ?? 0)
+                                .ThenBy(i => i.InterviewsId)
+                                .AsNoTracking()
+                                .ToListAsync();
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public async Task<List<Interviews>> GetChildInterviewsByParentIdAsync(int parentInterviewId)
+    {
+        try
+        {
+            return await _context.Interviews
+                .Where(i => i.ParentId == parentInterviewId)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public async Task<bool> DeleteChildInterviewsAndNotificationsAsync(int parentInterviewId, int candidateId)
+    {
+        try
+        {
+            // Get all child interviews recursively
+            var allChildInterviews = new List<Interviews>();
+            var childInterviews = await GetChildInterviewsByParentIdAsync(parentInterviewId);
+            allChildInterviews.AddRange(childInterviews);
+
+            // Recursively get grandchildren
+            foreach (var child in childInterviews)
+            {
+                var grandchildren = await GetChildInterviewsByParentIdAsync(child.InterviewsId);
+                allChildInterviews.AddRange(grandchildren);
+                
+                // Continue recursively for deeper levels
+                var queue = new Queue<Interviews>(grandchildren);
+                while (queue.Count > 0)
+                {
+                    var current = queue.Dequeue();
+                    var nextLevel = await GetChildInterviewsByParentIdAsync(current.InterviewsId);
+                    allChildInterviews.AddRange(nextLevel);
+                    foreach (var item in nextLevel)
+                        queue.Enqueue(item);
+                }
+            }
+
+            if (allChildInterviews.Count > 0)
+            {
+                // Collect all interviewer IDs from child interviews for notification deletion
+                var interviewerIds = allChildInterviews
+                    .SelectMany(i => new[] { i.InterviewerId, i.SecondInterviewerId, i.ArchitectureInterviewerId })
+                    .Where(id => !string.IsNullOrEmpty(id))
+                    .Distinct()
+                    .ToList();
+
+                // Get interview IDs to delete
+                var interviewIds = allChildInterviews.Select(i => i.InterviewsId).ToList();
+
+                // Delete notifications related to these interviews
+                var notificationsToDelete = _context.Notifications
+                    .Where(n => n.CandidateId == candidateId && 
+                                interviewerIds.Contains(n.ReceiverId))
+                    .ToList();
+
+                if (notificationsToDelete.Count > 0)
+                {
+                    _context.Notifications.RemoveRange(notificationsToDelete);
+                }
+
+                // Delete all child interviews by ID (to avoid tracking conflicts)
+                var interviewsToDelete = await _context.Interviews
+                    .Where(i => interviewIds.Contains(i.InterviewsId))
+                    .ToListAsync();
+
+                if (interviewsToDelete.Count > 0)
+                {
+                    _context.Interviews.RemoveRange(interviewsToDelete);
+                }
+
+                await _context.SaveChangesAsync();
+            }
+
+            return true;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    public async Task<bool> DeleteNotificationsByCandidateAndReceiversAsync(int candidateId, List<string> receiverIds)
+    {
+        try
+        {
+            if (receiverIds == null || receiverIds.Count == 0)
+                return true;
+
+            // Filter out null or empty receiver IDs
+            var validReceiverIds = receiverIds.Where(id => !string.IsNullOrEmpty(id)).Distinct().ToList();
+            
+            if (validReceiverIds.Count == 0)
+                return true;
+
+            // Delete notifications related to these receivers for this candidate
+            var notificationsToDelete = _context.Notifications
+                .Where(n => n.CandidateId == candidateId && 
+                            validReceiverIds.Contains(n.ReceiverId))
+                .ToList();
+
+            if (notificationsToDelete.Count > 0)
+            {
+                _context.Notifications.RemoveRange(notificationsToDelete);
+                await _context.SaveChangesAsync();
+            }
+
+            return true;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
 
 }

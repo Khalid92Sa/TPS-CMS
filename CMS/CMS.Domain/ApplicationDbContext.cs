@@ -25,6 +25,9 @@ public class ApplicationDbContext : IdentityDbContext
     public DbSet<Status> Statuses { get; set; }
     public DbSet<Logs> Logs { get; set; }
     public DbSet<Track> Tracks { get; set; }
+    public DbSet<WorkflowStage> WorkflowStages { get; set; }
+    public DbSet<WorkflowConfiguration> WorkflowConfigurations { get; set; }
+    public DbSet<SelectedInterviewers> SelectedInterviewers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -68,6 +71,11 @@ public class ApplicationDbContext : IdentityDbContext
         builder.ApplyConfiguration(new StatusSeed());
         builder.ApplyConfiguration(new TrackMapper());
         builder.ApplyConfiguration(new TrackSeed());
+        builder.ApplyConfiguration(new WorkflowStageMapper());
+        builder.ApplyConfiguration(new WorkflowSeed());
+        builder.ApplyConfiguration(new WorkflowConfigurationMapper());
+        builder.ApplyConfiguration(new WorkflowConfigurationSeed());
+        builder.ApplyConfiguration(new SelectedInterviewersMapper());
         base.OnModelCreating(builder);
     }
 }

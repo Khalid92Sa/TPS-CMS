@@ -35,4 +35,6 @@ public interface IInterviewsService
     Task<Result<bool>> RemoveArchitectureInterviewer(int interviewId);
     Task<Result<bool>> AddOrUpdateArchitectureInterviewer(int interviewId, string architectureId);
     Task<Result<List<InterviewsDTO>>> GetInterviewsWithoutResults();
+    Task<Result<List<InterviewsDTO>>> GetHRFirstFlowInterviewDetails(int interviewId);
+    Task<Result<List<InterviewsDTO>>> ShowHistoryForHRFirstFlow(int id);
 }

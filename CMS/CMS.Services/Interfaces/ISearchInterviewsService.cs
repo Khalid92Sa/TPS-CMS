@@ -22,4 +22,6 @@ public interface ISearchInterviewsService
     Task<string> GetInterviewerName(string id);
     Task<Result<List<InterviewsDTO>>> ShowHistory(int id);
     Task<Result<List<InterviewsDTO>>> GetAllByCandidateId(int candidateId);
+    Task<Result<List<InterviewsDTO>>> ShowHistoryForHRFirstFlow(int id);
+    Task<Result<List<InterviewsDTO>>> GetHRFirstFlowInterviewDetails(int interviewId);
 }

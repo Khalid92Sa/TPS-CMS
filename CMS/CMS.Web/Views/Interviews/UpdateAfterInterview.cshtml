@@ -1,6 +1,9 @@
 ﻿@using CMS.Domain.Enums;
 @model CMS.Application.DTOs.InterviewsDTO
 
+@{
+    var test = Model;
+}
 <style>
     .card-header {
         color: white;
@@ -39,6 +42,151 @@
             color: white;
             text-decoration: underline;
         }
+
+    /* File Upload Area Styles */
+    .file-upload-container {
+        margin-top: 1.5rem;
+    }
+
+    .file-upload-area {
+        border: 2px dashed #cbd5e0;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+    }
+
+        .file-upload-area:hover {
+            border-color: #486fc7;
+            background-color: #f0f4ff;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #319ca7;
+            background-color: #e6f7ff;
+            transform: scale(1.02);
+        }
+
+    .file-upload-icon {
+        font-size: 3rem;
+        color: #486fc7;
+        margin-bottom: 1rem;
+    }
+
+    .file-upload-text {
+        color: #4a5568;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .file-upload-hint {
+        color: #718096;
+        font-size: 0.875rem;
+    }
+
+    .file-input-hidden {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .file-preview-container {
+        margin-top: 1rem;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .file-preview-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem;
+        background-color: white;
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+        .file-preview-item:last-child {
+            margin-bottom: 0;
+        }
+
+    .file-preview-info {
+        display: flex;
+        align-items: center;
+        flex: 1;
+    }
+
+    .file-preview-icon {
+        font-size: 1.5rem;
+        color: #486fc7;
+        margin-right: 0.75rem;
+    }
+
+    .file-preview-details {
+        flex: 1;
+    }
+
+    .file-preview-name {
+        font-weight: 500;
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+    }
+
+    .file-preview-size {
+        font-size: 0.875rem;
+        color: #718096;
+    }
+
+    .file-remove-btn {
+        background: none;
+        border: none;
+        color: #e53e3e;
+        font-size: 1.25rem;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        transition: color 0.2s;
+    }
+
+        .file-remove-btn:hover {
+            color: #c53030;
+        }
+
+    .evaluation-form-card {
+        background: linear-gradient(135deg, #e6f7ff 0%, #f0f4ff 100%);
+        border: 1px solid #b3d9ff;
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .evaluation-form-title {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+    }
+
+        .evaluation-form-title i {
+            margin-right: 0.5rem;
+            color: #486fc7;
+        }
+
+    .evaluation-form-text {
+        color: #4a5568;
+        margin-bottom: 1rem;
+        line-height: 1.6;
+    }
 </style>
 
 <div class="container mt-5">
@@ -51,13 +199,15 @@
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                 <input type="hidden" asp-for="InterviewsId" />
                 <input type="hidden" asp-for="InterviewerId" />
+                <input type="hidden" asp-for="SecondInterviewerId" />
+                <input type="hidden" asp-for="ArchitectureInterviewerId" />
                 <input type="hidden" asp-for="EvalutaionFormId" />
                 <input type="hidden" asp-for="CandidateId" />
                 <input type="hidden" asp-for="PositionId" />
                 <input type="hidden" asp-for="isUpdated" />
 
                 <div class="row">
-                    @if ((User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture")) && Model.ParentId == null)
+                    @if (User.IsInRole("Interviewer") || (User.IsInRole("Solution Architecture") && Model.ParentId == null) || (User.IsInRole("Solution Architecture") && Model.ParentId != null && Model.WorkflowStageId == (int)EnumWorkflowStage.InterviewersReview))
                     {
                         <!-- Score -->
                         <div class="col-md-6 mb-3">
@@ -108,34 +258,71 @@
                     </div>
                 </div>
 
-                @if ((User.IsInRole("Interviewer") || User.IsInRole("Solution Architecture")) && Model.ParentId == null)
+                @if (User.IsInRole("Interviewer") || (User.IsInRole("Solution Architecture") && Model.ParentId == null) || (User.IsInRole("Solution Architecture") && Model.ParentId != null && Model.WorkflowStageId == (int)EnumWorkflowStage.InterviewersReview))
                 {
-                    @if (Model.EvalutaionFormId != null)
-                    {
-                        <div class="alert alert-info mt-4">
-                            <p>
-                                Please download the evaluation form by clicking the link below. After making the necessary modifications, please upload the modified form using the file input field.
-                            </p>
-                            <a class="btn btn-link" asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.EvalutaionFormId">Download Evaluation Form</a>
-                        </div>
-                    }
+                    <div class="file-upload-container">
+                        @if (Model.EvalutaionFormId != null)
+                        {
+                            <div class="evaluation-form-card">
+                                <div class="evaluation-form-title">
+                                    <i class="bx bx-file-blank"></i>
+                                    Evaluation Form Available
+                                </div>
+                                <p class="evaluation-form-text">
+                                    Please download the evaluation form by clicking the button below. After making the necessary modifications, upload the modified form using the upload area.
+                                </p>
+                                <a class="btn btn-link" asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.EvalutaionFormId">
+                                    <i class="bx bx-download"></i> Download Evaluation Form
+                                </a>
+                            </div>
+                        }
 
-                    <!-- Upload Evaluation -->
-                    <div class="row mt-3">
-                        <div class="col-md-6 mb-3">
-                            <label for="file"><span class="text-danger">*</span> Upload An Evaluation:</label>
-                            <input type="file" id="file" name="file" class="form-control-file" />
-                            <br />
-                            <span asp-validation-for="AttachmentId" class="text-danger"></span>
-                            <br />
-                            <span id="fileError" class="text-danger"></span>
+                        <!-- Upload Evaluation -->
+                        <div class="mb-3">
+                            <label class="form-label"><span class="text-danger">*</span> Upload Evaluation Form</label>
+                            <div class="file-upload-area" id="fileUploadArea">
+                                <input type="file" id="file" name="file" class="file-input-hidden" accept=".pdf,.doc,.docx,.xls,.xlsx" />
+                                <div class="file-upload-icon">
+                                    <i class="bx bx-cloud-upload"></i>
+                                </div>
+                                <div class="file-upload-text">
+                                    <strong>Click to upload</strong> or drag and drop
+                                </div>
+                                <div class="file-upload-hint">
+                                    PDF, DOC, DOCX, XLS, XLSX (Max size: 10MB)
+                                </div>
+                            </div>
+                            <div id="filePreviewContainer" class="file-preview-container" style="display: none;">
+                                <div class="file-preview-item" id="filePreviewItem">
+                                    <div class="file-preview-info">
+                                        <div class="file-preview-icon">
+                                            <i class="bx bx-file"></i>
+                                        </div>
+                                        <div class="file-preview-details">
+                                            <div class="file-preview-name" id="fileName"></div>
+                                            <div class="file-preview-size" id="fileSize"></div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="file-remove-btn" id="removeFileBtn" title="Remove file">
+                                        <i class="bx bx-x"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <span asp-validation-for="AttachmentId" class="text-danger d-block mt-2"></span>
+                            <span id="fileError" class="text-danger d-block mt-2"></span>
                         </div>
                     </div>
                 }
 
                 <div class="d-flex justify-content-between mt-4">
                     <button type="button" class="btn btn-success" id="submitButton">Submit</button>
-                    <a class="btn btn-secondary" asp-action="MyInterviews">Back to List</a>
+                    <a class="btn btn-secondary" 
+                       asp-action="MyInterviews"
+                       asp-route-statusFilter="@ViewBag.statusFilter"
+                       asp-route-companyFilter="@ViewBag.companyFilter"
+                       asp-route-trackFilter="@ViewBag.trackFilter">
+                        Back to List
+                    </a>
                 </div>
             </form>
         </div>
@@ -145,6 +332,7 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
 <script>
     $(document).ready(function () {
@@ -153,11 +341,109 @@
             this.value = this.value.replace(/[^0-9.]/g, '');
         });
 
+        // File Upload Area Functionality
+        const fileInput = $('#file');
+        const fileUploadArea = $('#fileUploadArea');
+        const filePreviewContainer = $('#filePreviewContainer');
+        const fileName = $('#fileName');
+        const fileSize = $('#fileSize');
+        const removeFileBtn = $('#removeFileBtn');
+        const fileError = $('#fileError');
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Show file preview
+        function showFilePreview(file) {
+            fileName.text(file.name);
+            fileSize.text(formatFileSize(file.size));
+            filePreviewContainer.show();
+            fileUploadArea.css('border-color', '#48bb78');
+            fileUploadArea.css('background-color', '#f0fff4');
+        }
+
+        // Hide file preview
+        function hideFilePreview() {
+            filePreviewContainer.hide();
+            fileInput.val('');
+            fileUploadArea.css('border-color', '#cbd5e0');
+            fileUploadArea.css('background-color', '#f8f9fa');
+            fileError.text('');
+        }
+
+        // File input change
+        fileInput.on('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file size (10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    fileError.text('File size exceeds 10MB limit.');
+                    hideFilePreview();
+                    return;
+                }
+                showFilePreview(file);
+                fileError.text('');
+            }
+        });
+
+        // Remove file button
+        removeFileBtn.on('click', function (e) {
+            e.stopPropagation();
+            hideFilePreview();
+        });
+
+        // Drag and drop functionality
+        fileUploadArea.on('dragover', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).addClass('dragover');
+        });
+
+        fileUploadArea.on('dragleave', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('dragover');
+        });
+
+        fileUploadArea.on('drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('dragover');
+
+            const files = e.originalEvent.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                // Validate file size
+                if (file.size > 10 * 1024 * 1024) {
+                    fileError.text('File size exceeds 10MB limit.');
+                    return;
+                }
+                // Create a FileList-like object
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput[0].files = dataTransfer.files;
+                showFilePreview(file);
+                fileError.text('');
+            }
+        });
+
+        // Click on upload area to trigger file input
+        fileUploadArea.on('click', function (e) {
+            if (!$(e.target).closest('.file-preview-container').length && !$(e.target).is('.file-remove-btn')) {
+                fileInput.click();
+            }
+        });
+
         $('#submitButton').click(function () {
             var isValid = true;
             var scoreValue = $('[name="Score"]').val();
             var statusValue = $('[name="StatusId"]').val();
-            var fileInput = $('#file');
             var fileSelected = fileInput.val();
 
             if ($('[name="Score"]').is(":visible")) {
@@ -190,8 +476,11 @@
             }
 
             if (fileInput.is(":visible") && !fileSelected) {
-                $('#fileError').text("Please choose a file to upload.");
+                fileError.text("Please choose a file to upload.");
+                fileUploadArea.css('border-color', '#e53e3e');
                 isValid = false;
+            } else {
+                fileUploadArea.css('border-color', '#cbd5e0');
             }
 
             if (!isValid) return;

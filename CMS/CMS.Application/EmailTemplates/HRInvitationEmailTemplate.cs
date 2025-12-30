@@ -176,6 +176,81 @@ public static class HRInvitationEmailTemplate
         </html>";
     }
 
+    public static string GetHRSecondInterviewApprovalEmail(string hrName, string candidateName, string approvedBy)
+    {
+        return $@"
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <title>Second Interview Approval - {candidateName}</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f7fc;
+                    margin: 0;
+                    padding: 20px;
+                }}
+                .email-container {{
+                    max-width: 600px;
+                    margin: 0 auto;
+                    background: #ffffff;
+                    padding: 25px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                }}
+                .header {{
+                    background-color: #2A5C83;
+                    color: #ffffff;
+                    text-align: center;
+                    padding: 15px;
+                    font-size: 20px;
+                    font-weight: bold;
+                    border-top-left-radius: 10px;
+                    border-top-right-radius: 10px;
+                }}
+                .content {{
+                    padding: 20px;
+                    font-size: 16px;
+                    color: #333;
+                    line-height: 1.6;
+                    text-align: center;
+                }}
+                .highlight {{
+                    font-weight: bold;
+                    color: #2A5C83;
+                }}
+                .footer {{
+                    text-align: center;
+                    font-size: 14px;
+                    color: #777;
+                    padding-top: 15px;
+                    border-top: 1px solid #e0e0e0;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class='email-container'>
+                <div class='header'>Candidate Management System</div>
+
+                <div class='content'>
+                    <p>Dear <span class='highlight'>{hrName}</span>,</p>
+
+                    <p>
+                        The second interview with <span class='highlight'>{candidateName}</span> has been 
+                        <span class='highlight'>Approved</span> by <span class='highlight'>{approvedBy.Replace("_", " ")}</span>.
+                    </p>
+                </div>
+
+                <div class='footer'>
+                    <p>Regards,</p>
+                    <p>Sent by: <span class='highlight'>CMS</span></p>
+                </div>
+            </div>
+        </body>
+        </html>";
+    }
+
     public static string GetHRRejectionEmail(string hrName, string candidateName, string rejectedBy, string systemName = "CMS")
     {
         return $@"
@@ -239,6 +314,81 @@ public static class HRInvitationEmailTemplate
                     <p>
                         The first interview with <span class='highlight'>{candidateName}</span> has been 
                         <span class='highlight'>rejected</span> by <span class='highlight'>{rejectedBy.Replace("_", " ")}</span>.
+                    </p>
+                </div>
+
+                <div class='footer'>
+                    <p>Regards,</p>
+                    <p>Sent by: <span class='highlight'>{systemName}</span></p>
+                </div>
+            </div>
+        </body>
+        </html>";
+    }
+
+    public static string GetHROnHoldEmail(string hrName, string candidateName, string putOnHoldBy, string systemName = "CMS")
+    {
+        return $@"
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <title>Interview On Hold - {candidateName}</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f7fc;
+                    margin: 0;
+                    padding: 20px;
+                }}
+                .email-container {{
+                    max-width: 600px;
+                    margin: 0 auto;
+                    background: #ffffff;
+                    padding: 25px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                }}
+                .header {{
+                    background-color: #F0AD4E;
+                    color: #ffffff;
+                    text-align: center;
+                    padding: 15px;
+                    font-size: 20px;
+                    font-weight: bold;
+                    border-top-left-radius: 10px;
+                    border-top-right-radius: 10px;
+                }}
+                .content {{
+                    padding: 20px;
+                    font-size: 16px;
+                    color: #333;
+                    line-height: 1.6;
+                    text-align: center;
+                }}
+                .highlight {{
+                    font-weight: bold;
+                    color: #F0AD4E;
+                }}
+                .footer {{
+                    text-align: center;
+                    font-size: 14px;
+                    color: #777;
+                    padding-top: 15px;
+                    border-top: 1px solid #e0e0e0;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class='email-container'>
+                <div class='header'>{systemName} - Interview On Hold</div>
+
+                <div class='content'>
+                    <p>Dear <span class='highlight'>{hrName}</span>,</p>
+
+                    <p>
+                        The interview with <span class='highlight'>{candidateName}</span> has been 
+                        <span class='highlight'>put on hold</span> by <span class='highlight'>{putOnHoldBy.Replace("_", " ")}</span>.
                     </p>
                 </div>
 

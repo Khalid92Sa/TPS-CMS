@@ -35,8 +35,30 @@
         z-index: 2;
     }
 
-    .text-danger {
+    /* Hide default error messages - they will be shown via JavaScript when needed */
+    #interviewerIdError,
+    #candidateIdError,
+    #positionIdError,
+    #trackIdError,
+    #dateValidationMessage {
         display: none;
+        font-size: 0.9em;
+    }
+
+    /* Style for validation error messages - simple design */
+    .interview-section .text-danger,
+    .interview-section span.text-danger {
+        position: relative;
+        z-index: 3;
+        margin-top: 5px;
+        font-size: 0.9em;
+    }
+
+    /* Ensure validation messages from server are visible */
+    .interview-section .field-validation-error {
+        position: relative;
+        z-index: 3;
+        margin-top: 5px;
         font-size: 0.9em;
     }
 
@@ -62,10 +84,23 @@
         border-color: gray;
     }
 
-        .btn-secondary:hover {
-            background-color: darkgray !important;
-            border-color: darkgray !important;
-        }
+    .btn-secondary:hover {
+        background-color: darkgray !important;
+        border-color: darkgray !important;
+    }
+
+    /* Pointer cursor for dropdowns */
+    select[data-selectize="true"],
+    .selectize-control,
+    .selectize-control .selectize-input,
+    .selectize-control.single .selectize-input.input-active,
+    .selectize-control.single .selectize-input {
+        cursor: pointer !important;
+    }
+
+    .selectize-control .selectize-input input {
+        cursor: pointer !important;
+    }
 </style>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css" rel="stylesheet" />
@@ -136,6 +171,7 @@
                                 <option value="">-- Select an Interviewer --</option>
                             </select>
                             <span id="interviewerIdError" class="text-danger">Please select an interviewer.</span>
+                            <span id="interviewerIdDuplicateError" class="text-danger" style="display: none;">This interviewer is already selected as Interviewer #2.</span>
                             <span asp-validation-for="InterviewerId" class="text-danger"></span>
                         </div>
                     </div>
@@ -144,9 +180,11 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label asp-for="SecondInterviewerId" class="form-label">Interviewer #2 (optional)</label>
-                            <select asp-for="SecondInterviewerId" asp-items="@(ViewBag.interviewersList)" class="form-control custom-dropdown" data-selectize="true">
+                            <select asp-for="SecondInterviewerId" asp-items="@(ViewBag.interviewersList)" class="form-control custom-dropdown" id="SecondInterviewerId" data-selectize="true">
                                 <option value="">-- Select Second Interviewer --</option>
                             </select>
+                            <span id="secondInterviewerIdError" class="text-danger" style="display: none;">This interviewer is already selected as Interviewer #1.</span>
+                            <span asp-validation-for="SecondInterviewerId" class="text-danger"></span>
                         </div>
                     </div>
                 </div>
@@ -155,9 +193,24 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label asp-for="ArchitectureInterviewerId" class="form-label">Architecture Interviewer (optional)</label>
-                        <select asp-for="ArchitectureInterviewerId" asp-items="@(ViewBag.architecturesList)" class="form-control custom-dropdown" data-selectize="true">
+                        <select asp-for="ArchitectureInterviewerId" asp-items="@(ViewBag.architecturesList)" class="form-control custom-dropdown" data-selectize="true" id="ArchitectureInterviewerId">
                             <option value="">-- Select Architecture Interviewer --</option>
                         </select>
+                    </div>
+                </div>
+
+                <!-- Start from HR Checkbox -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" asp-for="StartFromHR" id="StartFromHR" />
+                            <label class="form-check-label" for="StartFromHR">
+                                Start from HR
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">
+                            If checked, HR will conduct the initial interview, followed by other interviewers and then GM.
+                        </small>
                     </div>
                 </div>
 
@@ -190,13 +243,92 @@
 </div>
 
 <script>
-    $(document).ready(function () {
+        $(document).ready(function () {
         // Apply Selectize.js to all dropdowns
         $('[data-selectize="true"]').selectize({
             allowEmptyOption: false,
             searchField: 'text',
             placeholder: "Start typing to search...",
             selectOnTab: true,
+        });
+
+        // Check for server-side validation errors on page load and show them
+        // ASP.NET Core renders validation errors in spans with class "field-validation-error"
+        var interviewer1ErrorSpan = $('span[data-valmsg-for="InterviewerId"].field-validation-error');
+        var interviewer2ErrorSpan = $('span[data-valmsg-for="SecondInterviewerId"].field-validation-error');
+        
+        // Get error text from any found error spans
+        var interviewer1Error = interviewer1ErrorSpan.text();
+        var interviewer2Error = interviewer2ErrorSpan.text();
+        
+        if (interviewer1Error && interviewer1Error.includes('Interviewer #2')) {
+            $('#interviewerIdDuplicateError').text(interviewer1Error.trim()).show();
+        }
+        if (interviewer2Error && interviewer2Error.includes('Interviewer #1')) {
+            $('#secondInterviewerIdError').text(interviewer2Error.trim()).show();
+        }
+
+        // Validate interviewer selection - check if Interviewer #1 and #2 are the same
+        function validateInterviewerSelection(changedField) {
+            var interviewer1 = $('#InterviewerId').val();
+            var interviewer2 = $('#SecondInterviewerId').val();
+            
+            // If both are selected and they're the same
+            if (interviewer1 && interviewer2 && interviewer1 === interviewer2) {
+                // Show error under the field that was just changed
+                if (changedField === 'InterviewerId') {
+                    $('#interviewerIdDuplicateError').show();
+                    $('#secondInterviewerIdError').hide();
+                } else if (changedField === 'SecondInterviewerId') {
+                    $('#secondInterviewerIdError').show();
+                    $('#interviewerIdDuplicateError').hide();
+                } else {
+                    // If called from form submission, show error under Interviewer #2 by default
+                    $('#secondInterviewerIdError').show();
+                    $('#interviewerIdDuplicateError').hide();
+                }
+                return false;
+            } else {
+                // Clear both error messages only when they're different or one is empty
+                $('#secondInterviewerIdError').hide();
+                $('#interviewerIdDuplicateError').hide();
+                return true;
+            }
+        }
+
+        // Function to check if GM is selected and disable Architecture Interviewer field
+        function checkAndDisableArchitectureInterviewer() {
+            var gmUserIds = @Html.Raw(Json.Serialize(ViewBag.GMUserIds ?? new List<string>()));
+            var interviewer1 = $('#InterviewerId').val();
+            var interviewer2 = $('#SecondInterviewerId').val();
+            var architectureField = $('#ArchitectureInterviewerId');
+            
+            // Check if either interviewer is a GM
+            var isGMSelected = (interviewer1 && gmUserIds.includes(interviewer1)) || 
+                              (interviewer2 && gmUserIds.includes(interviewer2));
+            
+            if (isGMSelected) {
+                architectureField.prop('disabled', true);
+                architectureField.val(''); // Clear selection if GM is selected
+            } else {
+                architectureField.prop('disabled', false);
+            }
+        }
+
+        // Add change event listeners to both interviewer dropdowns
+        $(document).on('change', '#InterviewerId', function() {
+            validateInterviewerSelection('InterviewerId');
+            checkAndDisableArchitectureInterviewer();
+        });
+
+        $(document).on('change', '#SecondInterviewerId', function() {
+            validateInterviewerSelection('SecondInterviewerId');
+            checkAndDisableArchitectureInterviewer();
+        });
+
+        // Check on page load
+        $(document).ready(function() {
+            checkAndDisableArchitectureInterviewer();
         });
 
         $('#editForm').submit(function (e) {
@@ -243,12 +375,31 @@
                 $('#interviewerIdError').hide();
             }
 
+            // Validate that Interviewer #1 and #2 are not the same
+            var interviewer1 = $('#InterviewerId').val();
+            var interviewer2 = $('#SecondInterviewerId').val();
+            
+            if (interviewer1 && interviewer2 && interviewer1 === interviewer2) {
+                // Show error and prevent submission - error will persist until user changes selection
+                validateInterviewerSelection('');
+                isValid = false;
+            } else {
+                // Clear errors if they're different
+                $('#secondInterviewerIdError').hide();
+                $('#interviewerIdDuplicateError').hide();
+            }
+
             // Validate Date
             if (!date) {
                 $('#dateValidationMessage').text('Date is required.').show();
                 isValid = false;
             } else {
                 $('#dateValidationMessage').hide();
+            }
+
+            // If validation fails, don't proceed - keep error messages visible
+            if (!isValid) {
+                return false;
             }
 
             if (isValid) {

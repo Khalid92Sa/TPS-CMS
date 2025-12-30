@@ -140,9 +140,10 @@ public class AccountService : IAccountService
             if (users is null || users.Count == 0)
                 return Result<IList<IdentityUser>>.Failure(null, "No users found");
 
-            // Get the HR Manager role
+            // Get the HR Manager, Admin, and Viewer roles
             IdentityRole hrManagerRole = await _roleManager.FindByNameAsync("HR Manager");
             IdentityRole adminRole = await _roleManager.FindByNameAsync("Admin");
+            IdentityRole viewerRole = await _roleManager.FindByNameAsync("Viewer");
 
             if (hrManagerRole is null)
                 return Result<IList<IdentityUser>>.Failure(null, "HR Manager Role Not Found");
@@ -150,10 +151,14 @@ public class AccountService : IAccountService
             if (adminRole is null)
                 return Result<IList<IdentityUser>>.Failure(null, "Admin Role Not Found");
 
-            // Filter out users with the HR Manager role
-            List<IdentityUser> usersExcludingHRManager = users.Where(user => !(_userManager.IsInRoleAsync(user, hrManagerRole.Name).Result || _userManager.IsInRoleAsync(user, adminRole.Name).Result))
-                                                              .ToList();
-            return Result<IList<IdentityUser>>.Success(usersExcludingHRManager);
+            // Filter out users with HR Manager, Admin, and Viewer roles
+            List<IdentityUser> filteredUsers = users.Where(user => 
+                !(_userManager.IsInRoleAsync(user, hrManagerRole.Name).Result || 
+                  _userManager.IsInRoleAsync(user, adminRole.Name).Result ||
+                  (viewerRole != null && _userManager.IsInRoleAsync(user, viewerRole.Name).Result)))
+                .ToList();
+            
+            return Result<IList<IdentityUser>>.Success(filteredUsers);
         }
         catch (Exception)
         {
