@@ -54,9 +54,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="SQL_SCRIPTS\01_CreateConfigrationTables.sql" />
-    <Compile Include="SQL_SCRIPTS\03_InsertDataToWorkflowConfig.sql" />
-    <Compile Include="SQL_SCRIPTS\04_UpdateOldData.sql" />
+    <None Include="SQL_SCRIPTS\01_CreateConfigrationTables.sql" />
+    <None Include="SQL_SCRIPTS\02_Create_SelectedInterviewers_Table.sql" />
+    <None Include="SQL_SCRIPTS\03_InsertDataToWorkflowConfig.sql" />
+    <None Include="SQL_SCRIPTS\04_UpdateOldData.sql" />
   </ItemGroup>
 
 	<ItemGroup>
