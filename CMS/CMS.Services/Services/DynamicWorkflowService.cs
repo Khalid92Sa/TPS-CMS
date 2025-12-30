@@ -138,12 +138,13 @@ public class DynamicWorkflowService : IDynamicWorkflowService
                         || interviewer2Role == "Solution Architecture";
                 }
 
-                if (completedByRole == "Solution Architecture" && hasArchitectureInterviewer && isArchiAssignedAsInterviewer)
+                // If GM is one of the interviewers and Solution Architecture approves, go directly to HR (skip Stage 2)
+                if (isGMInInterview && completedByRole == "Solution Architecture")
                 {
-                    // SCENARIO: Architecture interviewer (assigned as Interviewer #1 or #2, AND also selected) approved
-                    // InterviewerId = GM, SecondInterviewerId = Architecture interviewer (from ArchitectureInterviewerId)
-                    await CreateParallelInterviewsAsync(
-                        (int)EnumWorkflowStage.ManagementReview, // Stage 2
+                    // GM is already involved, so go directly to HR
+                    await CreateSingleInterviewAsync(
+                        (int)EnumWorkflowStage.FinalHRInterview, // Stage 3 (HR)
+                        "HR Manager",
                         candidateId,
                         positionId,
                         trackId,
@@ -153,21 +154,75 @@ public class DynamicWorkflowService : IDynamicWorkflowService
                         pendingStatus.Id);
                     return Result<bool>.Success(true);
                 }
+
+                if (completedByRole == "Solution Architecture" && hasArchitectureInterviewer && isArchiAssignedAsInterviewer)
+                {
+                    // SCENARIO: Architecture interviewer (assigned as Interviewer #1 or #2, AND also selected) approved
+                    // BUT only if GM is NOT already in the interview
+                    if (!isGMInInterview)
+                    {
+                        // InterviewerId = GM, SecondInterviewerId = Architecture interviewer (from ArchitectureInterviewerId)
+                        await CreateParallelInterviewsAsync(
+                            (int)EnumWorkflowStage.ManagementReview, // Stage 2
+                            candidateId,
+                            positionId,
+                            trackId,
+                            interviewDate,
+                            completedInterviewId,
+                            createdByUserId,
+                            pendingStatus.Id);
+                        return Result<bool>.Success(true);
+                    }
+                    else
+                    {
+                        // GM is already in the interview, go directly to HR
+                        await CreateSingleInterviewAsync(
+                            (int)EnumWorkflowStage.FinalHRInterview, // Stage 3 (HR)
+                            "HR Manager",
+                            candidateId,
+                            positionId,
+                            trackId,
+                            interviewDate,
+                            completedInterviewId,
+                            createdByUserId,
+                            pendingStatus.Id);
+                        return Result<bool>.Success(true);
+                    }
+                }
                 else if (completedByRole == "Solution Architecture" && !hasArchitectureInterviewer && isArchiAssignedAsInterviewer)
                 {
                     // SCENARIO: Architecture interviewer (assigned as Interviewer #1 or #2, not selected) approved
                     // Go to GM only: InterviewerId = GM, SecondInterviewerId = null
-                    await CreateSingleInterviewAsync(
-                        (int)EnumWorkflowStage.ManagementReview, // Stage 2 (GM)
-                        "General Manager",
-                        candidateId,
-                        positionId,
-                        trackId,
-                        interviewDate,
-                        completedInterviewId,
-                        createdByUserId,
-                        pendingStatus.Id);
-                    return Result<bool>.Success(true);
+                    // BUT only if GM is NOT already in the interview
+                    if (!isGMInInterview)
+                    {
+                        await CreateSingleInterviewAsync(
+                            (int)EnumWorkflowStage.ManagementReview, // Stage 2 (GM)
+                            "General Manager",
+                            candidateId,
+                            positionId,
+                            trackId,
+                            interviewDate,
+                            completedInterviewId,
+                            createdByUserId,
+                            pendingStatus.Id);
+                        return Result<bool>.Success(true);
+                    }
+                    else
+                    {
+                        // GM is already in the interview, go directly to HR
+                        await CreateSingleInterviewAsync(
+                            (int)EnumWorkflowStage.FinalHRInterview, // Stage 3 (HR)
+                            "HR Manager",
+                            candidateId,
+                            positionId,
+                            trackId,
+                            interviewDate,
+                            completedInterviewId,
+                            createdByUserId,
+                            pendingStatus.Id);
+                        return Result<bool>.Success(true);
+                    }
                 }
 
                 // If GM is one of the interviewers and Interviewer approves, go directly to HR (skip Stage 2)
