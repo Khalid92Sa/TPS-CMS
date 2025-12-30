@@ -1309,15 +1309,11 @@ public class InterviewsController : Controller
                             {
                                 int interviewCount = await _interviewsRepository.GetInterviewCountForCandidate(interviewsDTO.CandidateId);
                                 
-                                // Check if this is HR-first flow and final stage (GM Final Review)
-                                // Also check if there are no more interviews after this (it's truly the final stage)
                                 bool isGMFinalReviewStage = currentInterview.WorkflowStageId == (int)Domain.Enums.EnumWorkflowStage.GMFinalReview;
-                                bool isFinalStage = nextInterviewStatusCode == null; // No more interviews after this
+                                bool isFinalStage = nextInterviewStatusCode == null;
                                 
                                 bool isHRFirstFlowFinalStage = isHRFirstFlow && isGMFinalReviewStage && isFinalStage;
                                 
-                                // Check if user is GM or Archi in final stage
-                                // For HR-first flow final stage, both GM and Archi (if involved) should be able to update status
                                 bool isGMOrArchiInFinalStage = isHRFirstFlowFinalStage && 
                                     (User.IsInRole("General Manager") || User.IsInRole("Solution Architecture"));
 
@@ -1444,19 +1440,14 @@ public class InterviewsController : Controller
                     }
                     else if (await _userManager.IsInRoleAsync(currentUser, "Solution Architecture"))
                     {
-                        // Get the interview from database to check all interviewer fields
                         Domain.Entities.Interviews archiInterview = await _interviewsRepository.GetById(interviewsDTO.InterviewsId);
                         
-                        // Check if current user (Archi) is involved in this interview
-                        // Check InterviewerId (Interviewer #1)
                         bool isCurrentUserFirstInterviewer = !string.IsNullOrEmpty(archiInterview?.InterviewerId) && 
                                                              archiInterview.InterviewerId == currentUser.Id;
                         
-                        // Check SecondInterviewerId (Interviewer #2)
                         bool isCurrentUserSecondInterviewer = !string.IsNullOrEmpty(archiInterview?.SecondInterviewerId) && 
                                                               archiInterview.SecondInterviewerId == currentUser.Id;
                         
-                        // Check ArchitectureInterviewerId (selected Architecture interviewer)
                         bool isCurrentUserArchitectureInterviewer = !string.IsNullOrEmpty(archiInterview?.ArchitectureInterviewerId) && 
                                                                     archiInterview.ArchitectureInterviewerId == currentUser.Id;
 
@@ -1466,11 +1457,9 @@ public class InterviewsController : Controller
                         }
                         else
                         {
-                            // Fallback: try to get from session or use DTO values
                             string secondInterviewerId = HttpContext.Session.GetString($"SecondInterviewerId_{interviewsDTO.InterviewsId}");
                             string interviewerId = HttpContext.Session.GetString($"InterviewerId_{interviewsDTO.InterviewsId}");
                             
-                            // If session values are null, use the interview record values
                             if (string.IsNullOrEmpty(interviewerId))
                                 interviewerId = archiInterview?.InterviewerId;
                             if (string.IsNullOrEmpty(secondInterviewerId))
@@ -2106,7 +2095,6 @@ public class InterviewsController : Controller
                                                 await _emailService.SendEmailToInterviewer(HREmail, interviewsDTO, emailModel);
                                         }
                                        
-                                        // Send HR notification and email for approval
                                         if (isHRFirstFlow)
                                         {
                                             await _notificationsService.CreateInterviewNotificationForFinalHRInterview(interviewsDTO.StatusId.Value, interviewsDTO.Notes, interviewsDTO.CandidateId, interviewsDTO.PositionId);
@@ -2165,7 +2153,6 @@ public class InterviewsController : Controller
 
                                             if(status.Code == Domain.Enums.StatusCode.Approved)
                                             {
-                                                // Send HR notification and email for approval
                                                 if (isHRFirstFlow)
                                                 {
                                                     await _notificationsService.CreateInterviewNotificationForFinalHRInterview(interviewsDTO.StatusId.Value, interviewsDTO.Notes, interviewsDTO.CandidateId, interviewsDTO.PositionId);
