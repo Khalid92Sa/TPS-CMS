@@ -15,7 +15,7 @@ public class StatusRepository : IStatusRepository
 {
     readonly ApplicationDbContext _context;
     public StatusRepository(ApplicationDbContext context) => _context = context;
-    
+
     public async Task<List<Status>> GetAll()
     {
         try
@@ -99,28 +99,63 @@ public class StatusRepository : IStatusRepository
 
     public async Task<List<CandidateDTO>> GetApprovedCandidatesByCode(string code, string hrId)
     {
-        List<CandidateDTO> candidates = await _context.Candidates.Include(c => c.Interviews)
-                                                                    .ThenInclude(i => i.Status)
-                                                                 .Where(c => c.Interviews.Any(i => i.Status.Code == code && i.InterviewerId == hrId))
-                                                                 .Select(candidate => new CandidateDTO
-                                                                 {
-                                                                     Name = candidate.FullName,
-                                                                     CompanyId = candidate.CompanyId,
-                                                                     CompanyName = candidate.Company.Name,
-                                                                     CountryId = candidate.CountryId,
-                                                                     CountryName = candidate.Country.Name,
-                                                                     Experience = candidate.Experience,
-                                                                     PositionId = candidate.PositionId,
-                                                                     PositionName = candidate.Position.Name,
-                                                                     TrackId = candidate.TrackId,
-                                                                     TrackName = candidate.Track.Name,
-                                                                     Phone = candidate.Phone,
-                                                                     Status = code,
-                                                                     CreatedOn = candidate.CreatedOn
-                                                                 })
-                                                                 .ToListAsync();
+        // Match the dashboard logic: Show ALL accepted candidates regardless of which HR approved them
+        // This ensures consistency between dashboard count and page display
 
-        return candidates;
+        // Get all candidates with interviews
+        var allCandidates = await _context.Candidates
+            .Include(c => c.Interviews)
+                .ThenInclude(i => i.Status)
+            .Include(c => c.Company)
+            .Include(c => c.Country)
+            .Include(c => c.Position)
+            .Include(c => c.Track)
+            .Where(c => c.Interviews.Any())
+            .ToListAsync();
+
+        // Filter in memory to match dashboard logic
+        var acceptedCandidates = allCandidates
+            .Where(c =>
+            {
+                var interviews = c.Interviews.OrderBy(i => i.InterviewsId).ToList();
+                int interviewCount = interviews.Count;
+
+                // Candidates with 3-4 interviews where ALL are approved
+                if (interviewCount == 3 || interviewCount == 4)
+                {
+                    return interviews.All(i => i.Status.Code == StatusCode.Approved && i.StopCycleNote == null);
+                }
+
+                // Candidates with 2 interviews where the last one (skip first) is approved
+                if (interviewCount == 2)
+                {
+                    var secondInterview = interviews.Skip(1).FirstOrDefault();
+                    return secondInterview != null
+                        && secondInterview.Status.Code == StatusCode.Approved
+                        && secondInterview.StopCycleNote == null;
+                }
+
+                return false;
+            })
+            .Select(candidate => new CandidateDTO
+            {
+                Name = candidate.FullName,
+                CompanyId = candidate.CompanyId,
+                CompanyName = candidate.Company?.Name,
+                CountryId = candidate.CountryId,
+                CountryName = candidate.Country?.Name,
+                Experience = candidate.Experience,
+                PositionId = candidate.PositionId,
+                PositionName = candidate.Position?.Name,
+                TrackId = candidate.TrackId,
+                TrackName = candidate.Track?.Name,
+                Phone = candidate.Phone,
+                Status = code,
+                CreatedOn = candidate.CreatedOn
+            })
+            .ToList();
+
+        return acceptedCandidates;
     }
 
 
