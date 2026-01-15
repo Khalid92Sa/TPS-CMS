@@ -18,15 +18,18 @@ public class CandidateRepository : ICandidateRepository
     private readonly ApplicationDbContext _dbContext;
     private readonly UserManager<IdentityUser> _userManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly RoleManager<IdentityRole> _roleManager;
 
     public CandidateRepository(
         ApplicationDbContext dbContext,
         UserManager<IdentityUser> userManager,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        RoleManager<IdentityRole> roleManager)
     {
         _dbContext = dbContext;
         _userManager = userManager;
         _httpContextAccessor = httpContextAccessor;
+        _roleManager = roleManager;
     }
 
 
@@ -124,21 +127,46 @@ public class CandidateRepository : ICandidateRepository
     {
         try
         {
+            IdentityRole GM = await _roleManager.FindByNameAsync("General Manager");
+            string GMId = (await _userManager.GetUsersInRoleAsync(GM.Name))
+                            .FirstOrDefault()?.Id;
+
             int candidateCounts = await _dbContext.Candidates
-                                                  .Include(a => a.Interviews)
-                                                      .ThenInclude(a => a.Status)
-                                                  .Where(a => (a.Interviews.Count == 3 || a.Interviews.Count == 4) && a.Interviews.All(a => a.Status.Code == StatusCode.Approved && a.StopCycleNote == null))
-                                                  .CountAsync();
+                .Where(a =>
+                    (a.Interviews.Count == 3 || a.Interviews.Count == 4) &&
+                    a.Interviews.All(i =>
+                        i.Status.Code == StatusCode.Approved &&
+                        i.StopCycleNote == null))
+                .CountAsync();
 
             int candidateCountsWithTwoAccepted = await _dbContext.Candidates
-                                                                 .Include(a => a.Interviews)
-                                                                     .ThenInclude(a => a.Status)
-                                                                 .Where(a => a.Interviews.Count == 2 && a.Interviews.Skip(1).All(i => i.Status.Code == StatusCode.Approved && i.StopCycleNote == null))
-                                                                 .CountAsync();
+                .Where(a =>
+                    a.Interviews.Count == 2 &&
+                    a.Interviews.Skip(1).All(i =>
+                        i.Status.Code == StatusCode.Approved &&
+                        i.StopCycleNote == null))
+                .CountAsync();
 
-            return candidateCounts + candidateCountsWithTwoAccepted;
+            var singleInterviewCandidateIds =_dbContext.Interviews.GroupBy(i => i.CandidateId)
+                                                                  .Where(g => g.Count() == 1)
+                                                                  .Select(g => g.Key);
+
+            int gmInterviewCount = await _dbContext.Interviews
+                                                    .Where(i =>
+                                                        i.ParentId == null &&
+                                                        i.StopCycleNote == null &&
+                                                        i.Status.Code == StatusCode.Approved &&
+                                                        (i.InterviewerId == GMId || i.SecondInterviewerId == GMId) &&
+                                                        singleInterviewCandidateIds.Contains(i.CandidateId))
+                                                    .CountAsync();
+
+
+
+            return candidateCounts
+                 + candidateCountsWithTwoAccepted
+                 + gmInterviewCount;
         }
-        catch (Exception)
+        catch
         {
             throw;
         }
@@ -211,10 +239,13 @@ public class CandidateRepository : ICandidateRepository
     {
         try
         {
-            int stoppedCyclesCount = await _dbContext.Interviews.Where(i => i.StopCycleNote != null)
-                                                                .CountAsync();
+            int stoppedCyclesCount = await _dbContext.Candidates
+                                                    .Include(a => a.Interviews)
+                                                    .Where(candidate => candidate.Interviews.Any(interview => interview.StopCycleNote != null))
+                                                    .CountAsync();
 
             return stoppedCyclesCount;
+
         }
         catch (Exception)
         {

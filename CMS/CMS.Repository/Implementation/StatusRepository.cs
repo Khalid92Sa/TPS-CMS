@@ -3,6 +3,7 @@ using CMS.Domain;
 using CMS.Domain.Entities;
 using CMS.Domain.Enums;
 using CMS.Repository.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,15 @@ namespace CMS.Repository.Implementation;
 public class StatusRepository : IStatusRepository
 {
     readonly ApplicationDbContext _context;
-    public StatusRepository(ApplicationDbContext context) => _context = context;
+    private readonly UserManager<IdentityUser> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
+
+    public StatusRepository(ApplicationDbContext context, UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
+    {
+        _context = context;
+        _roleManager = roleManager;
+        _userManager = userManager;
+    }
 
     public async Task<List<Status>> GetAll()
     {
@@ -99,10 +108,10 @@ public class StatusRepository : IStatusRepository
 
     public async Task<List<CandidateDTO>> GetApprovedCandidatesByCode(string code, string hrId)
     {
-        // Match the dashboard logic: Show ALL accepted candidates regardless of which HR approved them
-        // This ensures consistency between dashboard count and page display
+        IdentityRole GM = await _roleManager.FindByNameAsync("General Manager");
+        string GMId = (await _userManager.GetUsersInRoleAsync(GM.Name))
+                        .FirstOrDefault()?.Id;
 
-        // Get all candidates with interviews
         var allCandidates = await _context.Candidates
             .Include(c => c.Interviews)
                 .ThenInclude(i => i.Status)
@@ -113,26 +122,34 @@ public class StatusRepository : IStatusRepository
             .Where(c => c.Interviews.Any())
             .ToListAsync();
 
-        // Filter in memory to match dashboard logic
         var acceptedCandidates = allCandidates
             .Where(c =>
             {
                 var interviews = c.Interviews.OrderBy(i => i.InterviewsId).ToList();
                 int interviewCount = interviews.Count;
 
-                // Candidates with 3-4 interviews where ALL are approved
                 if (interviewCount == 3 || interviewCount == 4)
                 {
                     return interviews.All(i => i.Status.Code == StatusCode.Approved && i.StopCycleNote == null);
                 }
 
-                // Candidates with 2 interviews where the last one (skip first) is approved
                 if (interviewCount == 2)
                 {
                     var secondInterview = interviews.Skip(1).FirstOrDefault();
                     return secondInterview != null
                         && secondInterview.Status.Code == StatusCode.Approved
                         && secondInterview.StopCycleNote == null;
+                }
+
+                if (interviewCount == 1)
+                {
+                    var interview = interviews.First();
+
+                    return interview.ParentId == null &&
+                           interview.StopCycleNote == null &&
+                           interview.Status.Code == StatusCode.Approved &&
+                           (interview.InterviewerId == GMId ||
+                            interview.SecondInterviewerId == GMId);
                 }
 
                 return false;
