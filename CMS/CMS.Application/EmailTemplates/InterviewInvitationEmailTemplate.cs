@@ -1,12 +1,25 @@
-﻿using System;
+using System;
 
 namespace CMS.Application.EmailTemplates;
 
 public static class InterviewInvitationEmailTemplate
 {
-    public static string GetInvitationEmailTemplate(string recipientName, string coInterviewerName, string candidateName, string positionName, DateTime interviewDate, int interviewId)
+    public static string GetInvitationEmailTemplate(
+        string recipientName,
+        string coInterviewerName,
+        string candidateName,
+        string positionName,
+        DateTime interviewDate,
+        int interviewId,
+        bool isSecondInterview = false,
+        bool includeScheduleDate = true)
     {
         string formattedDate = interviewDate.ToString("dddd, MMMM dd, yyyy hh:mm tt");
+        string interviewPhase = isSecondInterview ? "second interview" : "first interview";
+        string scheduleSection = includeScheduleDate
+            ? $@"for the <span class='highlight'>{positionName}</span> position, scheduled on 
+                        <span class='highlight'>{formattedDate}</span>."
+            : $@"for the <span class='highlight'>{positionName}</span> position.";
 
         return $@"
         <!DOCTYPE html>
@@ -85,10 +98,9 @@ public static class InterviewInvitationEmailTemplate
                         {(string.IsNullOrEmpty(coInterviewerName)
                         ? "You are"
                         : $"You and <span class='highlight'>{coInterviewerName}</span> are")} assigned to conduct a 
-                        <span class='highlight'>first interview</span> 
+                        <span class='highlight'>{interviewPhase}</span> 
                         with <span class='highlight'>{candidateName}</span> 
-                        for the <span class='highlight'>{positionName}</span> position, scheduled on 
-                        <span class='highlight'>{formattedDate}</span>.
+                        {scheduleSection}
                     </p>
 
                     <p>Please click the button below to view the invitation details:</p>
@@ -109,9 +121,22 @@ public static class InterviewInvitationEmailTemplate
         </html>";
     }
 
-    public static string UpdatedInvitationEmail(string recipientName, string coInterviewerName, string candidateName, string positionName, DateTime interviewDate, string interviewId)
+    public static string UpdatedInvitationEmail(
+        string recipientName,
+        string coInterviewerName,
+        string candidateName,
+        string positionName,
+        DateTime interviewDate,
+        string interviewId,
+        bool isSecondInterview = false,
+        bool includeScheduleDate = true)
     {
         string formattedDate = interviewDate.ToString("dddd, MMMM dd, yyyy hh:mm tt");
+        string interviewPhase = isSecondInterview ? "second interview" : "first interview";
+        string scheduleSection = includeScheduleDate
+            ? $@"for the <span class='highlight'>{positionName}</span> position, scheduled on 
+                        <span class='highlight'>{formattedDate}</span>."
+            : $@"for the <span class='highlight'>{positionName}</span> position.";
 
         return $@"
         <!DOCTYPE html>
@@ -190,10 +215,9 @@ public static class InterviewInvitationEmailTemplate
                         {(string.IsNullOrEmpty(coInterviewerName)
                         ? "You are"
                         : $"You and <span class='highlight'>{coInterviewerName}</span> are")} assigned to conduct a 
-                        <span class='highlight'>first interview</span> 
+                        <span class='highlight'>{interviewPhase}</span> 
                         with <span class='highlight'>{candidateName}</span> 
-                        for the <span class='highlight'>{positionName}</span> position, scheduled on 
-                        <span class='highlight'>{formattedDate}</span>.
+                        {scheduleSection}
                     </p>
 
                     <p>Please click the button below to review the updated interview details:</p>

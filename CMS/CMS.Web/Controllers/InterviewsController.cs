@@ -1,4 +1,4 @@
-﻿using CMS.Application.CustomRoleAuth;
+using CMS.Application.CustomRoleAuth;
 using CMS.Application.DTOs;
 using CMS.Application.EmailTemplates;
 using CMS.Application.Extensions;
@@ -1527,7 +1527,9 @@ public class InterviewsController : Controller
                                         candidateNameForEmail,
                                         positionNameForEmail,
                                         interviewDate,
-                                        interviewsDTO.InterviewsId
+                                        interviewsDTO.InterviewsId,
+                                        isSecondInterview: true,
+                                        includeScheduleDate: false
                                     );
 
                                     EmailDTOs emailModel = new()
@@ -1558,7 +1560,9 @@ public class InterviewsController : Controller
                                         candidateNameForEmail,
                                         positionNameForEmail,
                                         interviewDate,
-                                        interviewsDTO.InterviewsId
+                                        interviewsDTO.InterviewsId,
+                                        isSecondInterview: true,
+                                        includeScheduleDate: false
                                     );
 
                                     EmailDTOs emailModel2 = new()
