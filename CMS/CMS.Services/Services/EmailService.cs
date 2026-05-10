@@ -1,4 +1,5 @@
 ﻿using CMS.Application.DTOs;
+using CMS.Application.Extensions;
 using CMS.Repository.Interfaces;
 using CMS.Services.Interfaces;
 using Hangfire;
@@ -22,6 +23,7 @@ public class EmailService : IEmailService
     private readonly IInterviewsRepository _interviewsRepository;
     private readonly ICandidateService _candidateService;
     private readonly IInterviewsService _interviewsService;
+    private readonly IStatusService _statusService;
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;
 
@@ -33,6 +35,7 @@ public class EmailService : IEmailService
     private readonly bool _enableSsl;
     private readonly string _fromEmail;
     private readonly string _ccEmail;
+    private readonly string _approvalCcEmail;
 
     public EmailService(
         IHttpContextAccessor httpContextAccessor,
@@ -40,6 +43,7 @@ public class EmailService : IEmailService
         IInterviewsRepository interviewsRepository,
         ICandidateService candidateService,
         IInterviewsService interviewsService,
+        IStatusService statusService,
         IConfiguration configuration,
         ILogger<EmailService> logger)
     {
@@ -48,6 +52,7 @@ public class EmailService : IEmailService
         _interviewsRepository = interviewsRepository;
         _candidateService = candidateService;
         _interviewsService = interviewsService;
+        _statusService = statusService;
         _configuration = configuration;
 
         _logger = logger;
@@ -60,6 +65,38 @@ public class EmailService : IEmailService
         _enableSsl = _configuration.GetValue<bool>("EmailSettings:EnableSsl");
         _fromEmail = _configuration["EmailSettings:FromEmail"];
         _ccEmail = _configuration["EmailSettings:CcEmail"];
+        _approvalCcEmail = _configuration["EmailSettings:ApprovalCcEmail"];
+    }
+
+    private static void AddEmailIfValid(MailAddressCollection recipients, string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return;
+
+        if (recipients.Any(x => string.Equals(x.Address, email, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        recipients.Add(email);
+    }
+
+    private void AddConfiguredCcRecipients(MailMessage message, bool isApprovalEmail)
+    {
+        AddEmailIfValid(message.CC, _ccEmail);
+
+        if (isApprovalEmail)
+            AddEmailIfValid(message.CC, _approvalCcEmail);
+    }
+
+    private async Task<bool> IsApprovedStatusAsync(int? statusId)
+    {
+        if (!statusId.HasValue)
+            return false;
+
+        Result<StatusDTO> statusResult = await _statusService.GetById(statusId.Value);
+        if (!statusResult.IsSuccess || statusResult.Value is null)
+            return false;
+
+        return statusResult.Value.Code == Domain.Enums.StatusCode.Approved;
     }
 
 
@@ -198,10 +235,7 @@ public class EmailService : IEmailService
             message.Subject = emailToResend.Subject;
             message.IsBodyHtml = true;
 
-            if (!string.IsNullOrEmpty(_ccEmail))
-            {
-                message.CC.Add(_ccEmail);
-            }
+            AddConfiguredCcRecipients(message, emailToResend.IsApprovalEmail);
 
             await smtp.SendMailAsync(message);
         }
@@ -254,6 +288,8 @@ public class EmailService : IEmailService
     {
         try
         {
+            emailModel.IsApprovalEmail = await IsApprovedStatusAsync(interview?.StatusId);
+
             SmtpClient smtp = new()
             {
                 Host = _smtpHost,
@@ -280,10 +316,7 @@ public class EmailService : IEmailService
             message.Subject = emailModel.Subject;
             message.IsBodyHtml = true;
 
-            if (!string.IsNullOrEmpty(_ccEmail))
-            {
-                message.CC.Add(_ccEmail);
-            }
+            AddConfiguredCcRecipients(message, emailModel.IsApprovalEmail);
 
             await smtp.SendMailAsync(message);
             _logger.LogInformation("Email has been sent successfully to:" + emailModel.EmailTo.FirstOrDefault());
@@ -307,6 +340,8 @@ public class EmailService : IEmailService
     {
         try
         {
+            emailModel.IsApprovalEmail = await IsApprovedStatusAsync(interview?.StatusId);
+
             SmtpClient smtp = new()
             {
                 Host = _smtpHost,
@@ -333,10 +368,7 @@ public class EmailService : IEmailService
             message.Subject = emailModel.Subject;
             message.IsBodyHtml = true;
 
-            if (!string.IsNullOrEmpty(_ccEmail))
-            {
-                message.CC.Add(_ccEmail);
-            }
+            AddConfiguredCcRecipients(message, emailModel.IsApprovalEmail);
 
             await smtp.SendMailAsync(message);
         }
