@@ -118,6 +118,8 @@
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                 <input type="hidden" asp-for="InterviewsId" />
                 <input type="hidden" asp-for="StatusId" />
+                <input type="hidden" asp-for="WorkflowStageId" />
+                <input type="hidden" asp-for="ParentId" />
 
                 <!-- Candidate Name -->
                 <div class="row mb-3">
@@ -193,7 +195,7 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label asp-for="ArchitectureInterviewerId" class="form-label">Architecture Interviewer (optional)</label>
-                        <select asp-for="ArchitectureInterviewerId" asp-items="@(ViewBag.architecturesList)" class="form-control custom-dropdown" data-selectize="true" id="ArchitectureInterviewerId">
+                        <select asp-for="ArchitectureInterviewerId" asp-items="@(ViewBag.architecturesList)" class="form-control" id="ArchitectureInterviewerId">
                             <option value="">-- Select Architecture Interviewer --</option>
                         </select>
                     </div>
@@ -302,34 +304,46 @@
             var interviewer1 = $('#InterviewerId').val();
             var interviewer2 = $('#SecondInterviewerId').val();
             var architectureField = $('#ArchitectureInterviewerId');
-            
+            var architectureSelectize = architectureField[0] && architectureField[0].selectize;
+
             // Check if either interviewer is a GM
-            var isGMSelected = (interviewer1 && gmUserIds.includes(interviewer1)) || 
+            var isGMSelected = (interviewer1 && gmUserIds.includes(interviewer1)) ||
                               (interviewer2 && gmUserIds.includes(interviewer2));
-            
+
             if (isGMSelected) {
-                architectureField.prop('disabled', true);
-                architectureField.val(''); // Clear selection if GM is selected
+                if (architectureSelectize) {
+                    architectureSelectize.clear();
+                    architectureSelectize.disable();
+                } else {
+                    architectureField.prop('disabled', true);
+                    architectureField.val('');
+                }
+            } else if (architectureSelectize) {
+                architectureSelectize.enable();
             } else {
                 architectureField.prop('disabled', false);
             }
         }
 
-        // Add change event listeners to both interviewer dropdowns
-        $(document).on('change', '#InterviewerId', function() {
-            validateInterviewerSelection('InterviewerId');
-            checkAndDisableArchitectureInterviewer();
-        });
+        function bindInterviewerChangeHandler(selector, changedField) {
+            var element = $(selector)[0];
+            if (element && element.selectize) {
+                element.selectize.on('change', function () {
+                    validateInterviewerSelection(changedField);
+                    checkAndDisableArchitectureInterviewer();
+                });
+            } else {
+                $(document).on('change', selector, function () {
+                    validateInterviewerSelection(changedField);
+                    checkAndDisableArchitectureInterviewer();
+                });
+            }
+        }
 
-        $(document).on('change', '#SecondInterviewerId', function() {
-            validateInterviewerSelection('SecondInterviewerId');
-            checkAndDisableArchitectureInterviewer();
-        });
+        bindInterviewerChangeHandler('#InterviewerId', 'InterviewerId');
+        bindInterviewerChangeHandler('#SecondInterviewerId', 'SecondInterviewerId');
 
-        // Check on page load
-        $(document).ready(function() {
-            checkAndDisableArchitectureInterviewer();
-        });
+        checkAndDisableArchitectureInterviewer();
 
         $('#editForm').submit(function (e) {
             e.preventDefault(); // Prevent form submission

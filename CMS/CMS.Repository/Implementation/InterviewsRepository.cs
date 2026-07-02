@@ -134,8 +134,7 @@ public class InterviewsRepository : IInterviewsRepository
                                                                                      (c.StartFromHR == true && c.WorkflowStageId == (int)EnumWorkflowStage.GMFinalReview) ||
                                                                                      (c.StartFromHR == false && c.WorkflowStageId.HasValue && c.WorkflowStageId >= (int)EnumWorkflowStage.ManagementReview) ||
                                                                                      c.ModifiedBy == userId
-                                                                                 )) ||
-                                                                                c.ModifiedBy == userId
+                                                                                 ))
                                                                             )
                                                                         )
                                                                         .AsQueryable();

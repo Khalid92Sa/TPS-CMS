@@ -830,6 +830,13 @@ public class InterviewsController : Controller
                     }
                     else
                     {
+                        if (!string.IsNullOrEmpty(currentInterview.InterviewerId))
+                        {
+                            await _interviewsRepository.DeleteNotificationsByCandidateAndReceiversAsync(
+                                collection.CandidateId,
+                                new List<string> { currentInterview.InterviewerId });
+                        }
+
                         await _interviewsRepository.DeleteChildInterviewsAndNotificationsAsync(
                             collection.InterviewsId, 
                             collection.CandidateId);
@@ -850,8 +857,46 @@ public class InterviewsController : Controller
                         collection.WorkflowStageId = (int)Domain.Enums.EnumWorkflowStage.InitialInterview;
                     }
                 }
+                else if (newStartFromHR && originalStartFromHR && currentInterview != null && currentInterview.ParentId == null)
+                {
+                    string firstInterviewerId = collection.InterviewerId;
+                    string secondInterviewerId = collection.SecondInterviewerId;
+                    string architectureInterviewerId = collection.ArchitectureInterviewerId;
 
-                string previousInterviewerId = HttpContext.Session.GetString($"InterviewerId_{collection.InterviewsId}");
+                    collection.InterviewerId = currentInterview.InterviewerId;
+                    collection.SecondInterviewerId = null;
+                    collection.ArchitectureInterviewerId = null;
+
+                    var existingSelected = await _selectedInterviewersRepository.GetByInterviewIdAsync(collection.InterviewsId);
+                    if (existingSelected != null)
+                    {
+                        existingSelected.FirstInterviewerId = firstInterviewerId;
+                        existingSelected.SecondInterviewerId = secondInterviewerId;
+                        existingSelected.ArchitectureInterviewerId = architectureInterviewerId;
+                        existingSelected.ModifiedBy = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                        existingSelected.ModifiedOn = DateTime.Now;
+                        await _selectedInterviewersRepository.UpdateAsync(existingSelected);
+                    }
+                    else if (!string.IsNullOrEmpty(firstInterviewerId) ||
+                             !string.IsNullOrEmpty(secondInterviewerId) ||
+                             !string.IsNullOrEmpty(architectureInterviewerId))
+                    {
+                        var selectedInterviewers = new Domain.Entities.SelectedInterviewers
+                        {
+                            InterviewId = collection.InterviewsId,
+                            FirstInterviewerId = firstInterviewerId,
+                            SecondInterviewerId = secondInterviewerId,
+                            ArchitectureInterviewerId = architectureInterviewerId,
+                            CreatedBy = User.FindFirstValue(ClaimTypes.NameIdentifier),
+                            CreatedOn = DateTime.Now,
+                            IsActive = true
+                        };
+                        await _selectedInterviewersRepository.InsertAsync(selectedInterviewers);
+                    }
+                }
+
+                string previousInterviewerId = HttpContext.Session.GetString($"InterviewerId_{collection.InterviewsId}")
+                    ?? currentInterview?.InterviewerId;
                 string previousSecondInterviewerId = HttpContext.Session.GetString($"SecondInterviewerId_{collection.InterviewsId}");
                 if (status.Code == Domain.Enums.StatusCode.Pending)
                 {
@@ -868,7 +913,7 @@ public class InterviewsController : Controller
 
                 if (result.IsSuccess)
                 {
-                    if (originalStartFromHR == newStartFromHR)
+                    if (originalStartFromHR == newStartFromHR && !newStartFromHR)
                     {
                         CandidateDTO candidate = await _candidateService.GetCandidateByIdAsync(collection.CandidateId);
                         Result<PositionDTO> positionResult = await _positionService.GetById(collection.PositionId);
@@ -921,6 +966,40 @@ public class InterviewsController : Controller
 
                             await _emailService.SendEmailToInterviewer(secondInterviewerEmail, collection, emailModel2);
                         }
+                    }
+                    else if (originalStartFromHR == newStartFromHR && newStartFromHR)
+                    {
+                        CandidateDTO candidate = await _candidateService.GetCandidateByIdAsync(collection.CandidateId);
+                        Result<PositionDTO> positionResult = await _positionService.GetById(collection.PositionId);
+
+                        string candidateName = candidate.FullName;
+                        string positionName = positionResult.Value.Name;
+                        string hrInterviewerEmail = await _emailService.GetInterviewerEmail(collection.InterviewerId);
+                        IdentityUser hrInterviewer = await _userManager.FindByEmailAsync(hrInterviewerEmail);
+
+                        string hrEmailBody = InterviewInvitationEmailTemplate.UpdatedInvitationEmail(
+                            hrInterviewer.UserName,
+                            null,
+                            candidateName,
+                            positionName,
+                            collection.Date,
+                            collection.InterviewsId.ToString()
+                        );
+
+                        EmailDTOs emailModel = new()
+                        {
+                            EmailTo = [hrInterviewerEmail],
+                            Subject = $"Updated Interview Invitation ({candidateName})",
+                            EmailBody = hrEmailBody
+                        };
+
+                        await _emailService.SendEmailToInterviewer(hrInterviewerEmail, collection, emailModel);
+                        await _notificationsService.CreateInterviewNotificationForInterviewerAsync(
+                            collection.Date,
+                            collection.CandidateId,
+                            collection.PositionId,
+                            new List<string> { collection.InterviewerId },
+                            isCanceled: false);
                     }
                     else if (!newStartFromHR && originalStartFromHR)
                     {

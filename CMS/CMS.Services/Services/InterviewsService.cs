@@ -651,6 +651,7 @@ public class InterviewsService : IInterviewsService
 
             IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
             Interviews previouseInterview = await _interviewsRepository.GetByIdForEdit(data.InterviewsId);
+            bool isRootHrInterview = data.StartFromHR && (data.ParentId ?? previouseInterview.ParentId) == null;
 
             Interviews interview = new Interviews
             {
@@ -659,10 +660,10 @@ public class InterviewsService : IInterviewsService
                 TrackId = data.TrackId,
                 CandidateId = data.CandidateId,
                 Score = data.Score,
-                ParentId = data.ParentId,
+                ParentId = data.ParentId ?? previouseInterview.ParentId,
                 InterviewerId = data.InterviewerId,
-                SecondInterviewerId = data.SecondInterviewerId,
-                ArchitectureInterviewerId = data.ArchitectureInterviewerId,
+                SecondInterviewerId = isRootHrInterview ? null : data.SecondInterviewerId,
+                ArchitectureInterviewerId = isRootHrInterview ? null : data.ArchitectureInterviewerId,
                 Date = data.Date,
                 Notes = data.Notes,
                 StopCycleNote = data.StopCycleNote,
@@ -673,7 +674,7 @@ public class InterviewsService : IInterviewsService
                 CreatedBy = previouseInterview.CreatedBy,
                 CreatedOn = previouseInterview.CreatedOn,
                 StartFromHR = data.StartFromHR,
-                WorkflowStageId = data.WorkflowStageId,
+                WorkflowStageId = data.WorkflowStageId ?? previouseInterview.WorkflowStageId,
             };
             await _interviewsRepository.Update(interview);
             return Result<InterviewsDTO>.Success(data);
