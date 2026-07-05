@@ -1,0 +1,273 @@
+@{
+    const string Key = "InterviewDetails_Styles_Loaded";
+    bool stylesLoaded = Context.Items.ContainsKey(Key);
+    if (!stylesLoaded) Context.Items[Key] = true;
+}
+@if (!stylesLoaded)
+{
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+<style>
+    .interview-details-page {
+        padding: 1.5rem 0 2.5rem;
+    }
+
+    .interview-details-page__header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.75rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .interview-details-page__title h2 {
+        margin: 0 0 0.25rem;
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: #2d3748;
+    }
+
+    .interview-details-page__title p {
+        margin: 0;
+        color: #718096;
+        font-size: 0.95rem;
+    }
+
+    .interview-details-page__badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .detail-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.4rem 0.85rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        color: #fff;
+    }
+
+    .detail-badge--muted {
+        background: #edf2f7;
+        color: #4a5568;
+    }
+
+    .detail-badge--score {
+        background: #ebf8ff;
+        color: #2b6cb0;
+    }
+
+    .interview-cards-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
+    }
+
+    .interview-card-col {
+        display: flex;
+        flex-direction: column;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .interview-card-col > .interview-detail-card {
+        flex: 1;
+        width: 100%;
+    }
+
+    .interview-detail-card {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        width: 100%;
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(72, 111, 199, 0.08);
+        overflow: hidden;
+        transition: box-shadow 0.2s ease;
+    }
+
+    .interview-card-col:not(.interview-card-col-wide) .interview-detail-card:hover {
+        box-shadow: 0 6px 18px rgba(72, 111, 199, 0.14);
+    }
+
+    .interview-detail-card__header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+        background: linear-gradient(135deg, rgba(72, 111, 199, 0.08), rgba(49, 156, 167, 0.08));
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    .interview-detail-card__icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        color: #fff;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .interview-detail-card__title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #2d3748;
+    }
+
+    .interview-detail-card__body {
+        padding: 1.1rem 1.25rem 1.25rem;
+        flex: 1;
+    }
+
+    .detail-field + .detail-field {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px dashed #edf2f7;
+    }
+
+    .detail-field__label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #718096;
+        margin-bottom: 0.35rem;
+    }
+
+    .detail-field__value {
+        font-size: 0.95rem;
+        color: #2d3748;
+        line-height: 1.5;
+        min-width: 0;
+        word-break: break-word;
+    }
+
+    .detail-field__value--empty {
+        color: #a0aec0;
+        font-style: italic;
+    }
+
+    .detail-field__value--notes {
+        background: #f8fafc;
+        border: 1px solid #edf2f7;
+        border-radius: 8px;
+        padding: 0.75rem;
+    }
+
+    .detail-summary-card {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(72, 111, 199, 0.08);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+
+    .detail-summary-card__header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        color: #fff;
+    }
+
+    .detail-summary-card__header h5 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .detail-summary-card__body {
+        padding: 1.25rem;
+    }
+
+    .detail-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1.25rem 2rem;
+    }
+
+    .detail-download-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.45rem 0.9rem;
+        border-radius: 8px;
+        border: 1px solid #486fc7;
+        background: #fff;
+        color: #486fc7;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .detail-download-btn:hover {
+        background: linear-gradient(135deg, #486fc7, #319ca7);
+        color: #fff;
+        border-color: transparent;
+    }
+
+    .interview-details-page__footer {
+        display: flex;
+        justify-content: center;
+        margin-top: 0.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .btn-detail-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.55rem 1.25rem;
+        border-radius: 8px;
+        background: #718096;
+        border: none;
+        color: #fff;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background 0.2s ease;
+    }
+
+    .btn-detail-back:hover {
+        background: #4a5568;
+        color: #fff;
+    }
+
+    .detail-empty-state {
+        color: #a0aec0;
+        font-style: italic;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .interview-card-col-wide .notes-content figure.table {
+        overflow-x: auto;
+    }
+
+    dl.row dd .notes-content-wrapper,
+    dl dd .notes-content-wrapper,
+    .detail-field__value .notes-content-wrapper {
+        min-width: 0;
+    }
+</style>
+}

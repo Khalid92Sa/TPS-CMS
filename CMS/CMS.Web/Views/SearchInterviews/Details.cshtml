@@ -1,179 +1,106 @@
 ﻿@model CMS.Application.DTOs.InterviewsDTO
 
-<style>
-    .text-muted-custom {
-        color: #6c757d;
-        font-style: italic;
-    }
+@await Html.PartialAsync("_InterviewDetailsStyles")
 
-    .details-card {
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .card-header-custom {
-        background-color: #405189;
-        color: white;
-        padding: 20px;
-        border-bottom: 3px solid #ffffff;
-    }
-
-    .card-body-custom {
-        padding: 20px;
-    }
-
-    dt {
-        font-weight: bold;
-        color: #333;
-    }
-
-    dd {
-        margin-bottom: 1rem;
-    }
-
-    .no-note {
-        color: #dc3545;
-        font-weight: bold;
-    }
-
-    .icon-download {
-        font-size: 1.5rem;
-        color: #007bff;
-    }
-
-        .icon-download:hover {
-            color: #0056b3;
-        }
-
-    .more-text {
-        display: none;
-    }
-
-    .more-link {
-        cursor: pointer;
-        color: #007bff;
-        text-decoration: none;
-    }
-
-        .more-link:hover {
-            text-decoration: underline;
-        }
-
-    .card-header {
-        color: white;
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-    }
-
-    .btn-secondary {
-        background-color: gray;
-        border-color: gray;
-    }
-
-        .btn-secondary:hover {
-            background-color: darkgray !important;
-            border-color: darkgray !important;
-        }
-</style>
-
-<div class="card details-card">
-    <div class="card-header card-header-custom">
-        <h2 style="color:white;">Interview Details</h2>
+<div class="container interview-details-page">
+    <div class="interview-details-page__header">
+        <div class="interview-details-page__title">
+            <h2>Interview Details</h2>
+            <p><i class="bx bx-user me-1"></i>@Model.FullName</p>
+        </div>
+        <div class="interview-details-page__badges">
+            @if (!string.IsNullOrEmpty(Model.TrackName))
+            {
+                <span class="detail-badge detail-badge--muted"><i class="bx bx-git-branch"></i>@Model.TrackName</span>
+            }
+        </div>
     </div>
 
-    <div class="card-body card-body-custom">
-        <dl class="row">
-            <dt class="col-sm-2">Candidate Name:</dt>
-            <dd class="col-sm-10">@Model.FullName</dd>
+    <div class="detail-summary-card">
+        <div class="detail-summary-card__header">
+            <span class="interview-detail-card__icon"><i class="bx bx-info-circle"></i></span>
+            <h5>Overview</h5>
+        </div>
+        <div class="detail-summary-card__body">
+            <div class="detail-summary-grid">
+                <div class="detail-field">
+                    <div class="detail-field__label">Candidate Name</div>
+                    <div class="detail-field__value">@Model.FullName</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-field__label">Level</div>
+                    <div class="detail-field__value">@Model.Name</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-field__label">Track</div>
+                    <div class="detail-field__value">@(Model.TrackName ?? "—")</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-field__label">Interviewer</div>
+                    <div class="detail-field__value">@Model.InterviewerName</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-field__label">Date</div>
+                    <div class="detail-field__value">@Model.Date.ToString("MMMM dd, yyyy")</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-field__label">Status</div>
+                    <div class="detail-field__value">@Model.StatusName</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-field__label">CV Attachment</div>
+                    <div class="detail-field__value">
+                        @if (Model.CandidateCVAttachmentId != null)
+                        {
+                            <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.CandidateCVAttachmentId" class="detail-download-btn">
+                                <i class="bx bx-download"></i> Download CV
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="detail-empty-state">No CV uploaded</span>
+                        }
+                    </div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-field__label">Stop Cycle Note</div>
+                    <div class="detail-field__value">
+                        @if (Model.StopCycleNote != null)
+                        {
+                            @await Html.PartialAsync("_NotesContent", new { Content = Model.StopCycleNote, MaxLength = 100 })
+                        }
+                        else
+                        {
+                            <span class="detail-empty-state">No stop cycle notes</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            <dt class="col-sm-2">Level:</dt>
-            <dd class="col-sm-10">@Model.Name</dd>
+    <div class="interview-detail-card">
+        <div class="interview-detail-card__header">
+            <span class="interview-detail-card__icon"><i class="bx bx-note"></i></span>
+            <h5 class="interview-detail-card__title">Notes</h5>
+        </div>
+        <div class="interview-detail-card__body">
+            <div class="detail-field__value detail-field__value--notes">
+                @if (Model.Notes != null)
+                {
+                    @await Html.PartialAsync("_NotesContent", new { Content = Model.Notes, MaxLength = 100 })
+                }
+                else
+                {
+                    <span class="detail-empty-state">No notes added</span>
+                }
+            </div>
+        </div>
+    </div>
 
-            <dt class="col-sm-2">Track:</dt>
-            <dd class="col-sm-10">@Model.TrackName</dd>
-
-            <dt class="col-sm-2">Interviewer Name:</dt>
-            <dd class="col-sm-10">@Model.InterviewerName</dd>
-
-            <dt class="col-sm-2">Date:</dt>
-            <dd class="col-sm-10">@Model.Date.ToString("MMMM dd, yyyy")</dd>
-
-            <dt class="col-sm-2">Status:</dt>
-            <dd class="col-sm-10">@Model.StatusName</dd>
-
-            @if (Model.Notes != null)
-            {
-                <dt class="col-sm-2">Notes:</dt>
-                <dd class="col-sm-10">@Html.Raw(ShowMore(Model.Notes, 100))</dd>
-            }
-            else
-            {
-                <dt class="col-sm-2">Notes:</dt>
-                <dd class="col-sm-10 text-muted-custom">No notes added</dd>
-            }
-
-            @if (Model.StopCycleNote != null)
-            {
-                <dt class="col-sm-2">Stop Cycle Note:</dt>
-                <dd class="col-sm-10">@Model.StopCycleNote</dd>
-            }
-            else
-            {
-                <dt class="col-sm-2">Stop Cycle Note:</dt>
-                <dd class="col-sm-10 text-muted-custom">No stop cycle notes available</dd>
-            }
-
-            @if (@Model.CandidateCVAttachmentId != null)
-            {
-                <dt class="col-sm-2">CV Attachment:</dt>
-                <dd class="col-sm-10">
-                    <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.CandidateCVAttachmentId" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Download CV">
-                        <i class="bx bxs-cloud-download icon-download"></i>
-                    </a>
-                </dd>
-            }
-            else
-            {
-                <dt class="col-sm-2">CV Attachment:</dt>
-                <dd class="col-sm-10 text-muted-custom">No CV uploaded for this candidate</dd>
-            }
-        </dl>
+    <div class="interview-details-page__footer">
+        <a class="btn-detail-back" href="@Url.Action("Index", new { positionFilter = ViewBag.PositionFilter, scoreFilter = ViewBag.ScoreFilter, statusFilter = ViewBag.StatusFilter, candidateFilter = ViewBag.CandidateFilter, interviewerFilter = ViewBag.InterviewerFilter, fromDate = ViewBag.FromDate, toDate = ViewBag.ToDate, trackFilterDropdown = ViewBag.TrackList })">
+            <i class="bx bx-arrow-back"></i> Back to List
+        </a>
     </div>
 </div>
-
-<div class="form-group text-center">
-    <a class="btn btn-secondary" href="@Url.Action("Index", new { positionFilter = ViewBag.PositionFilter, scoreFilter = ViewBag.ScoreFilter, statusFilter = ViewBag.StatusFilter, candidateFilter = ViewBag.CandidateFilter, interviewerFilter = ViewBag.InterviewerFilter, fromDate = ViewBag.FromDate, toDate = ViewBag.ToDate, trackFilterDropdown = ViewBag.TrackList })">Back to List</a>
-</div>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<script>
-    $(document).ready(function () {
-        $(".more-link").click(function () {
-            var moreContent = $(this).siblings(".more-text");
-            var moreLink = $(this);
-
-            moreContent.toggle();
-            moreLink.text(moreContent.is(":visible") ? "Less" : "More");
-        });
-    });
-</script>
-
-@functions {
-    public string ShowMore(string text, int maxLength)
-    {
-        if (string.IsNullOrEmpty(text)) return string.Empty;
-
-        text = text.Trim();
-
-        if (text.Length <= maxLength)
-        {
-            return text;
-        }
-
-        var shortText = text.Substring(0, maxLength);
-        var moreText = text.Substring(maxLength);
-
-        return $"{shortText}<span class=\"more-text\">{moreText}</span> <a class=\"more-link\">More</a>";
-    }
-}

@@ -120,10 +120,11 @@
         <span asp-validation-for="StatusId" class="text-danger"></span>
 
     </div>
-    <div class="form-group">
-        <label asp-for="Notes" class="control-label"></label>
-        <input asp-for="Notes" class="form-control" />
-        <span asp-validation-for="Notes" class="text-danger"></span>
+    <div class="row">
+        <div class="col-12">
+            @await Html.PartialAsync("_CKEditor", new { id = "Notes", label = "Notes", value = Model.Notes ?? "" })
+            <span asp-validation-for="Notes" class="text-danger"></span>
+        </div>
     </div>
 
 

@@ -92,7 +92,7 @@
                                     @if (!string.IsNullOrEmpty(item.Notes))
                                     {
                                         <div style="overflow: hidden; text-overflow: ellipsis;">
-                                            @Html.Raw(ShowMore(item.Notes, 100))
+                                            @await Html.PartialAsync("_NotesContent", new { Content = item.Notes, MaxLength = 100 })
                                         </div>
                                     }
                                     else

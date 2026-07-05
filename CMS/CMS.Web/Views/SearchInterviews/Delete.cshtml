@@ -59,7 +59,7 @@
                         <dd class="col-sm-7">
                             @if (Model.Notes != null)
                             {
-                                @Html.DisplayFor(model => model.Notes)
+                                @await Html.PartialAsync("_NotesContent", new { Content = Model.Notes, MaxLength = 100 })
                             }
                             else
                             {

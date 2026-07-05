@@ -107,7 +107,7 @@
                         <dd class="col-sm-8">
                             @if (@Model.Notes != null)
                             {
-                                @Model.Notes
+                                @await Html.PartialAsync("_NotesContent", new { Content = Model.Notes, MaxLength = 100 })
                             }
                             else
                             {

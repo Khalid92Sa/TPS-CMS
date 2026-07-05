@@ -249,12 +249,12 @@
                         }
                         <span asp-validation-for="StatusId" class="text-danger"></span>
                     </div>
+                </div>
 
-                    <!-- Notes -->
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Notes">Notes:</label>
-                        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
-                        <span asp-validation-for="Notes" class="text-danger"></span>
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        @await Html.PartialAsync("_CKEditor", new { id = "Notes", label = "Notes:", value = Model.Notes ?? "" })
+                        <span asp-validation-for="Notes" class="text-danger d-block" id="notes-client-validation"></span>
                     </div>
                 </div>
 
@@ -470,9 +470,17 @@
                 isValid = false;
             }
 
-            if (statusValue === "3" && !$('[name="Notes"]').val()) {
-                $('[name="Notes"]').next(".text-danger").text("Please provide a reason for rejection.");
+            if (statusValue === "3" && !window.CKEditorManager.getPlainText('Notes')) {
+                const notesTextarea = document.getElementById('Notes');
+                const wrapper = notesTextarea?.closest('.ckeditor-component-wrapper');
+                if (wrapper) wrapper.classList.add('is-invalid');
+                $('#notes-client-validation').text("Please provide a reason for rejection.");
                 isValid = false;
+            } else {
+                const notesTextarea = document.getElementById('Notes');
+                const wrapper = notesTextarea?.closest('.ckeditor-component-wrapper');
+                if (wrapper) wrapper.classList.remove('is-invalid');
+                $('#notes-client-validation').text("");
             }
 
             if (fileInput.is(":visible") && !fileSelected) {

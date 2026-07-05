@@ -136,7 +136,7 @@
                                 <td>
                                     @if (!string.IsNullOrEmpty(item.Notes))
                                     {
-                                        @Html.Raw(ShowMore(item.Notes, 100))
+                                        @await Html.PartialAsync("_NotesContent", new { Content = item.Notes, MaxLength = 100 })
                                     }
                                     else
                                     {

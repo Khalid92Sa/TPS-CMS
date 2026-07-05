@@ -1,0 +1,211 @@
+@using System.Text.RegularExpressions
+@model dynamic
+@{
+    string content = "";
+    int maxLength = 100;
+
+    if (Model != null)
+    {
+        if (Model is string modelContent)
+        {
+            content = modelContent;
+        }
+        else
+        {
+            foreach (var prop in Model.GetType().GetProperties())
+            {
+                var val = prop.GetValue(Model, null);
+                if (val == null) continue;
+
+                switch (prop.Name.ToLower())
+                {
+                    case "content":
+                    case "value":
+                        content = val.ToString();
+                        break;
+                    case "maxlength":
+                        if (val is int i) maxLength = i;
+                        else if (int.TryParse(val.ToString(), out int parsed)) maxLength = parsed;
+                        break;
+                }
+            }
+        }
+    }
+
+    var plainText = Regex.Replace(content ?? "", "<[^>]+>", " ")
+        .Replace("&nbsp;", " ")
+        .Trim();
+    plainText = Regex.Replace(plainText, @"\s+", " ");
+
+    bool isCollapsible = maxLength > 0 && plainText.Length > maxLength;
+
+    const string AssetsKey = "NotesContent_Assets_Loaded";
+    bool assetsLoaded = Context.Items.ContainsKey(AssetsKey);
+    if (!assetsLoaded) Context.Items[AssetsKey] = true;
+}
+
+@if (!assetsLoaded)
+{
+<style>
+    .notes-content-wrapper {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .notes-content {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        word-wrap: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .notes-content.is-collapsed {
+        max-height: 6.5rem;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .notes-content.is-collapsed::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 2rem;
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #fff);
+        pointer-events: none;
+    }
+
+    .notes-content figure.table {
+        margin: 1rem 0;
+        width: 100% !important;
+        max-width: 100%;
+        display: block;
+        overflow-x: auto;
+    }
+
+    .notes-content figure.table[style] {
+        width: 100% !important;
+    }
+
+    .notes-content figure.table table {
+        width: auto;
+        min-width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #dee2e6;
+        table-layout: auto;
+    }
+
+    .notes-content figure.table table col {
+        width: auto !important;
+    }
+
+    .notes-content figure.table table th,
+    .notes-content figure.table table td {
+        border: 1px solid #dee2e6;
+        padding: 0.75rem;
+        vertical-align: top;
+        white-space: normal;
+        word-break: normal;
+        min-width: 3.5rem;
+    }
+
+    .notes-content table {
+        width: auto;
+        min-width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #dee2e6;
+        margin: 1rem 0;
+        table-layout: auto;
+    }
+
+    .notes-content table th,
+    .notes-content table td {
+        border: 1px solid #dee2e6;
+        padding: 0.75rem;
+        vertical-align: top;
+        white-space: normal;
+        word-break: normal;
+        min-width: 3.5rem;
+    }
+
+    .notes-content ul,
+    .notes-content ol {
+        padding-left: 2.5rem;
+        margin: 1rem 0;
+    }
+
+    [dir="rtl"] .notes-content ul,
+    [dir="rtl"] .notes-content ol {
+        padding-right: 2.5rem;
+        padding-left: 0;
+    }
+
+    .notes-toggle-link {
+        display: inline-block;
+        margin-top: 0.35rem;
+        cursor: pointer;
+        color: #007bff;
+        text-decoration: none;
+        font-size: 0.875rem;
+        background: none;
+        border: none;
+        padding: 0;
+    }
+
+    .notes-toggle-link:hover {
+        text-decoration: underline;
+        color: #0056b3;
+    }
+
+    dl.row dd .notes-content-wrapper,
+    dl dd .notes-content-wrapper,
+    .detail-field__value .notes-content-wrapper {
+        min-width: 0;
+    }
+</style>
+
+<script>
+    (function () {
+        if (window.NotesContentToggleInitialized) return;
+        window.NotesContentToggleInitialized = true;
+
+        document.addEventListener('click', function (e) {
+            var toggle = e.target.closest('.notes-toggle-link');
+            if (!toggle) return;
+
+            e.preventDefault();
+            var wrapper = toggle.closest('.notes-content-wrapper');
+            if (!wrapper) return;
+
+            var content = wrapper.querySelector('.notes-content');
+            if (!content) return;
+
+            content.classList.toggle('is-collapsed');
+            toggle.textContent = content.classList.contains('is-collapsed') ? 'More' : 'Less';
+
+            if (!content.classList.contains('is-collapsed')) {
+                var cardCol = wrapper.closest('.interview-card-col');
+                if (cardCol && !cardCol.classList.contains('interview-card-col-wide')) {
+                    cardCol.classList.remove('col-md-3', 'col-md-4', 'col-md-6', 'col-sm-6', 'col-lg-6', 'interview-card-col-medium');
+                    cardCol.classList.add('col-12', 'interview-card-col-wide');
+                }
+            }
+        });
+    })();
+</script>
+}
+
+@if (!string.IsNullOrEmpty(content))
+{
+    <div class="notes-content-wrapper">
+        <div class="notes-content@(isCollapsible ? " is-collapsed" : "")">@Html.Raw(content)</div>
+        @if (isCollapsible)
+        {
+            <button type="button" class="notes-toggle-link">More</button>
+        }
+    </div>
+}
