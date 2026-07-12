@@ -728,6 +728,8 @@ public class InterviewsService : IInterviewsService
                 }
 
                 Debug.Assert(intervieww != null, "No Interview Provided for Conduct Interview Method");
+                Status previousStatusForGmPath = await _statusRepository.GetById(intervieww.StatusId);
+                bool wasAlreadyApprovedForGmPath = previousStatusForGmPath?.Code == StatusCode.Approved;
                 intervieww.StatusId = (int)completedDTO.StatusId;
                 intervieww.Score = completedDTO.Score;
                 intervieww.Notes = completedDTO.Notes;
@@ -777,7 +779,7 @@ public class InterviewsService : IInterviewsService
                 bool isLastInterviewerAnHRr = await _userManager.IsInRoleAsync(intervieww.Interviewer, "HR Manager");
                 bool isReverseWorkflow = intervieww.StartFromHR;
                 
-                if (isApprovedd && (!isLastInterviewerAnHRr || (isReverseWorkflow && isLastInterviewerAnHRr)))
+                if (isApprovedd && !wasAlreadyApprovedForGmPath && (!isLastInterviewerAnHRr || (isReverseWorkflow && isLastInterviewerAnHRr)))
                 {
                     string completedByRole = await GetInterviewerRole(currentUserr.Id);
                     if (string.IsNullOrEmpty(completedByRole))
@@ -818,6 +820,8 @@ public class InterviewsService : IInterviewsService
                 }
 
                 Debug.Assert(interview != null, "No Interview Provided for Conduct Interview Method");
+                Status previousStatus = await _statusRepository.GetById(interview.StatusId);
+                bool wasAlreadyApproved = previousStatus?.Code == StatusCode.Approved;
                 interview.StatusId = (int)completedDTO.StatusId;
                 interview.Score = completedDTO.Score;
                 interview.Notes = completedDTO.Notes;
@@ -883,7 +887,7 @@ public class InterviewsService : IInterviewsService
                 bool isLastInterviewerAnHR = await _userManager.IsInRoleAsync(interview.Interviewer, "HR Manager");
                 bool isReverseWorkflow = interview.StartFromHR;
 
-                if (isApproved && (!isLastInterviewerAnHR || (isReverseWorkflow && isLastInterviewerAnHR)))
+                if (isApproved && !wasAlreadyApproved && (!isLastInterviewerAnHR || (isReverseWorkflow && isLastInterviewerAnHR)))
                 {
                     string completedByRole = await GetInterviewerRole(currentUser.Id);
                     if (string.IsNullOrEmpty(completedByRole))
@@ -933,6 +937,9 @@ public class InterviewsService : IInterviewsService
             }
 
             Debug.Assert(interview != null, "No Interview Provided for Conduct Interview Method");
+
+            Status previousStatusForGm = await _statusRepository.GetById(interview.StatusId);
+            bool wasAlreadyApprovedForGm = previousStatusForGm?.Code == StatusCode.Approved;
 
             interview.StatusId = (int)completedDTO.StatusId;
             interview.Score = completedDTO.Score;
@@ -993,7 +1000,7 @@ public class InterviewsService : IInterviewsService
             bool isLastInterviewerAnHR = await _userManager.IsInRoleAsync(interview.Interviewer, "HR Manager");
             bool isReverseWorkflow = interview.StartFromHR;
 
-            if (isApproved && (!isLastInterviewerAnHR || (isReverseWorkflow && isLastInterviewerAnHR)))
+            if (isApproved && !wasAlreadyApprovedForGm && (!isLastInterviewerAnHR || (isReverseWorkflow && isLastInterviewerAnHR)))
             {
                 string completedByRole = await GetInterviewerRole(currentUser.Id);
                 if (string.IsNullOrEmpty(completedByRole))
@@ -1042,6 +1049,9 @@ public class InterviewsService : IInterviewsService
             }
 
             Debug.Assert(interview != null, "No Interview Provided for Conduct Interview Method");
+
+            Status previousStatusForArchi = await _statusRepository.GetById(interview.StatusId);
+            bool wasAlreadyApprovedForArchi = previousStatusForArchi?.Code == StatusCode.Approved;
 
             interview.StatusId = (int)completedDTO.StatusId;
             interview.Score = completedDTO.Score;
@@ -1145,7 +1155,7 @@ public class InterviewsService : IInterviewsService
             bool isLastInterviewerAnHR = await _userManager.IsInRoleAsync(interview.Interviewer, "HR Manager");
             bool isReverseWorkflow = interview.StartFromHR;
 
-            if (isApproved && (!isLastInterviewerAnHR || (isReverseWorkflow && isLastInterviewerAnHR)))
+            if (isApproved && !wasAlreadyApprovedForArchi && (!isLastInterviewerAnHR || (isReverseWorkflow && isLastInterviewerAnHR)))
             {
                 string completedByRole = await GetInterviewerRole(currentUser.Id);
                 if (string.IsNullOrEmpty(completedByRole))

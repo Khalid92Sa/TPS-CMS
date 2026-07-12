@@ -701,6 +701,28 @@ public class DynamicWorkflowService : IDynamicWorkflowService
                     return Result<bool>.Failure(false, "No valid interviewer found");
                 }
 
+                // Avoid duplicates when HR re-submits an already-approved interview
+                var existingChildren = await _interviewsRepository.GetChildInterviewsByParentIdAsync(completedInterviewId);
+                var existingStage5 = existingChildren
+                    .FirstOrDefault(i => i.WorkflowStageId == (int)EnumWorkflowStage.InterviewersReview);
+
+                if (existingStage5 != null)
+                {
+                    var stage5ToUpdate = await _interviewsRepository.GetById(existingStage5.InterviewsId);
+                    if (stage5ToUpdate != null)
+                    {
+                        stage5ToUpdate.InterviewerId = firstInterviewerId;
+                        stage5ToUpdate.SecondInterviewerId = secondInterviewerId;
+                        stage5ToUpdate.ArchitectureInterviewerId = architectureInterviewerId;
+                        stage5ToUpdate.Date = interviewDate;
+                        stage5ToUpdate.ModifiedOn = DateTime.Now;
+                        stage5ToUpdate.ModifiedBy = createdByUserId;
+                        await _interviewsRepository.Update(stage5ToUpdate);
+                    }
+
+                    return Result<bool>.Success(true);
+                }
+
                 // Create single interview with all interviewers in one row
                 var interview = new Interviews
                 {
@@ -782,6 +804,13 @@ public class DynamicWorkflowService : IDynamicWorkflowService
                 // GM is NOT one of the selected interviewers → Continue to Stage 6
                 // Check if Architecture Interviewer exists
                 bool hasArchitectureInterviewer = !string.IsNullOrEmpty(selectedInterviewers.ArchitectureInterviewerId);
+
+                var existingStage6Children = await _interviewsRepository.GetChildInterviewsByParentIdAsync(completedInterviewId);
+                var existingStage6 = existingStage6Children
+                    .FirstOrDefault(i => i.WorkflowStageId == (int)EnumWorkflowStage.GMFinalReview);
+
+                if (existingStage6 != null)
+                    return Result<bool>.Success(true);
 
                 if (hasArchitectureInterviewer)
                 {

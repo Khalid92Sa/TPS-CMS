@@ -893,6 +893,25 @@ public class InterviewsController : Controller
                         };
                         await _selectedInterviewersRepository.InsertAsync(selectedInterviewers);
                     }
+
+                    // Keep the already-created interviewer stage in sync instead of leaving stale/duplicate rows
+                    var childInterviews = await _interviewsRepository.GetChildInterviewsByParentIdAsync(collection.InterviewsId);
+                    var existingInterviewerStage = childInterviews
+                        .FirstOrDefault(i => i.WorkflowStageId == (int)Domain.Enums.EnumWorkflowStage.InterviewersReview);
+                    if (existingInterviewerStage != null)
+                    {
+                        var interviewerStageToUpdate = await _interviewsRepository.GetById(existingInterviewerStage.InterviewsId);
+                        if (interviewerStageToUpdate != null)
+                        {
+                            interviewerStageToUpdate.InterviewerId = firstInterviewerId;
+                            interviewerStageToUpdate.SecondInterviewerId = secondInterviewerId;
+                            interviewerStageToUpdate.ArchitectureInterviewerId = architectureInterviewerId;
+                            interviewerStageToUpdate.Date = collection.Date;
+                            interviewerStageToUpdate.ModifiedBy = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                            interviewerStageToUpdate.ModifiedOn = DateTime.Now;
+                            await _interviewsRepository.Update(interviewerStageToUpdate);
+                        }
+                    }
                 }
 
                 string previousInterviewerId = HttpContext.Session.GetString($"InterviewerId_{collection.InterviewsId}")
@@ -1493,6 +1512,14 @@ public class InterviewsController : Controller
                         && await _userManager.IsInRoleAsync(currentUser, "HR Manager")
                         && interviewsDTO.StatusId.HasValue;
 
+                    bool isFirstHrApproval = false;
+                    if (isReverseWorkflowHRApproval && hrInterviewForReverseWorkflow != null)
+                    {
+                        Result<StatusDTO> previousHrStatusResult = await _StatusService.GetById(hrInterviewForReverseWorkflow.StatusId);
+                        isFirstHrApproval = previousHrStatusResult.IsSuccess
+                            && previousHrStatusResult.Value.Code == Domain.Enums.StatusCode.Pending;
+                    }
+
                     if (await _userManager.IsInRoleAsync(currentUser, "General Manager"))
                         await _interviewsService.ConductInterviewForGm(interviewsDTO);
 
@@ -1569,7 +1596,7 @@ public class InterviewsController : Controller
                             await _interviewsService.ConductInterview(interviewsDTO, interviewerId, secondInterviewerId);
                     }
 
-                    if (isReverseWorkflowHRApproval && interviewsDTO.StatusId.HasValue)
+                    if (isFirstHrApproval && interviewsDTO.StatusId.HasValue)
                     {
                         Result<StatusDTO> statusResult = await _StatusService.GetById(interviewsDTO.StatusId.Value);
                         if (statusResult.IsSuccess && statusResult.Value.Code == Domain.Enums.StatusCode.Approved)
