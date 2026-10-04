@@ -180,7 +180,7 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseHangfireDashboard("/jobs");
+app.UseHangfireDashboard("/hangfire");
 
 string interviewReminderCron = HangfireCronHelper.GetJordanTimeCronExpression(builder.Configuration);
 
