@@ -39,4 +39,14 @@ public interface IInterviewsRepository
     Task<List<Interviews>> GetChildInterviewsByParentIdAsync(int parentInterviewId);
     Task<bool> DeleteChildInterviewsAndNotificationsAsync(int parentInterviewId, int candidateId);
     Task<bool> DeleteNotificationsByCandidateAndReceiversAsync(int candidateId, List<string> receiverIds);
+    Task ReloadAsync(Interviews interview);
+    Task<string> TryCompletePendingIfAssignedAsync(Interviews interview, string actingUserId);
+    Task<string> InsertInterviewDelegationAsync(int interviewId, string originalInterviewerId, bool secondSlot, InterviewDelegation delegation);
+    Task<string> CancelInterviewDelegationAsync(int interviewId, int delegationId, string removedByUserId);
+    Task<List<InterviewDelegation>> GetDelegationsByInterviewIdAsync(int interviewId);
+    Task<List<InterviewDelegation>> GetInForceDelegationsAsync(int interviewId, DateTime asOf);
+    Task<List<Interviews>> GetPendingChildInterviewsAsync(int parentInterviewId);
+    Task<InterviewDelegation> GetActiveDelegationAsync(int interviewId, string userId, DateTime asOf);
+    Task<List<InterviewDelegation>> GetUserDelegationsForInterviewAsync(int interviewId, string userId);
+    Task<bool> HasActiveDelegationAsync(string userId, DateTime asOf);
 }

@@ -84,11 +84,23 @@ public class InterviewsController : Controller
 
 
     [Route("myInterviews")]
-    [AuthorizeRoles("HR Manager", "Interviewer", "General Manager", "Solution Architecture")]
     public async Task<ActionResult> MyInterviews(int? statusFilter, int? companyFilter, int? trackFilter, int pageNumber = 1, int pageSize = 5)
     {
         try
         {
+                if (!_signInManager.IsSignedIn(User))
+                {
+                    TempData["ErrorMessage"] = "You must log in first.";
+                    return RedirectToAction("login", "users");
+                }
+
+                bool canOpenMyInterviews = User.IsInRole("HR Manager")
+                    || User.IsInRole("Interviewer")
+                    || User.IsInRole("General Manager")
+                    || User.IsInRole("Solution Architecture");
+                if (!canOpenMyInterviews && !await _interviewsService.HasActiveDelegationAsync())
+                    return View("AccessDenied");
+
                 Result<List<StatusDTO>> statusesResult = await _StatusService.GetAll();
                 if (!statusesResult.IsSuccess)
                 {
@@ -355,6 +367,10 @@ public class InterviewsController : Controller
     {
         try
         {
+            ActionResult closedResult = await RedirectIfSubmittedResultIsClosedAsync(id);
+            if (closedResult != null)
+                return closedResult;
+
             var interview = await _interviewsRepository.GetById(id);
             if (interview != null && interview.StartFromHR)
             {
@@ -404,6 +420,10 @@ public class InterviewsController : Controller
     {
         try
         {
+            ActionResult closedResult = await RedirectIfSubmittedResultIsClosedAsync(id);
+            if (closedResult != null)
+                return closedResult;
+
             ViewBag.PreviousAction = previousAction ?? "Index";
 
             ViewBag.statusFilter = statusFilter;
@@ -1266,9 +1286,23 @@ public class InterviewsController : Controller
                         string code = currentStatusResult.Value.Code;
                         if (!string.Equals(code, Domain.Enums.StatusCode.Pending, StringComparison.OrdinalIgnoreCase))
                         {
+                            Result<bool> canOpenResult = await _interviewsService.EnsureCurrentUserCanOpenSubmittedResultAsync(id);
+                            if (!canOpenResult.IsSuccess)
+                            {
+                                ViewBag.CanOpenResult = false;
+                                ViewBag.ClosedResultMessage = canOpenResult.Error;
+                            }
+
                             return View("ResultAlreadySubmitted", InterviewsDTO);
                         }
                     }
+                }
+
+                Result<bool> canSubmit = await _interviewsService.EnsureCurrentUserCanSubmitPendingAsync(id);
+                if (!canSubmit.IsSuccess)
+                {
+                    TempData["ErrorMessage"] = canSubmit.Error;
+                    return RedirectToAction(nameof(MyInterviews));
                 }
 
                 return View(InterviewsDTO);
@@ -1364,6 +1398,7 @@ public class InterviewsController : Controller
 
             if (ModelState.IsValid)
             {
+                bool preserveDelegatedRoute = false;
                 Domain.Entities.Interviews currentInterview = await _interviewsRepository.GetById(interviewsDTO.InterviewsId);
                 bool isHRFirstFlow = currentInterview?.StartFromHR == true;
 
@@ -1465,8 +1500,9 @@ public class InterviewsController : Controller
                         }
                         else if (newStatus.Code == Domain.Enums.StatusCode.Approved && !User.IsInRole("HR Manager"))
                         {
+                            preserveDelegatedRoute = await _interviewsService.HasInForceDelegationAsync(interviewsDTO.InterviewsId);
                             string nextInterviewStatusCode = await _interviewsRepository.GetStatusOfNextInterview(interviewsDTO.CandidateId, interviewsDTO.InterviewsId);
-                            if (nextInterviewStatusCode != null && nextInterviewStatusCode.Equals(Domain.Enums.StatusCode.Pending))
+                            if (!preserveDelegatedRoute && nextInterviewStatusCode != null && nextInterviewStatusCode.Equals(Domain.Enums.StatusCode.Pending))
                             {
                                 bool interviewsDeleted = await _interviewsRepository.DeletePendingInterviews(nextInterviewStatusCode, interviewsDTO.CandidateId, interviewsDTO.PositionId, userId: User.FindFirstValue(ClaimTypes.NameIdentifier));
                             }
@@ -1505,11 +1541,27 @@ public class InterviewsController : Controller
                         }
                     }
 
+                    Result<bool> pendingAssignment = await _interviewsService.EnsureCurrentUserCanSubmitPendingAsync(interviewsDTO.InterviewsId);
+                    if (!pendingAssignment.IsSuccess)
+                    {
+                        ModelState.AddModelError("", pendingAssignment.Error);
+                        if (attachmentStream != null)
+                        {
+                            attachmentStream.Close();
+                            attachmentStream.Dispose();
+                        }
+                        return View(interviewsDTO);
+                    }
+
                     IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+                    string delegatedRole = await _interviewsService.GetDelegatedWorkflowRoleAsync(interviewsDTO.InterviewsId, currentUser.Id);
+                    bool actingAsHrManager = delegatedRole != null
+                        ? delegatedRole == "HR Manager"
+                        : await _userManager.IsInRoleAsync(currentUser, "HR Manager");
 
                     var hrInterviewForReverseWorkflow = await _interviewsRepository.GetById(interviewsDTO.InterviewsId);
                     bool isReverseWorkflowHRApproval = hrInterviewForReverseWorkflow?.StartFromHR == true 
-                        && await _userManager.IsInRoleAsync(currentUser, "HR Manager")
+                        && actingAsHrManager
                         && interviewsDTO.StatusId.HasValue;
 
                     bool isFirstHrApproval = false;
@@ -1520,7 +1572,23 @@ public class InterviewsController : Controller
                             && previousHrStatusResult.Value.Code == Domain.Enums.StatusCode.Pending;
                     }
 
-                    if (await _userManager.IsInRoleAsync(currentUser, "General Manager"))
+                    if (!string.IsNullOrEmpty(delegatedRole))
+                    {
+                        string delegatedSecondInterviewerId = HttpContext.Session.GetString($"SecondInterviewerId_{interviewsDTO.InterviewsId}");
+                        string delegatedInterviewerId = HttpContext.Session.GetString($"InterviewerId_{interviewsDTO.InterviewsId}");
+                        if (string.IsNullOrEmpty(delegatedInterviewerId))
+                            delegatedInterviewerId = hrInterviewForReverseWorkflow?.InterviewerId;
+                        if (string.IsNullOrEmpty(delegatedSecondInterviewerId))
+                            delegatedSecondInterviewerId = hrInterviewForReverseWorkflow?.SecondInterviewerId;
+
+                        if (delegatedRole == "General Manager")
+                            await _interviewsService.ConductInterviewForGm(interviewsDTO);
+                        else if (delegatedRole == "Solution Architecture")
+                            await _interviewsService.ConductInterviewForArchi(interviewsDTO);
+                        else
+                            await _interviewsService.ConductInterview(interviewsDTO, delegatedInterviewerId, delegatedSecondInterviewerId);
+                    }
+                    else if (await _userManager.IsInRoleAsync(currentUser, "General Manager"))
                         await _interviewsService.ConductInterviewForGm(interviewsDTO);
 
                     else if (await _userManager.IsInRoleAsync(currentUser, "HR Manager"))
@@ -1595,6 +1663,9 @@ public class InterviewsController : Controller
                         else
                             await _interviewsService.ConductInterview(interviewsDTO, interviewerId, secondInterviewerId);
                     }
+
+                    if (preserveDelegatedRoute)
+                        await _interviewsService.EnsureDelegatedSuccessorAsync(interviewsDTO.InterviewsId);
 
                     if (isFirstHrApproval && interviewsDTO.StatusId.HasValue)
                     {
@@ -2555,5 +2626,236 @@ public class InterviewsController : Controller
     {
         bool interviewExists = await _interviewsService.DoesInterviewExistForCandidate(candidateId);
         return Json(new { exists = interviewExists });
+    }
+
+    [AuthorizeRoles("Admin", "HR Manager")]
+    [HttpGet("delegation")]
+    public async Task<IActionResult> Delegation()
+    {
+        Result<BulkDelegationPageDTO> page = await _interviewsService.GetBulkDelegationPageAsync();
+        if (!page.IsSuccess)
+        {
+            TempData["ErrorMessage"] = page.Error;
+            return View(new BulkDelegationPageDTO());
+        }
+
+        return View(page.Value);
+    }
+
+    [AuthorizeRoles("Admin", "HR Manager")]
+    [HttpPost("delegation")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delegation(int[] interviewIds, string delegatedUserId, int durationId)
+    {
+        Result<BulkDelegationResultDTO> result = await _interviewsService.DelegatePendingInterviewsAsync(
+            interviewIds,
+            delegatedUserId,
+            durationId);
+
+        if (!result.IsSuccess || result.Value == null || result.Value.Delegated.Count == 0)
+        {
+            TempData["ErrorMessage"] = result.Error ?? "Select at least one interview.";
+            return RedirectToAction(nameof(Delegation));
+        }
+
+        List<string> warnings = [.. result.Value.Errors];
+        foreach (InterviewDelegationDTO delegated in result.Value.Delegated)
+        {
+            string warning = await NotifyDelegatedUserAsync(delegated);
+            if (warning != null)
+                warnings.Add(warning);
+        }
+
+        InterviewDelegationDTO first = result.Value.Delegated[0];
+        TempData["SuccessMessage"] = $"{result.Value.Delegated.Count} interview(s) delegated to {first.DelegatedUserName} until {first.ExpirationDate:dd/MM/yyyy hh:mm tt}.";
+        if (warnings.Count > 0)
+            TempData["ErrorMessage"] = string.Join(" ", warnings);
+
+        return RedirectToAction(nameof(Delegation));
+    }
+
+    [AuthorizeRoles("Admin", "HR Manager")]
+    [Route("{id}/delegate")]
+    public async Task<IActionResult> Delegate(int id)
+    {
+        Result<DelegateInterviewPageDTO> page = await _interviewsService.GetPendingInterviewDelegationAsync(id);
+        if (!page.IsSuccess)
+        {
+            TempData["ErrorMessage"] = page.Error;
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(page.Value);
+    }
+
+    [HttpPost]
+    [AuthorizeRoles("Admin", "HR Manager")]
+    [Route("{id}/delegate")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delegate(
+        int id,
+        string interviewerSlot,
+        string delegatedUserId,
+        int durationId)
+    {
+        string slot = "Primary";
+        string originalInterviewerId = null;
+        if (!string.IsNullOrWhiteSpace(interviewerSlot))
+        {
+            string[] parts = interviewerSlot.Split('|');
+            slot = parts[0];
+            if (parts.Length > 1)
+                originalInterviewerId = parts[1];
+        }
+
+        Result<InterviewDelegationDTO> result = await _interviewsService.DelegatePendingInterviewAsync(
+            id,
+            slot,
+            originalInterviewerId,
+            delegatedUserId,
+            durationId);
+
+        if (!result.IsSuccess)
+        {
+            Result<DelegateInterviewPageDTO> page = await _interviewsService.GetPendingInterviewDelegationAsync(id);
+            if (!page.IsSuccess)
+            {
+                TempData["ErrorMessage"] = result.Error;
+                return RedirectToAction(nameof(Index));
+            }
+
+            ViewBag.ErrorMessage = result.Error;
+            return View(page.Value);
+        }
+
+        InterviewDelegationDTO delegated = result.Value;
+        string noticeWarning = await NotifyDelegatedUserAsync(delegated);
+
+        if (noticeWarning != null)
+            TempData["ErrorMessage"] = noticeWarning;
+        else
+            TempData["SuccessMessage"] = $"{delegated.DelegatedUserName} can score {delegated.CandidateName} until {delegated.ExpirationDate:dd/MM/yyyy hh:mm tt}. {delegated.OriginalInterviewerName} remains assigned.";
+
+        return RedirectToAction(nameof(Delegation));
+    }
+
+    [HttpPost]
+    [AuthorizeRoles("Admin", "HR Manager")]
+    [Route("{id}/delegate/{delegationId}/remove")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveDelegate(int id, int delegationId)
+    {
+        Result<InterviewDelegationDTO> result = await _interviewsService.RemoveInterviewDelegationAsync(id, delegationId);
+        if (!result.IsSuccess)
+        {
+            TempData["ErrorMessage"] = result.Error;
+            Result<DelegateInterviewPageDTO> page = await _interviewsService.GetPendingInterviewDelegationAsync(id);
+            if (!page.IsSuccess)
+                return RedirectToAction(nameof(Delegation));
+
+            return RedirectToAction(nameof(Delegate), new { id });
+        }
+
+        string noticeWarning = await NotifyDelegationRemovedAsync(result.Value);
+        TempData["SuccessMessage"] = $"{result.Value.DelegatedUserName} no longer has access to score {result.Value.CandidateName}.";
+        if (noticeWarning != null)
+            TempData["ErrorMessage"] = noticeWarning;
+
+        return RedirectToAction(nameof(Delegate), new { id });
+    }
+
+    private async Task<ActionResult> RedirectIfSubmittedResultIsClosedAsync(int interviewId)
+    {
+        Result<bool> canOpen = await _interviewsService.EnsureCurrentUserCanOpenSubmittedResultAsync(interviewId);
+        if (canOpen.IsSuccess)
+            return null;
+
+        TempData["ErrorMessage"] = canOpen.Error;
+        return RedirectToAction(nameof(MyInterviews));
+    }
+
+    private async Task<string> NotifyDelegationRemovedAsync(InterviewDelegationDTO removed)
+    {
+        try
+        {
+            string interviewerEmail = await _emailService.GetInterviewerEmail(removed.DelegatedUserId);
+            if (string.IsNullOrEmpty(interviewerEmail))
+                return $"{removed.DelegatedUserName} was removed, but that user has no email address.";
+
+            EmailDTOs emailModel = new()
+            {
+                EmailTo = [interviewerEmail],
+                Subject = $"Temporary access removed for {removed.CandidateName}",
+                EmailBody = InterviewDelegationEmailTemplate.GetRemovalEmail(
+                    removed.DelegatedUserName,
+                    removed.CandidateName,
+                    removed.PositionName)
+            };
+
+            await _emailService.SendEmailToInterviewer(interviewerEmail, new InterviewsDTO
+            {
+                InterviewsId = removed.InterviewId,
+                CandidateId = removed.CandidateId,
+                PositionId = removed.PositionId,
+                Date = removed.InterviewDate,
+                StatusId = removed.StatusId,
+                InterviewerId = removed.OriginalInterviewerId
+            }, emailModel);
+            return null;
+        }
+        catch (Exception)
+        {
+            return $"{removed.DelegatedUserName} was removed, but the email could not be sent.";
+        }
+    }
+
+    private async Task<string> NotifyDelegatedUserAsync(InterviewDelegationDTO delegated)
+    {
+        try
+        {
+            await _notificationsService.CreatePendingInterviewDelegationNotificationAsync(
+                delegated.DelegatedUserId,
+                delegated.CandidateId,
+                delegated.PositionId,
+                delegated.OriginalInterviewerName,
+                delegated.StartDate,
+                delegated.ExpirationDate);
+
+            string interviewerEmail = await _emailService.GetInterviewerEmail(delegated.DelegatedUserId);
+            string emailBody = InterviewDelegationEmailTemplate.GetAssignmentEmail(
+                delegated.DelegatedUserName,
+                delegated.CandidateName,
+                delegated.PositionName,
+                delegated.OriginalInterviewerName,
+                delegated.StartDate,
+                delegated.ExpirationDate,
+                $"https://apps.sssprocess.com:6134/interviews/{delegated.InterviewId}/addingresult",
+                "CMS");
+
+            EmailDTOs emailModel = new()
+            {
+                EmailTo = [interviewerEmail],
+                Subject = $"Temporary access to score {delegated.CandidateName}",
+                EmailBody = emailBody
+            };
+
+            if (string.IsNullOrEmpty(interviewerEmail))
+                return $"{delegated.CandidateName} was delegated, but the delegated user has no email address.";
+
+            await _emailService.SendEmailToInterviewer(interviewerEmail, new InterviewsDTO
+            {
+                InterviewsId = delegated.InterviewId,
+                CandidateId = delegated.CandidateId,
+                PositionId = delegated.PositionId,
+                Date = delegated.InterviewDate,
+                StatusId = delegated.StatusId,
+                InterviewerId = delegated.OriginalInterviewerId
+            }, emailModel);
+            return null;
+        }
+        catch (Exception)
+        {
+            return $"{delegated.CandidateName} was delegated, but the notification or email could not be sent.";
+        }
     }
 }

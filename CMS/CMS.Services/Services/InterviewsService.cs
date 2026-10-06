@@ -31,6 +31,7 @@ public class InterviewsService : IInterviewsService
     private readonly IDynamicWorkflowService _dynamicWorkflowService;
     private readonly IWorkflowService _workflowService;
     private readonly ISelectedInterviewersRepository _selectedInterviewersRepository;
+    private readonly IDelegationDurationRepository _delegationDurationRepository;
 
     public InterviewsService(
         IInterviewsRepository interviewsRepository,
@@ -45,7 +46,8 @@ public class InterviewsService : IInterviewsService
         IConfiguration configuration,
         IDynamicWorkflowService dynamicWorkflowService,
         IWorkflowService workflowService,
-        ISelectedInterviewersRepository selectedInterviewersRepository)
+        ISelectedInterviewersRepository selectedInterviewersRepository,
+        IDelegationDurationRepository delegationDurationRepository)
     {
         _interviewsRepository = interviewsRepository;
         _candidateService = candidateService;
@@ -60,6 +62,7 @@ public class InterviewsService : IInterviewsService
         _dynamicWorkflowService = dynamicWorkflowService;
         _workflowService = workflowService;
         _selectedInterviewersRepository = selectedInterviewersRepository;
+        _delegationDurationRepository = delegationDurationRepository;
     }
 
 
@@ -713,10 +716,14 @@ public class InterviewsService : IInterviewsService
                 ? await GetInterviewerRole(secondinterviewer) 
                 : null;
             IdentityUser currentUserrGM = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+            string delegatedWorkflowRole = await GetDelegatedWorkflowRoleAsync(completedDTO.InterviewsId, currentUserrGM?.Id);
             string hrManagerIDRole = "226cca69-f046-4d15-8b81-9b9ba34f2214";
             string createdbyRole = await _interviewsRepository.GetRoleById(hrManagerIDRole);
+            bool enterGmBranch = delegatedWorkflowRole != null
+                ? delegatedWorkflowRole == "General Manager"
+                : await _userManager.IsInRoleAsync(currentUserrGM, "General Manager");
 
-            if (createdbyRole == "HR Manager" && await _userManager.IsInRoleAsync(currentUserrGM, "General Manager"))
+            if (createdbyRole == "HR Manager" && enterGmBranch)
             {
                 IdentityUser currentUserr = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
 
@@ -728,6 +735,7 @@ public class InterviewsService : IInterviewsService
                 }
 
                 Debug.Assert(intervieww != null, "No Interview Provided for Conduct Interview Method");
+                await EnsurePendingAssignmentAfterReloadAsync(intervieww);
                 Status previousStatusForGmPath = await _statusRepository.GetById(intervieww.StatusId);
                 bool wasAlreadyApprovedForGmPath = previousStatusForGmPath?.Code == StatusCode.Approved;
                 intervieww.StatusId = (int)completedDTO.StatusId;
@@ -739,9 +747,20 @@ public class InterviewsService : IInterviewsService
                 intervieww.ModifiedBy = currentUserr.Id;
                 intervieww.ModifiedOn = DateTime.Now;
                 intervieww.IsUpdated = true;
-                await _interviewsRepository.Update(intervieww);
+                if (previousStatusForGmPath?.Code == StatusCode.Pending)
+                {
+                    string saveResult = await _interviewsRepository.TryCompletePendingIfAssignedAsync(intervieww, currentUserr.Id);
+                    if (saveResult != "Saved")
+                        throw new InvalidOperationException(DescribeSubmitFailure(saveResult));
+                }
+                else
+                {
+                    await _interviewsRepository.Update(intervieww);
+                }
 
-                bool isHRr = await _userManager.IsInRoleAsync(currentUserr, "HR Manager");
+                bool isHRr = delegatedWorkflowRole != null
+                    ? delegatedWorkflowRole == "HR Manager"
+                    : await _userManager.IsInRoleAsync(currentUserr, "HR Manager");
                 if (!isHRr)
                 {
                     Interviews generalManagerInterview = await _interviewsRepository.GetGeneralManagerInterviewForCandidate(intervieww.CandidateId);
@@ -781,8 +800,8 @@ public class InterviewsService : IInterviewsService
                 
                 if (isApprovedd && !wasAlreadyApprovedForGmPath && (!isLastInterviewerAnHRr || (isReverseWorkflow && isLastInterviewerAnHRr)))
                 {
-                    string completedByRole = await GetInterviewerRole(currentUserr.Id);
-                    if (string.IsNullOrEmpty(completedByRole))
+                    string completedByRole = delegatedWorkflowRole ?? await GetInterviewerRole(currentUserr.Id);
+                    if (string.IsNullOrEmpty(completedByRole) || completedByRole == "User not found")
                     {
                         completedByRole = await GetInterviewerRole(intervieww.InterviewerId);
                     }
@@ -820,6 +839,7 @@ public class InterviewsService : IInterviewsService
                 }
 
                 Debug.Assert(interview != null, "No Interview Provided for Conduct Interview Method");
+                await EnsurePendingAssignmentAfterReloadAsync(interview);
                 Status previousStatus = await _statusRepository.GetById(interview.StatusId);
                 bool wasAlreadyApproved = previousStatus?.Code == StatusCode.Approved;
                 interview.StatusId = (int)completedDTO.StatusId;
@@ -830,10 +850,21 @@ public class InterviewsService : IInterviewsService
                 interview.ModifiedBy = currentUser.Id;
                 interview.ModifiedOn = DateTime.Now;
                 interview.IsUpdated = true;
-                await _interviewsRepository.Update(interview);
+                if (previousStatus?.Code == StatusCode.Pending)
+                {
+                    string saveResult = await _interviewsRepository.TryCompletePendingIfAssignedAsync(interview, currentUser.Id);
+                    if (saveResult != "Saved")
+                        throw new InvalidOperationException(DescribeSubmitFailure(saveResult));
+                }
+                else
+                {
+                    await _interviewsRepository.Update(interview);
+                }
 
 
-                bool isHR = await _userManager.IsInRoleAsync(currentUser, "HR Manager");
+                bool isHR = delegatedWorkflowRole != null
+                    ? delegatedWorkflowRole == "HR Manager"
+                    : await _userManager.IsInRoleAsync(currentUser, "HR Manager");
                 if (!isHR)
                 {
                     Interviews generalManagerInterview = await _interviewsRepository.GetGeneralManagerInterviewForCandidate(interview.CandidateId);
@@ -889,8 +920,8 @@ public class InterviewsService : IInterviewsService
 
                 if (isApproved && !wasAlreadyApproved && (!isLastInterviewerAnHR || (isReverseWorkflow && isLastInterviewerAnHR)))
                 {
-                    string completedByRole = await GetInterviewerRole(currentUser.Id);
-                    if (string.IsNullOrEmpty(completedByRole))
+                    string completedByRole = delegatedWorkflowRole ?? await GetInterviewerRole(currentUser.Id);
+                    if (string.IsNullOrEmpty(completedByRole) || completedByRole == "User not found")
                     {
                         completedByRole = await GetInterviewerRole(interview.InterviewerId);
                     }
@@ -921,6 +952,7 @@ public class InterviewsService : IInterviewsService
         try
         {
             IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+            string delegatedWorkflowRole = await GetDelegatedWorkflowRoleAsync(completedDTO.InterviewsId, currentUser?.Id);
             Interviews interview = await _interviewsRepository.GetById(completedDTO.InterviewsId);
 
             if (completedDTO.FileData != null)
@@ -937,6 +969,7 @@ public class InterviewsService : IInterviewsService
             }
 
             Debug.Assert(interview != null, "No Interview Provided for Conduct Interview Method");
+            await EnsurePendingAssignmentAfterReloadAsync(interview);
 
             Status previousStatusForGm = await _statusRepository.GetById(interview.StatusId);
             bool wasAlreadyApprovedForGm = previousStatusForGm?.Code == StatusCode.Approved;
@@ -949,10 +982,21 @@ public class InterviewsService : IInterviewsService
             interview.ModifiedBy = currentUser.Id;
             interview.ModifiedOn = DateTime.Now;
             interview.IsUpdated = true;
-            await _interviewsRepository.Update(interview);
+            if (previousStatusForGm?.Code == StatusCode.Pending)
+            {
+                string saveResult = await _interviewsRepository.TryCompletePendingIfAssignedAsync(interview, currentUser.Id);
+                if (saveResult != "Saved")
+                    throw new InvalidOperationException(DescribeSubmitFailure(saveResult));
+            }
+            else
+            {
+                await _interviewsRepository.Update(interview);
+            }
 
 
-            bool isHR = await _userManager.IsInRoleAsync(currentUser, "HR Manager");
+            bool isHR = delegatedWorkflowRole != null
+                ? delegatedWorkflowRole == "HR Manager"
+                : await _userManager.IsInRoleAsync(currentUser, "HR Manager");
 
             if (!isHR)
             {
@@ -1002,8 +1046,8 @@ public class InterviewsService : IInterviewsService
 
             if (isApproved && !wasAlreadyApprovedForGm && (!isLastInterviewerAnHR || (isReverseWorkflow && isLastInterviewerAnHR)))
             {
-                string completedByRole = await GetInterviewerRole(currentUser.Id);
-                if (string.IsNullOrEmpty(completedByRole))
+                string completedByRole = delegatedWorkflowRole ?? await GetInterviewerRole(currentUser.Id);
+                if (string.IsNullOrEmpty(completedByRole) || completedByRole == "User not found")
                 {
                     completedByRole = await GetInterviewerRole(interview.InterviewerId);
                 }
@@ -1033,6 +1077,7 @@ public class InterviewsService : IInterviewsService
         try
         {
             IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+            string delegatedWorkflowRole = await GetDelegatedWorkflowRoleAsync(completedDTO.InterviewsId, currentUser?.Id);
             Interviews interview = await _interviewsRepository.GetById(completedDTO.InterviewsId);
 
             if (completedDTO.FileData != null)
@@ -1049,6 +1094,7 @@ public class InterviewsService : IInterviewsService
             }
 
             Debug.Assert(interview != null, "No Interview Provided for Conduct Interview Method");
+            await EnsurePendingAssignmentAfterReloadAsync(interview);
 
             Status previousStatusForArchi = await _statusRepository.GetById(interview.StatusId);
             bool wasAlreadyApprovedForArchi = previousStatusForArchi?.Code == StatusCode.Approved;
@@ -1061,10 +1107,21 @@ public class InterviewsService : IInterviewsService
             interview.ModifiedBy = currentUser.Id;
             interview.ModifiedOn = DateTime.Now;
             interview.IsUpdated = true;
-            await _interviewsRepository.Update(interview);
+            if (previousStatusForArchi?.Code == StatusCode.Pending)
+            {
+                string saveResult = await _interviewsRepository.TryCompletePendingIfAssignedAsync(interview, currentUser.Id);
+                if (saveResult != "Saved")
+                    throw new InvalidOperationException(DescribeSubmitFailure(saveResult));
+            }
+            else
+            {
+                await _interviewsRepository.Update(interview);
+            }
 
 
-            bool isHR = await _userManager.IsInRoleAsync(currentUser, "HR Manager");
+            bool isHR = delegatedWorkflowRole != null
+                ? delegatedWorkflowRole == "HR Manager"
+                : await _userManager.IsInRoleAsync(currentUser, "HR Manager");
 
             if (!isHR)
             {
@@ -1157,8 +1214,8 @@ public class InterviewsService : IInterviewsService
 
             if (isApproved && !wasAlreadyApprovedForArchi && (!isLastInterviewerAnHR || (isReverseWorkflow && isLastInterviewerAnHR)))
             {
-                string completedByRole = await GetInterviewerRole(currentUser.Id);
-                if (string.IsNullOrEmpty(completedByRole))
+                string completedByRole = delegatedWorkflowRole ?? await GetInterviewerRole(currentUser.Id);
+                if (string.IsNullOrEmpty(completedByRole) || completedByRole == "User not found")
                 {
                     completedByRole = await GetInterviewerRole(interview.InterviewerId);
                 }
@@ -1652,5 +1709,637 @@ public class InterviewsService : IInterviewsService
         {
             return Result<List<InterviewsDTO>>.Failure(null, $"An error occurred while fetching interviews: {ex.Message}");
         }
+    }
+
+    private const string PrimaryInterviewerSlot = "Primary";
+    private const string SecondInterviewerSlot = "Second";
+
+    public async Task<Result<DelegateInterviewPageDTO>> GetPendingInterviewDelegationAsync(int interviewId)
+    {
+        try
+        {
+            Result<bool> authorization = await EnsureUserCanDelegateAsync();
+            if (!authorization.IsSuccess)
+                return Result<DelegateInterviewPageDTO>.Failure(null, authorization.Error);
+
+            Interviews interview = await _interviewsRepository.GetByIdForEdit(interviewId);
+            if (interview == null)
+                return Result<DelegateInterviewPageDTO>.Failure(null, "Interview not found.");
+
+            if (!IsInterviewStillPending(interview))
+                return Result<DelegateInterviewPageDTO>.Failure(null, "This interview is no longer pending.");
+
+            List<InterviewDelegation> history = await _interviewsRepository.GetDelegationsByInterviewIdAsync(interviewId);
+            List<DelegationDuration> durations = await _delegationDurationRepository.GetActiveAsync();
+
+            DelegateInterviewPageDTO page = new()
+            {
+                InterviewId = interview.InterviewsId,
+                CandidateName = interview.Candidate?.FullName,
+                PositionName = interview.Position?.Name,
+                InterviewDate = interview.Date,
+                StatusName = interview.Status?.Name,
+                PrimaryInterviewerId = interview.InterviewerId,
+                PrimaryInterviewerName = await GetInterviewerName(interview.InterviewerId),
+                PrimaryRole = await GetInterviewerRole(interview.InterviewerId),
+                SecondInterviewerId = interview.SecondInterviewerId,
+                SecondInterviewerName = string.IsNullOrEmpty(interview.SecondInterviewerId)
+                    ? null
+                    : await GetInterviewerName(interview.SecondInterviewerId),
+                SecondRole = string.IsNullOrEmpty(interview.SecondInterviewerId)
+                    ? null
+                    : await GetInterviewerRole(interview.SecondInterviewerId),
+                Durations = durations.Select(d => new DelegationDurationDTO
+                {
+                    Id = d.Id,
+                    Name = d.Name,
+                    Amount = d.Amount,
+                    Unit = d.Unit,
+                    DurationMinutes = d.DurationMinutes,
+                    IsActive = d.IsActive
+                }).ToList(),
+                DelegateCandidates = await GetDelegationCandidateUsersAsync(interview.InterviewerId, interview.SecondInterviewerId),
+                History = []
+            };
+
+            DateTime now = DateTime.Now;
+            bool interviewIsPending = IsInterviewStillPending(interview);
+            foreach (InterviewDelegation item in history)
+            {
+                string status = DescribeDelegationStatus(item, now);
+                page.History.Add(new InterviewDelegationHistoryItemDTO
+                {
+                    Id = item.Id,
+                    OriginalInterviewerName = await GetInterviewerName(item.OriginalInterviewerId),
+                    DelegatedUserName = await GetInterviewerName(item.DelegatedUserId),
+                    DelegatedByName = await GetInterviewerName(item.DelegatedByUserId),
+                    StartDate = item.StartDate,
+                    ExpirationDate = item.ExpirationDate,
+                    CreatedOn = item.CreatedOn,
+                    Duration = DescribeStoredDuration(item),
+                    InterviewerSlot = item.InterviewerSlot,
+                    Status = status,
+                    CanRemove = interviewIsPending && (status == "Active" || status == "Not started"),
+                    RemovedByName = string.IsNullOrEmpty(item.RemovedByUserId)
+                        ? null
+                        : await GetInterviewerName(item.RemovedByUserId),
+                    RemovedOn = item.RemovedOn
+                });
+            }
+
+            return Result<DelegateInterviewPageDTO>.Success(page);
+        }
+        catch (Exception ex)
+        {
+            return Result<DelegateInterviewPageDTO>.Failure(null, $"Unable to load the pending interview for delegation: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<InterviewDelegationDTO>> DelegatePendingInterviewAsync(
+        int interviewId,
+        string interviewerSlot,
+        string originalInterviewerId,
+        string delegatedUserId,
+        int durationId)
+    {
+        try
+        {
+            Result<bool> authorization = await EnsureUserCanDelegateAsync();
+            if (!authorization.IsSuccess)
+                return Result<InterviewDelegationDTO>.Failure(null, authorization.Error);
+
+            if (string.IsNullOrWhiteSpace(delegatedUserId))
+                return Result<InterviewDelegationDTO>.Failure(null, "Please select a user to delegate to.");
+
+            if (string.IsNullOrWhiteSpace(originalInterviewerId))
+                return Result<InterviewDelegationDTO>.Failure(null, "The original interviewer could not be confirmed. Refresh the page and try again.");
+
+            DelegationDuration duration = await _delegationDurationRepository.GetActiveByIdAsync(durationId);
+            if (duration == null)
+                return Result<InterviewDelegationDTO>.Failure(null, "Please select an active delegation duration.");
+
+            DateTime startDate = DateTime.Now;
+            DateTime expirationDate = startDate.AddMinutes(duration.DurationMinutes);
+
+            bool secondSlot = string.Equals(interviewerSlot, SecondInterviewerSlot, StringComparison.OrdinalIgnoreCase);
+            if (!secondSlot && !string.Equals(interviewerSlot, PrimaryInterviewerSlot, StringComparison.OrdinalIgnoreCase))
+                return Result<InterviewDelegationDTO>.Failure(null, "Select which interviewer this delegation covers.");
+
+            Interviews interview = await _interviewsRepository.GetByIdForEdit(interviewId);
+            if (interview == null)
+                return Result<InterviewDelegationDTO>.Failure(null, "Interview not found.");
+
+            if (!IsInterviewStillPending(interview))
+                return Result<InterviewDelegationDTO>.Failure(null, "This interview is no longer pending. It may already have been completed.");
+
+            string currentInterviewerId = secondSlot ? interview.SecondInterviewerId : interview.InterviewerId;
+            if (string.IsNullOrEmpty(currentInterviewerId))
+                return Result<InterviewDelegationDTO>.Failure(null, "This interview does not have an interviewer in the selected slot.");
+
+            if (!string.Equals(currentInterviewerId, originalInterviewerId, StringComparison.Ordinal))
+                return Result<InterviewDelegationDTO>.Failure(null, "The original interviewer changed. Refresh the page and try again.");
+
+            if (string.Equals(interview.InterviewerId, delegatedUserId, StringComparison.Ordinal)
+                || string.Equals(interview.SecondInterviewerId, delegatedUserId, StringComparison.Ordinal))
+                return Result<InterviewDelegationDTO>.Failure(null, "The selected delegate is already the assigned interviewer.");
+
+            IdentityUser delegatedUser = await _userManager.FindByIdAsync(delegatedUserId);
+            if (delegatedUser == null || !await IsEligibleDelegateUserAsync(delegatedUser))
+                return Result<InterviewDelegationDTO>.Failure(null, "The selected user is not eligible to act for this interview.");
+
+            IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+            InterviewDelegation delegation = new()
+            {
+                InterviewId = interview.InterviewsId,
+                CandidateId = interview.CandidateId,
+                OriginalInterviewerId = currentInterviewerId,
+                DelegatedUserId = delegatedUserId,
+                DelegatedByUserId = currentUser.Id,
+                StartDate = startDate,
+                ExpirationDate = expirationDate,
+                DurationName = duration.Name,
+                DurationMinutes = duration.DurationMinutes,
+                WorkflowStageId = interview.WorkflowStageId,
+                InterviewerSlot = secondSlot ? SecondInterviewerSlot : PrimaryInterviewerSlot,
+                Status = InterviewDelegation.StatusActive,
+                CreatedBy = currentUser.Id,
+                ModifiedBy = currentUser.Id
+            };
+
+            string updateResult = await _interviewsRepository.InsertInterviewDelegationAsync(
+                interview.InterviewsId,
+                currentInterviewerId,
+                secondSlot,
+                delegation);
+
+            string failure = MapDelegationFailure(updateResult);
+            if (failure != null)
+                return Result<InterviewDelegationDTO>.Failure(null, failure);
+
+            return Result<InterviewDelegationDTO>.Success(new InterviewDelegationDTO
+            {
+                InterviewId = interview.InterviewsId,
+                CandidateId = interview.CandidateId,
+                CandidateName = interview.Candidate?.FullName,
+                PositionId = interview.PositionId,
+                PositionName = interview.Position?.Name,
+                StageName = await GetStageNameAsync(interview.WorkflowStageId),
+                InterviewDate = interview.Date,
+                StatusId = interview.StatusId,
+                OriginalInterviewerId = currentInterviewerId,
+                OriginalInterviewerName = await GetInterviewerName(currentInterviewerId),
+                DelegatedUserId = delegatedUserId,
+                DelegatedUserName = delegatedUser.UserName,
+                DelegatedByUserId = currentUser.Id,
+                StartDate = startDate,
+                ExpirationDate = expirationDate,
+                WorkflowStageId = interview.WorkflowStageId,
+                InterviewerSlot = delegation.InterviewerSlot
+            });
+        }
+        catch (Exception ex)
+        {
+            return Result<InterviewDelegationDTO>.Failure(null, $"Unable to delegate the pending interview: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<InterviewDelegationDTO>> RemoveInterviewDelegationAsync(int interviewId, int delegationId)
+    {
+        try
+        {
+            Result<bool> authorization = await EnsureUserCanDelegateAsync();
+            if (!authorization.IsSuccess)
+                return Result<InterviewDelegationDTO>.Failure(null, authorization.Error);
+
+            IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+            if (currentUser == null)
+                return Result<InterviewDelegationDTO>.Failure(null, "You must log in first.");
+
+            List<InterviewDelegation> existing = await _interviewsRepository.GetDelegationsByInterviewIdAsync(interviewId);
+            InterviewDelegation current = existing.FirstOrDefault(d => d.Id == delegationId);
+            if (current == null)
+                return Result<InterviewDelegationDTO>.Failure(null, "This delegation could not be found.");
+
+            string cancelResult = await _interviewsRepository.CancelInterviewDelegationAsync(interviewId, delegationId, currentUser.Id);
+            string failure = cancelResult switch
+            {
+                "Success" => null,
+                "NotFound" => "This delegation could not be found.",
+                "AlreadyRemoved" => "This delegation has already been removed.",
+                "ScoreSubmitted" => "The delegate has already submitted the score.",
+                _ => "The delegation could not be removed."
+            };
+            if (failure != null)
+                return Result<InterviewDelegationDTO>.Failure(null, failure);
+
+            Interviews interview = await _interviewsRepository.GetByIdForEdit(interviewId);
+            return Result<InterviewDelegationDTO>.Success(new InterviewDelegationDTO
+            {
+                InterviewId = interviewId,
+                CandidateId = current.CandidateId,
+                CandidateName = interview?.Candidate?.FullName,
+                PositionId = interview?.PositionId ?? 0,
+                PositionName = interview?.Position?.Name,
+                InterviewDate = interview?.Date ?? current.StartDate,
+                StatusId = interview?.StatusId,
+                OriginalInterviewerId = current.OriginalInterviewerId,
+                OriginalInterviewerName = await GetInterviewerName(current.OriginalInterviewerId),
+                DelegatedUserId = current.DelegatedUserId,
+                DelegatedUserName = await GetInterviewerName(current.DelegatedUserId),
+                DelegatedByUserId = current.DelegatedByUserId,
+                StartDate = current.StartDate,
+                ExpirationDate = current.ExpirationDate,
+                InterviewerSlot = current.InterviewerSlot
+            });
+        }
+        catch (Exception ex)
+        {
+            return Result<InterviewDelegationDTO>.Failure(null, $"Unable to remove the delegation: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<BulkDelegationPageDTO>> GetBulkDelegationPageAsync()
+    {
+        try
+        {
+            Result<bool> authorization = await EnsureUserCanDelegateAsync();
+            if (!authorization.IsSuccess)
+                return Result<BulkDelegationPageDTO>.Failure(null, authorization.Error);
+
+            Result<List<InterviewsDTO>> interviews = await GetAll();
+            if (!interviews.IsSuccess)
+                return Result<BulkDelegationPageDTO>.Failure(null, interviews.Error);
+
+            Status pending = await _statusRepository.GetByCode(StatusCode.Pending);
+            List<DelegationDuration> durations = await _delegationDurationRepository.GetActiveAsync();
+
+            return Result<BulkDelegationPageDTO>.Success(new BulkDelegationPageDTO
+            {
+                Interviews = interviews.Value
+                    .Where(i => i.StatusId == pending.Id)
+                    .OrderByDescending(i => i.Date)
+                    .ToList(),
+                DelegateCandidates = await GetEligibleDelegateUsersAsync(),
+                Durations = durations.Select(d => new DelegationDurationDTO
+                {
+                    Id = d.Id,
+                    Name = d.Name,
+                    Amount = d.Amount,
+                    Unit = d.Unit,
+                    DurationMinutes = d.DurationMinutes,
+                    IsActive = d.IsActive
+                }).ToList()
+            });
+        }
+        catch (Exception ex)
+        {
+            return Result<BulkDelegationPageDTO>.Failure(null, $"Unable to load interviews for delegation: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<BulkDelegationResultDTO>> DelegatePendingInterviewsAsync(
+        IEnumerable<int> interviewIds,
+        string delegatedUserId,
+        int durationId)
+    {
+        List<int> ids = interviewIds?.Where(id => id > 0).Distinct().ToList() ?? [];
+        if (ids.Count == 0)
+            return Result<BulkDelegationResultDTO>.Failure(null, "Select at least one interview.");
+
+        if (string.IsNullOrWhiteSpace(delegatedUserId))
+            return Result<BulkDelegationResultDTO>.Failure(null, "Please select a delegated user.");
+
+        if (await _delegationDurationRepository.GetActiveByIdAsync(durationId) == null)
+            return Result<BulkDelegationResultDTO>.Failure(null, "Please select an active delegation duration.");
+
+        IdentityUser delegatedUser = await _userManager.FindByIdAsync(delegatedUserId);
+        if (delegatedUser == null || !await IsEligibleDelegateUserAsync(delegatedUser))
+            return Result<BulkDelegationResultDTO>.Failure(null, "The selected user is not eligible to act for this interview.");
+
+        BulkDelegationResultDTO bulk = new();
+        foreach (int interviewId in ids)
+        {
+            Interviews interview = await _interviewsRepository.GetByIdForEdit(interviewId);
+            string candidateName = interview?.Candidate?.FullName ?? $"Interview {interviewId}";
+            if (interview == null || string.IsNullOrEmpty(interview.InterviewerId))
+            {
+                bulk.Errors.Add($"{candidateName} could not be delegated because it has no assigned interviewer.");
+                continue;
+            }
+
+            Result<InterviewDelegationDTO> delegated = await DelegatePendingInterviewAsync(
+                interviewId,
+                PrimaryInterviewerSlot,
+                interview.InterviewerId,
+                delegatedUserId,
+                durationId);
+
+            if (!delegated.IsSuccess)
+                bulk.Errors.Add($"{candidateName}: {delegated.Error}");
+            else
+                bulk.Delegated.Add(delegated.Value);
+        }
+
+        if (bulk.Delegated.Count == 0)
+            return Result<BulkDelegationResultDTO>.Failure(bulk, string.Join(" ", bulk.Errors));
+
+        return Result<BulkDelegationResultDTO>.Success(bulk);
+    }
+
+    public async Task<bool> IsCurrentUserAssignedToInterviewAsync(int interviewId)
+    {
+        Interviews interview = await _interviewsRepository.GetById(interviewId);
+        if (interview == null)
+            return false;
+
+        IdentityUser user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+        return user != null && IsUserAssigned(interview, user.Id);
+    }
+
+    public async Task<Result<bool>> EnsureCurrentUserCanSubmitPendingAsync(int interviewId)
+    {
+        Interviews interview = await _interviewsRepository.GetById(interviewId);
+        if (interview == null)
+            return Result<bool>.Failure(false, "Interview not found.");
+
+        await _interviewsRepository.ReloadAsync(interview);
+
+        Status status = await _statusRepository.GetById(interview.StatusId);
+        if (status?.Code != StatusCode.Pending)
+            return Result<bool>.Success(true);
+
+        IdentityUser user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+        if (user != null && IsUserAssigned(interview, user.Id))
+            return Result<bool>.Success(true);
+
+        if (user == null)
+            return Result<bool>.Failure(false, "You are no longer allowed to submit this interview.");
+
+        string delegationBlock = await DescribeWhyDelegationDoesNotAllowAsync(interviewId, user.Id);
+        if (delegationBlock == null)
+            return Result<bool>.Success(true);
+
+        return Result<bool>.Failure(false, delegationBlock);
+    }
+
+    public async Task<Result<bool>> EnsureCurrentUserCanOpenSubmittedResultAsync(int interviewId)
+    {
+        Interviews interview = await _interviewsRepository.GetById(interviewId);
+        if (interview == null)
+            return Result<bool>.Failure(false, "Interview not found.");
+
+        IdentityUser user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+        if (user == null)
+            return Result<bool>.Failure(false, "You must log in first.");
+
+        if (IsUserAssigned(interview, user.Id))
+            return Result<bool>.Success(true);
+
+        if (await _userManager.IsInRoleAsync(user, "Admin") || await _userManager.IsInRoleAsync(user, "HR Manager"))
+            return Result<bool>.Success(true);
+
+        List<InterviewDelegation> delegations = await _interviewsRepository.GetUserDelegationsForInterviewAsync(interviewId, user.Id);
+        if (delegations.Count == 0)
+            return Result<bool>.Success(true);
+
+        string delegationBlock = await DescribeWhyDelegationDoesNotAllowAsync(interviewId, user.Id);
+        if (delegationBlock == null)
+            return Result<bool>.Success(true);
+
+        return Result<bool>.Failure(false, delegationBlock);
+    }
+
+    public async Task<string> GetDelegatedWorkflowRoleAsync(int interviewId, string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+            return null;
+
+        Interviews interview = await _interviewsRepository.GetById(interviewId);
+        if (interview == null || IsUserAssigned(interview, userId))
+            return null;
+
+        InterviewDelegation delegation = await _interviewsRepository.GetActiveDelegationAsync(interviewId, userId, DateTime.Now);
+        if (delegation == null)
+            return null;
+
+        string role = await GetInterviewerRole(delegation.OriginalInterviewerId);
+        return role == "User not found" ? null : role;
+    }
+
+    public async Task<bool> HasActiveDelegationAsync()
+    {
+        IdentityUser user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+        if (user == null)
+            return false;
+
+        return await _interviewsRepository.HasActiveDelegationAsync(user.Id, DateTime.Now);
+    }
+
+    public async Task<bool> HasInForceDelegationAsync(int interviewId)
+    {
+        List<InterviewDelegation> delegations = await _interviewsRepository.GetInForceDelegationsAsync(interviewId, DateTime.Now);
+        return delegations.Count > 0;
+    }
+
+    public Task EnsureDelegatedSuccessorAsync(int interviewId)
+    {
+        return _dynamicWorkflowService.EnsureDelegatedSuccessorAsync(interviewId);
+    }
+
+    private async Task EnsurePendingAssignmentAfterReloadAsync(Interviews interview)
+    {
+        if (interview == null)
+            throw new InvalidOperationException("Interview not found.");
+
+        Result<bool> check = await EnsureCurrentUserCanSubmitPendingAsync(interview.InterviewsId);
+        if (!check.IsSuccess)
+            throw new InvalidOperationException(check.Error);
+    }
+
+    private async Task<Result<bool>> EnsureUserCanDelegateAsync()
+    {
+        IdentityUser user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+        if (user == null)
+            return Result<bool>.Failure(false, "You must log in first.");
+
+        bool isHr = await _userManager.IsInRoleAsync(user, "HR Manager");
+        bool isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+        if (!isHr && !isAdmin)
+            return Result<bool>.Failure(false, "You are not authorized to delegate interviews.");
+
+        return Result<bool>.Success(true);
+    }
+
+    private static bool IsInterviewStillPending(Interviews interview)
+    {
+        return interview.Status != null
+            && interview.Status.Code == StatusCode.Pending
+            && !interview.IsUpdated;
+    }
+
+    private static bool IsUserAssigned(Interviews interview, string userId)
+    {
+        if (interview == null || string.IsNullOrEmpty(userId))
+            return false;
+
+        if (interview.InterviewerId == userId || interview.SecondInterviewerId == userId)
+            return true;
+
+        if (interview.ArchitectureInterviewerId != userId)
+            return false;
+
+        if (interview.StartFromHR && interview.WorkflowStageId == (int)EnumWorkflowStage.GMFinalReview)
+            return true;
+
+        if (!interview.StartFromHR
+            && interview.WorkflowStageId.HasValue
+            && interview.WorkflowStageId >= (int)EnumWorkflowStage.ManagementReview)
+            return true;
+
+        return interview.ModifiedBy == userId;
+    }
+
+    private Task<List<UsersDTO>> GetDelegationCandidateUsersAsync(string primaryInterviewerId, string secondInterviewerId)
+    {
+        return GetEligibleDelegateUsersAsync(primaryInterviewerId, secondInterviewerId);
+    }
+
+    private async Task<List<UsersDTO>> GetEligibleDelegateUsersAsync(params string[] excludedUserIds)
+    {
+        HashSet<string> excluded = new(
+            excludedUserIds.Where(id => !string.IsNullOrEmpty(id)),
+            StringComparer.Ordinal);
+        List<UsersDTO> candidates = [];
+        foreach (IdentityUser user in _userManager.Users.OrderBy(u => u.UserName))
+        {
+            if (excluded.Contains(user.Id) || !await IsEligibleDelegateUserAsync(user))
+                continue;
+
+            candidates.Add(new UsersDTO
+            {
+                Id = user.Id,
+                Name = user.UserName,
+                Email = user.Email
+            });
+        }
+
+        return candidates;
+    }
+
+    private async Task<bool> IsEligibleDelegateUserAsync(IdentityUser user)
+    {
+        IList<string> roles = await _userManager.GetRolesAsync(user);
+        return !roles.Any(role =>
+            string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(role, "Viewer", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async Task<string> GetStageNameAsync(int? workflowStageId)
+    {
+        if (!workflowStageId.HasValue)
+            return null;
+
+        Result<WorkflowStageDTO> stage = await _workflowService.GetStageByIdAsync(workflowStageId.Value);
+        return stage.IsSuccess ? stage.Value?.Name : null;
+    }
+
+    private static string MapDelegationFailure(string updateResult)
+    {
+        return updateResult switch
+        {
+            "Success" => null,
+            "NotFound" => "Interview not found.",
+            "NotPending" => "This interview is no longer pending. It may already have been completed.",
+            "InterviewerChanged" => "The original interviewer changed. Refresh the page and try again.",
+            "AlreadyAssigned" => "The selected delegate is already the assigned interviewer.",
+            "Overlap" => "This user already has a delegation for this interview during the selected period.",
+            _ => "Unable to delegate the pending interview."
+        };
+    }
+
+    private static string DescribeStoredDuration(InterviewDelegation delegation)
+    {
+        if (!string.IsNullOrWhiteSpace(delegation.DurationName))
+            return delegation.DurationName;
+
+        if (delegation.DurationMinutes.HasValue && delegation.DurationMinutes.Value > 0)
+            return FormatMinutes(delegation.DurationMinutes.Value);
+
+        TimeSpan span = delegation.ExpirationDate - delegation.StartDate;
+        if (span.TotalMinutes < 1)
+            return "—";
+
+        return FormatMinutes((int)Math.Round(span.TotalMinutes));
+    }
+
+    private static string FormatMinutes(int minutes)
+    {
+        if (minutes % (7 * 24 * 60) == 0)
+        {
+            int weeks = minutes / (7 * 24 * 60);
+            return weeks == 1 ? "1 week" : $"{weeks} weeks";
+        }
+
+        if (minutes % (24 * 60) == 0)
+        {
+            int days = minutes / (24 * 60);
+            return days == 1 ? "1 day" : $"{days} days";
+        }
+
+        if (minutes % 60 == 0)
+        {
+            int hours = minutes / 60;
+            return hours == 1 ? "1 hour" : $"{hours} hours";
+        }
+
+        return minutes == 1 ? "1 minute" : $"{minutes} minutes";
+    }
+
+    private static string DescribeDelegationStatus(InterviewDelegation delegation, DateTime now)
+    {
+        if (delegation == null || !delegation.IsActive || delegation.IsDelete || delegation.Status == InterviewDelegation.StatusCancelled)
+            return "Cancelled";
+
+        if (now < delegation.StartDate)
+            return "Not started";
+
+        if (now >= delegation.ExpirationDate)
+            return "Expired";
+
+        return "Active";
+    }
+
+    private static string DescribeSubmitFailure(string saveResult)
+    {
+        return saveResult switch
+        {
+            "NotPending" => "This interview is no longer pending. It may already have been completed.",
+            "Expired" => "This delegation has expired.",
+            "NotStarted" => "This delegation has not started yet.",
+            _ => "You are no longer allowed to submit this interview."
+        };
+    }
+
+    private async Task<string> DescribeWhyDelegationDoesNotAllowAsync(int interviewId, string userId)
+    {
+        DateTime now = DateTime.Now;
+        List<InterviewDelegation> delegations = await _interviewsRepository.GetUserDelegationsForInterviewAsync(interviewId, userId);
+        List<InterviewDelegation> openDelegations = delegations
+            .Where(d => d.IsActive && !d.IsDelete && d.Status != InterviewDelegation.StatusCancelled)
+            .ToList();
+
+        if (openDelegations.Any(d => d.StartDate <= now && d.ExpirationDate > now))
+            return null;
+
+        if (openDelegations.Any(d => now < d.StartDate))
+            return "This delegation has not started yet.";
+
+        if (openDelegations.Any(d => now >= d.ExpirationDate))
+            return "This delegation has expired.";
+
+        if (delegations.Any(d => d.Status == InterviewDelegation.StatusCancelled))
+            return "This delegation has been removed.";
+
+        return "You are no longer allowed to submit this interview.";
     }
 }

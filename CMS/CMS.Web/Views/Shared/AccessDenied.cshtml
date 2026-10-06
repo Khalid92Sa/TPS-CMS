@@ -3,7 +3,14 @@
     <div class="row">
         <div class="col-md-12">
             <h2>Access Denied</h2>
-            <p class="text-danger">Sorry, you do not have permission to access this page.</p>
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <p class="text-danger">@TempData["ErrorMessage"]</p>
+            }
+            else
+            {
+                <p class="text-danger">Sorry, you do not have permission to access this page.</p>
+            }
             <p>Please contact your administrator for assistance.</p>
         </div>
     </div>

@@ -1,0 +1,46 @@
+@model CMS.Application.DTOs.DelegationDurationDTO
+@{
+    ViewData["Title"] = "Edit Delegation Duration";
+}
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header" style="background: linear-gradient(135deg, #486fc7, #319ca7); color: white;">
+            <h4 class="mb-0" style="color:white;">Edit Delegation Duration</h4>
+        </div>
+        <div class="card-body">
+            <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group mb-3">
+                        <label asp-for="Amount" class="form-label"></label>
+                        <input asp-for="Amount" class="form-control" type="number" min="1" />
+                        <span asp-validation-for="Amount" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 form-group mb-3">
+                        <label asp-for="Unit" class="form-label"></label>
+                        <select asp-for="Unit" class="form-control" asp-items="ViewBag.Units"></select>
+                        <span asp-validation-for="Unit" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input asp-for="IsActive" class="form-check-input" />
+                    <label asp-for="IsActive" class="form-check-label">Enabled</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>

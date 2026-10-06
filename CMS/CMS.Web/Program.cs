@@ -70,6 +70,8 @@ builder.Services.AddScoped(typeof(ITrackRepository), typeof(TrackRepository));
 builder.Services.AddScoped<ITrackService, TrackService>();
 
 builder.Services.AddScoped(typeof(IInterviewsRepository), typeof(InterviewsRepository));
+builder.Services.AddScoped(typeof(IDelegationDurationRepository), typeof(DelegationDurationRepository));
+builder.Services.AddTransient<IDelegationDurationService, DelegationDurationService>();
 builder.Services.AddScoped(typeof(ISelectedInterviewersRepository), typeof(SelectedInterviewersRepository));
 builder.Services.AddTransient<IInterviewsService, InterviewsService>();
 builder.Services.AddTransient<ISearchInterviewsService, SearchInterviewsService>();

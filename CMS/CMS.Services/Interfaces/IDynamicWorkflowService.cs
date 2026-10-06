@@ -20,5 +20,10 @@ public interface IDynamicWorkflowService
         int trackId,
         DateTime interviewDate,
         string createdByUserId);
+
+    /// <summary>
+    /// Keeps the next pending interview on the delegated user when the completed interview still has an active delegation.
+    /// </summary>
+    Task EnsureDelegatedSuccessorAsync(int completedInterviewId);
 }
 

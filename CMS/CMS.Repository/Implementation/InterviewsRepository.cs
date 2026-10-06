@@ -135,6 +135,14 @@ public class InterviewsRepository : IInterviewsRepository
                                                                                      (c.StartFromHR == false && c.WorkflowStageId.HasValue && c.WorkflowStageId >= (int)EnumWorkflowStage.ManagementReview) ||
                                                                                      c.ModifiedBy == userId
                                                                                  ))
+                                                                                || _context.InterviewDelegations.Any(d =>
+                                                                                    d.InterviewId == c.InterviewsId
+                                                                                    && d.DelegatedUserId == userId
+                                                                                    && d.IsActive
+                                                                                    && !d.IsDelete
+                                                                                    && d.Status != InterviewDelegation.StatusCancelled
+                                                                                    && d.StartDate <= DateTime.Now
+                                                                                    && d.ExpirationDate > DateTime.Now)
                                                                             )
                                                                         )
                                                                         .AsQueryable();
@@ -719,6 +727,280 @@ public class InterviewsRepository : IInterviewsRepository
         }
         catch (Exception)
         {
+            throw;
+        }
+    }
+
+    public async Task ReloadAsync(Interviews interview)
+    {
+        if (interview == null)
+            return;
+
+        await _context.Entry(interview).ReloadAsync();
+    }
+
+    public async Task<string> TryCompletePendingIfAssignedAsync(Interviews interview, string actingUserId)
+    {
+        if (interview == null || string.IsNullOrEmpty(actingUserId))
+            return "NotAllowed";
+
+        DateTime now = DateTime.Now;
+        Status pendingStatus = await _statusRepository.GetByCode(StatusCode.Pending);
+        int rows = await _context.Database.ExecuteSqlInterpolatedAsync($@"
+            UPDATE Interviews
+            SET StatusId = {interview.StatusId},
+                Score = {interview.Score},
+                Notes = {interview.Notes},
+                StopCycleNote = {interview.StopCycleNote},
+                ActualExperience = {interview.ActualExperience},
+                AttachmentId = {interview.AttachmentId},
+                ModifiedBy = {interview.ModifiedBy},
+                ModifiedOn = {interview.ModifiedOn},
+                IsUpdated = {interview.IsUpdated}
+            WHERE InterviewsId = {interview.InterviewsId}
+              AND StatusId = {pendingStatus.Id}
+              AND IsUpdated = 0
+              AND (
+                    InterviewerId = {actingUserId}
+                    OR SecondInterviewerId = {actingUserId}
+                    OR ArchitectureInterviewerId = {actingUserId}
+                    OR EXISTS (
+                        SELECT 1
+                        FROM InterviewDelegations d
+                        WHERE d.InterviewId = Interviews.InterviewsId
+                          AND d.DelegatedUserId = {actingUserId}
+                          AND d.IsActive = 1
+                          AND d.IsDelete = 0
+                          AND d.Status <> {InterviewDelegation.StatusCancelled}
+                          AND d.StartDate <= {now}
+                          AND d.ExpirationDate > {now}
+                    )
+                  )");
+
+        if (rows == 1)
+        {
+            _context.Entry(interview).State = EntityState.Detached;
+            return "Saved";
+        }
+
+        Interviews fresh = await _context.Interviews.AsNoTracking()
+            .FirstOrDefaultAsync(i => i.InterviewsId == interview.InterviewsId);
+        if (fresh == null || fresh.StatusId != pendingStatus.Id || fresh.IsUpdated)
+            return "NotPending";
+
+        List<InterviewDelegation> delegations = await GetUserDelegationsForInterviewAsync(interview.InterviewsId, actingUserId);
+        if (delegations.Any(d => d.IsActive && !d.IsDelete && d.Status != InterviewDelegation.StatusCancelled && now < d.StartDate))
+            return "NotStarted";
+        if (delegations.Any(d => d.IsActive && !d.IsDelete && d.Status != InterviewDelegation.StatusCancelled && now >= d.ExpirationDate))
+            return "Expired";
+
+        return "NotAllowed";
+    }
+
+    public async Task<List<InterviewDelegation>> GetDelegationsByInterviewIdAsync(int interviewId)
+    {
+        return await _context.InterviewDelegations
+            .AsNoTracking()
+            .Where(d => d.InterviewId == interviewId && !d.IsDelete)
+            .OrderByDescending(d => d.CreatedOn)
+            .ToListAsync();
+    }
+
+    public async Task<List<InterviewDelegation>> GetInForceDelegationsAsync(int interviewId, DateTime asOf)
+    {
+        return await _context.InterviewDelegations
+            .AsNoTracking()
+            .Where(d => d.InterviewId == interviewId
+                && d.IsActive
+                && !d.IsDelete
+                && d.Status != InterviewDelegation.StatusCancelled
+                && d.StartDate <= asOf
+                && d.ExpirationDate > asOf)
+            .OrderByDescending(d => d.CreatedOn)
+            .ToListAsync();
+    }
+
+    public async Task<List<Interviews>> GetPendingChildInterviewsAsync(int parentInterviewId)
+    {
+        Status pendingStatus = await _statusRepository.GetByCode(StatusCode.Pending);
+        return await _context.Interviews
+            .Where(i => i.ParentId == parentInterviewId && i.StatusId == pendingStatus.Id)
+            .ToListAsync();
+    }
+
+    public async Task<InterviewDelegation> GetActiveDelegationAsync(int interviewId, string userId, DateTime asOf)
+    {
+        return await _context.InterviewDelegations
+            .AsNoTracking()
+            .Where(d => d.InterviewId == interviewId
+                && d.DelegatedUserId == userId
+                && d.IsActive
+                && !d.IsDelete
+                && d.Status != InterviewDelegation.StatusCancelled
+                && d.StartDate <= asOf
+                && d.ExpirationDate > asOf)
+            .OrderByDescending(d => d.ExpirationDate)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<List<InterviewDelegation>> GetUserDelegationsForInterviewAsync(int interviewId, string userId)
+    {
+        return await _context.InterviewDelegations
+            .AsNoTracking()
+            .Where(d => d.InterviewId == interviewId && d.DelegatedUserId == userId && !d.IsDelete)
+            .ToListAsync();
+    }
+
+    public async Task<bool> HasActiveDelegationAsync(string userId, DateTime asOf)
+    {
+        return await _context.InterviewDelegations
+            .AnyAsync(d => d.DelegatedUserId == userId
+                && d.IsActive
+                && !d.IsDelete
+                && d.Status != InterviewDelegation.StatusCancelled
+                && d.StartDate <= asOf
+                && d.ExpirationDate > asOf);
+    }
+
+    public async Task<string> InsertInterviewDelegationAsync(
+        int interviewId,
+        string originalInterviewerId,
+        bool secondSlot,
+        InterviewDelegation delegation)
+    {
+        Status pendingStatus = await _statusRepository.GetByCode(StatusCode.Pending);
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+
+        try
+        {
+            Interviews interview = await _context.Interviews
+                .FirstOrDefaultAsync(i => i.InterviewsId == interviewId);
+
+            if (interview == null)
+            {
+                await transaction.RollbackAsync();
+                return "NotFound";
+            }
+
+            if (interview.StatusId != pendingStatus.Id || interview.IsUpdated)
+            {
+                await transaction.RollbackAsync();
+                return "NotPending";
+            }
+
+            string currentInterviewerId = secondSlot ? interview.SecondInterviewerId : interview.InterviewerId;
+            if (!string.Equals(currentInterviewerId, originalInterviewerId, StringComparison.Ordinal))
+            {
+                await transaction.RollbackAsync();
+                return "InterviewerChanged";
+            }
+
+            if (string.Equals(interview.InterviewerId, delegation.DelegatedUserId, StringComparison.Ordinal)
+                || string.Equals(interview.SecondInterviewerId, delegation.DelegatedUserId, StringComparison.Ordinal))
+            {
+                await transaction.RollbackAsync();
+                return "AlreadyAssigned";
+            }
+
+            bool overlaps = await _context.InterviewDelegations.AnyAsync(d =>
+                d.InterviewId == interviewId
+                && d.DelegatedUserId == delegation.DelegatedUserId
+                && d.IsActive
+                && !d.IsDelete
+                && d.Status != InterviewDelegation.StatusCancelled
+                && d.StartDate < delegation.ExpirationDate
+                && delegation.StartDate < d.ExpirationDate);
+
+            if (overlaps)
+            {
+                await transaction.RollbackAsync();
+                return "Overlap";
+            }
+
+            DateTime now = DateTime.Now;
+            delegation.CreatedOn = now;
+            delegation.ModifiedOn = now;
+            delegation.IsActive = true;
+            delegation.IsDelete = false;
+            delegation.Status = InterviewDelegation.StatusActive;
+
+            await _context.InterviewDelegations.AddAsync(delegation);
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return "Success";
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task<string> CancelInterviewDelegationAsync(int interviewId, int delegationId, string removedByUserId)
+    {
+        Status pendingStatus = await _statusRepository.GetByCode(StatusCode.Pending);
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+
+        try
+        {
+            InterviewDelegation delegation = await _context.InterviewDelegations
+                .FirstOrDefaultAsync(d => d.Id == delegationId && d.InterviewId == interviewId && !d.IsDelete);
+
+            if (delegation == null)
+            {
+                await transaction.RollbackAsync();
+                return "NotFound";
+            }
+
+            if (!delegation.IsActive || delegation.Status == InterviewDelegation.StatusCancelled)
+            {
+                await transaction.RollbackAsync();
+                return "AlreadyRemoved";
+            }
+
+            Interviews interview = await _context.Interviews
+                .FirstOrDefaultAsync(i => i.InterviewsId == interviewId);
+
+            if (interview == null)
+            {
+                await transaction.RollbackAsync();
+                return "NotFound";
+            }
+
+            if (interview.StatusId != pendingStatus.Id || interview.IsUpdated)
+            {
+                await transaction.RollbackAsync();
+                return "ScoreSubmitted";
+            }
+
+            DateTime now = DateTime.Now;
+            delegation.Status = InterviewDelegation.StatusCancelled;
+            delegation.IsActive = false;
+            delegation.RemovedByUserId = removedByUserId;
+            delegation.RemovedOn = now;
+            delegation.ModifiedBy = removedByUserId;
+            delegation.ModifiedOn = now;
+
+            string expires = delegation.ExpirationDate.ToString("dd/MM/yyyy hh:mm tt");
+            List<Notifications> notices = await _context.Notifications
+                .Where(n => n.ReceiverId == delegation.DelegatedUserId
+                    && n.CandidateId == delegation.CandidateId
+                    && n.Title.StartsWith("Temporary access to score "))
+                .ToListAsync();
+
+            List<Notifications> matched = notices
+                .Where(n => n.BodyDesc != null && n.BodyDesc.Contains(expires))
+                .ToList();
+            if (matched.Count > 0)
+                _context.Notifications.RemoveRange(matched);
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return "Success";
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
             throw;
         }
     }

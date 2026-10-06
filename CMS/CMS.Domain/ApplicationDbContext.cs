@@ -28,6 +28,8 @@ public class ApplicationDbContext : IdentityDbContext
     public DbSet<WorkflowStage> WorkflowStages { get; set; }
     public DbSet<WorkflowConfiguration> WorkflowConfigurations { get; set; }
     public DbSet<SelectedInterviewers> SelectedInterviewers { get; set; }
+    public DbSet<InterviewDelegation> InterviewDelegations { get; set; }
+    public DbSet<DelegationDuration> DelegationDurations { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -76,6 +78,8 @@ public class ApplicationDbContext : IdentityDbContext
         builder.ApplyConfiguration(new WorkflowConfigurationMapper());
         builder.ApplyConfiguration(new WorkflowConfigurationSeed());
         builder.ApplyConfiguration(new SelectedInterviewersMapper());
+        builder.ApplyConfiguration(new InterviewDelegationMapper());
+        builder.ApplyConfiguration(new DelegationDurationMapper());
         base.OnModelCreating(builder);
     }
 }

@@ -58,6 +58,9 @@
     <None Include="SQL_SCRIPTS\02_Create_SelectedInterviewers_Table.sql" />
     <None Include="SQL_SCRIPTS\03_InsertDataToWorkflowConfig.sql" />
     <None Include="SQL_SCRIPTS\04_UpdateOldData.sql" />
+    <None Include="SQL_SCRIPTS\05_Create_InterviewDelegations_Table.sql" />
+    <None Include="SQL_SCRIPTS\06_Create_DelegationDurations_Table.sql" />
+    <None Include="SQL_SCRIPTS\07_Add_InterviewDelegation_Removal_Audit.sql" />
   </ItemGroup>
 
 	<ItemGroup>

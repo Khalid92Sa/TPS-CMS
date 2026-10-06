@@ -1,0 +1,235 @@
+@model CMS.Application.DTOs.BulkDelegationPageDTO
+@{
+    ViewData["Title"] = "Delegation";
+}
+
+<style>
+    .card-body {
+        width: 100%;
+        max-width: 100%;
+        overflow-y: hidden;
+    }
+</style>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <h5 class="card-title mb-0 flex-grow-1">Pending Interviews</h5>
+                <button type="button" id="openDelegate" class="btn btn-primary">Delegate</button>
+            </div>
+            <div class="card-body">
+                <span id="selectionError" class="text-danger" style="display:none;">Select at least one interview.</span>
+                <form id="bulkDelegateForm" asp-action="Delegation" method="post" novalidate>
+                    @Html.AntiForgeryToken()
+                    <table class="table table-bordered" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">
+                                    <input type="checkbox" id="selectAllInterviews" title="Select all" />
+                                </th>
+                                <th>Candidate Name</th>
+                                <th>Level</th>
+                                <th>Track</th>
+                                <th>Interviewer</th>
+                                <th>Date and Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Interviews != null && Model.Interviews.Count > 0)
+                            {
+                                foreach (var item in Model.Interviews)
+                                {
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="interview-check" name="interviewIds" value="@item.InterviewsId" />
+                                        </td>
+                                        <td>@item.FullName</td>
+                                        <td>@item.Name</td>
+                                        <td>@item.TrackName</td>
+                                        @if (item.SecondInterviewerName == "User not found")
+                                        {
+                                            <td>@item.InterviewerName</td>
+                                        }
+                                        else
+                                        {
+                                            <td>
+                                                <div>1-@item.InterviewerName</div>
+                                                <div>2-@item.SecondInterviewerName</div>
+                                            </td>
+                                        }
+                                        <td>@item.Date.ToString("dd-MM-yyyy hh:mm tt")</td>
+                                        <td>@item.StatusName</td>
+                                        <td>
+                                            <a class="bx bx-detail" style="font-size:x-large"
+                                               asp-action="Delegate"
+                                               asp-route-id="@item.InterviewsId"
+                                               data-bs-toggle="tooltip"
+                                               data-bs-placement="bottom"
+                                               data-bs-original-title="Delegation details"></a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">No pending interviews are available for delegation.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <div class="modal fade" id="delegateModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Delegate Selected Interviews</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label" for="delegatedUserId">Delegated User <span class="text-danger">*</span></label>
+                                        <select id="delegatedUserId" name="delegatedUserId" class="form-control">
+                                            <option value="">-- Select user --</option>
+                                            @foreach (var user in Model.DelegateCandidates)
+                                            {
+                                                <option value="@user.Id">@user.Name</option>
+                                            }
+                                        </select>
+                                        <span id="delegatedUserError" class="text-danger" style="display:none;">Please select a delegated user.</span>
+                                    </div>
+                                    <div class="form-group mb-0">
+                                        <label class="form-label" for="durationId">Duration</label>
+                                        <select id="durationId" name="durationId" class="form-control">
+                                            <option value="">-- Select duration --</option>
+                                            @foreach (var duration in Model.Durations)
+                                            {
+                                                <option value="@duration.Id">@duration.Name</option>
+                                            }
+                                        </select>
+                                        <span id="durationError" class="text-danger" style="display:none;">Please select an active delegation duration.</span>
+                                        @if (Model.Durations.Count == 0)
+                                        {
+                                            <span class="text-muted">No active durations are available. Add one from Delegation Durations.</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" id="confirmDelegate" class="btn btn-primary">Delegate</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var selectAll = document.getElementById('selectAllInterviews');
+    var selectionError = document.getElementById('selectionError');
+    var userSelect = document.getElementById('delegatedUserId');
+    var userError = document.getElementById('delegatedUserError');
+    var durationSelect = document.getElementById('durationId');
+    var durationError = document.getElementById('durationError');
+    var delegateModal = new bootstrap.Modal(document.getElementById('delegateModal'));
+
+    function selectedChecks() {
+        return Array.prototype.slice.call(document.querySelectorAll('.interview-check:checked'));
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            document.querySelectorAll('.interview-check').forEach(function (box) {
+                box.checked = selectAll.checked;
+            });
+            if (selectAll.checked)
+                selectionError.style.display = 'none';
+        });
+    }
+
+    document.querySelectorAll('.interview-check').forEach(function (box) {
+        box.addEventListener('change', function () {
+            var checks = document.querySelectorAll('.interview-check');
+            var checked = document.querySelectorAll('.interview-check:checked');
+            if (selectAll)
+                selectAll.checked = checks.length > 0 && checked.length === checks.length;
+            if (checked.length > 0)
+                selectionError.style.display = 'none';
+        });
+    });
+
+    document.getElementById('openDelegate').addEventListener('click', function () {
+        if (selectedChecks().length === 0) {
+            selectionError.style.display = 'block';
+            return;
+        }
+
+        selectionError.style.display = 'none';
+        delegateModal.show();
+    });
+
+    userSelect.addEventListener('change', function () {
+        if (userSelect.value)
+            userError.style.display = 'none';
+    });
+
+    durationSelect.addEventListener('change', function () {
+        if (durationSelect.value)
+            durationError.style.display = 'none';
+    });
+
+    document.getElementById('confirmDelegate').addEventListener('click', function () {
+        var valid = true;
+        if (!userSelect.value) {
+            userError.style.display = 'block';
+            valid = false;
+        } else {
+            userError.style.display = 'none';
+        }
+
+        if (!durationSelect.value) {
+            durationError.style.display = 'block';
+            valid = false;
+        } else {
+            durationError.style.display = 'none';
+        }
+
+        if (!valid)
+            return;
+
+        var count = selectedChecks().length;
+        var userName = userSelect.options[userSelect.selectedIndex].text;
+        var durationName = durationSelect.options[durationSelect.selectedIndex].text;
+        var interviewWord = count === 1 ? 'interview' : 'interviews';
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'You are about to delegate ' + count + ' ' + interviewWord + ' to ' + userName + ' for ' + durationName + '.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delegate!',
+            cancelButtonText: 'No, cancel!'
+        }).then(function (result) {
+            if (result.isConfirmed)
+                document.getElementById('bulkDelegateForm').submit();
+        });
+    });
+});
+</script>

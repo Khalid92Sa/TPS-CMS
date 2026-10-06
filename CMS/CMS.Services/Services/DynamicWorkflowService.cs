@@ -5,6 +5,7 @@ using CMS.Repository.Interfaces;
 using CMS.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -343,7 +344,7 @@ public class DynamicWorkflowService : IDynamicWorkflowService
             TrackId = trackId,
             Date = interviewDate,
             ParentId = parentInterviewId,
-            InterviewerId = gmUser.Id, // GM as InterviewerId
+            InterviewerId = await ResolveDelegatedAssigneeAsync(parentInterviewId, gmUser.Id),
             SecondInterviewerId = !string.IsNullOrEmpty(parentInterview.ArchitectureInterviewerId)
                 ? parentInterview.ArchitectureInterviewerId
                 : null, // Architecture Interviewer as SecondInterviewerId if exists
@@ -388,6 +389,8 @@ public class DynamicWorkflowService : IDynamicWorkflowService
             interviewerId = interviewer.Id;
         }
 
+        interviewerId = await ResolveDelegatedAssigneeAsync(parentInterviewId, interviewerId);
+
         // Get parent interview to preserve StartFromHR flag
         var parentInterview = await _interviewsRepository.GetById(parentInterviewId);
         bool startFromHR = parentInterview?.StartFromHR ?? false;
@@ -410,6 +413,84 @@ public class DynamicWorkflowService : IDynamicWorkflowService
         };
 
         await _interviewsRepository.Insert(interview);
+    }
+
+    /// <summary>
+    /// If the completed interview has an active delegation, the next pending interview stays with the delegated user.
+    /// An existing pending child is kept. A missing child is created once.
+    /// </summary>
+    public async Task EnsureDelegatedSuccessorAsync(int completedInterviewId)
+    {
+        List<InterviewDelegation> delegations = await _interviewsRepository.GetInForceDelegationsAsync(completedInterviewId, DateTime.Now);
+        if (delegations.Count == 0)
+            return;
+
+        Interviews completed = await _interviewsRepository.GetById(completedInterviewId);
+        if (completed == null)
+            return;
+
+        Status status = await _statusRepository.GetById(completed.StatusId);
+        if (status?.Code != StatusCode.Approved)
+            return;
+
+        List<Interviews> children = await _interviewsRepository.GetPendingChildInterviewsAsync(completedInterviewId);
+        if (children.Count == 0)
+        {
+            string completedByRole = await GetInterviewerRole(completed.InterviewerId);
+            if (string.IsNullOrEmpty(completedByRole))
+                return;
+
+            await CreateNextStageInterviewsAsync(
+                completed.InterviewsId,
+                completedByRole,
+                completed.CandidateId,
+                completed.PositionId,
+                completed.TrackId,
+                completed.Date,
+                completed.ModifiedBy ?? completed.CreatedBy);
+
+            children = await _interviewsRepository.GetPendingChildInterviewsAsync(completedInterviewId);
+        }
+
+        foreach (Interviews child in children)
+        {
+            string resolvedInterviewerId = await ResolveDelegatedAssigneeAsync(completedInterviewId, child.InterviewerId);
+            if (string.IsNullOrEmpty(resolvedInterviewerId) || resolvedInterviewerId == child.InterviewerId)
+                continue;
+
+            child.InterviewerId = resolvedInterviewerId;
+            child.ModifiedOn = DateTime.Now;
+            await _interviewsRepository.Update(child);
+        }
+    }
+
+    /// <summary>
+    /// Uses the active delegation when the workflow would otherwise assign the original interviewer,
+    /// or an arbitrary user who has the same role as the delegated user.
+    /// </summary>
+    private async Task<string> ResolveDelegatedAssigneeAsync(int sourceInterviewId, string assignedUserId)
+    {
+        if (string.IsNullOrEmpty(assignedUserId))
+            return assignedUserId;
+
+        List<InterviewDelegation> delegations = await _interviewsRepository.GetInForceDelegationsAsync(sourceInterviewId, DateTime.Now);
+        if (delegations.Count == 0)
+            return assignedUserId;
+
+        InterviewDelegation coveringOriginal = delegations.FirstOrDefault(d => d.OriginalInterviewerId == assignedUserId);
+        if (coveringOriginal != null)
+            return coveringOriginal.DelegatedUserId;
+
+        string assignedRole = await GetInterviewerRole(assignedUserId);
+        foreach (InterviewDelegation delegation in delegations)
+        {
+            string delegateRole = await GetInterviewerRole(delegation.DelegatedUserId);
+            if (!string.IsNullOrEmpty(assignedRole)
+                && string.Equals(delegateRole, assignedRole, StringComparison.OrdinalIgnoreCase))
+                return delegation.DelegatedUserId;
+        }
+
+        return assignedUserId;
     }
 
     /// <summary>

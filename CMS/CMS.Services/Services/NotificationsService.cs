@@ -1077,6 +1077,46 @@ public class NotificationsService : INotificationsService
         }
     }
 
+    public async Task CreatePendingInterviewDelegationNotificationAsync(
+        string delegatedUserId,
+        int candidateId,
+        int positionId,
+        string originalInterviewerName,
+        DateTime startDate,
+        DateTime expirationDate)
+    {
+        try
+        {
+            IdentityUser currentUser = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+            string candidateName = await GetCandidateName(candidateId);
+            string positionName = await GetPositionName(positionId);
+            string originalName = string.IsNullOrWhiteSpace(originalInterviewerName)
+                ? "the assigned interviewer"
+                : originalInterviewerName;
+            string starts = startDate.ToString("dd/MM/yyyy hh:mm tt");
+            string expires = expirationDate.ToString("dd/MM/yyyy hh:mm tt");
+
+            Notifications notification = new Notifications
+            {
+                ReceiverId = delegatedUserId,
+                SendDate = DateTime.Now,
+                IsReceived = true,
+                IsRead = false,
+                CandidateId = candidateId,
+                Title = $"Temporary access to score {candidateName}",
+                BodyDesc = $"You can enter the score for {candidateName} ({positionName}) from {starts} until {expires}. {originalName} remains the assigned interviewer. This access is only for this interview.",
+                CreatedBy = currentUser?.Id,
+                CreatedOn = DateTime.Now
+            };
+
+            await _notificationsRepository.Create(notification);
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
     public string GetLoggedInUserName()
     {
         try

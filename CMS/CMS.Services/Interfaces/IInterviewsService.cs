@@ -37,4 +37,16 @@ public interface IInterviewsService
     Task<Result<List<InterviewsDTO>>> GetInterviewsWithoutResults();
     Task<Result<List<InterviewsDTO>>> GetHRFirstFlowInterviewDetails(int interviewId);
     Task<Result<List<InterviewsDTO>>> ShowHistoryForHRFirstFlow(int id);
+    Task<Result<DelegateInterviewPageDTO>> GetPendingInterviewDelegationAsync(int interviewId);
+    Task<Result<InterviewDelegationDTO>> DelegatePendingInterviewAsync(int interviewId, string interviewerSlot, string originalInterviewerId, string delegatedUserId, int durationId);
+    Task<Result<InterviewDelegationDTO>> RemoveInterviewDelegationAsync(int interviewId, int delegationId);
+    Task<Result<BulkDelegationPageDTO>> GetBulkDelegationPageAsync();
+    Task<Result<BulkDelegationResultDTO>> DelegatePendingInterviewsAsync(IEnumerable<int> interviewIds, string delegatedUserId, int durationId);
+    Task<Result<bool>> EnsureCurrentUserCanSubmitPendingAsync(int interviewId);
+    Task<Result<bool>> EnsureCurrentUserCanOpenSubmittedResultAsync(int interviewId);
+    Task<bool> IsCurrentUserAssignedToInterviewAsync(int interviewId);
+    Task<string> GetDelegatedWorkflowRoleAsync(int interviewId, string userId);
+    Task<bool> HasActiveDelegationAsync();
+    Task<bool> HasInForceDelegationAsync(int interviewId);
+    Task EnsureDelegatedSuccessorAsync(int interviewId);
 }

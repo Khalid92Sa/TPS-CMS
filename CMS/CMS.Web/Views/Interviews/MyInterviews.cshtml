@@ -15,6 +15,11 @@
     }
 </style>
 
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
 @using (Html.BeginForm("MyInterviews", "Interviews", FormMethod.Get))
 {
     <div class="form-group mb-3">

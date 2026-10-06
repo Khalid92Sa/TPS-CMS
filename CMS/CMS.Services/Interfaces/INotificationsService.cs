@@ -31,6 +31,7 @@ public interface INotificationsService
     Task CreateInterviewNotificationtoHrForOnHold(int status, string notes, int CandidateId, int positionId);
     Task CreateInterviewNotificationForHRInterviewfromGM(int status, string notes, int CandidateId, int positionId);
     Task CreateNotificationForInterviewer(int CandidateId, string selectedInterviewerId);
+    Task CreatePendingInterviewDelegationNotificationAsync(string delegatedUserId, int candidateId, int positionId, string originalInterviewerName, DateTime startDate, DateTime expirationDate);
     Task<NotificationsDTO> GetNotificationByIdforDetails(int notificationsId);
     Task<int> GetUnreadNotificationCount();
     Task MarkAllAsReadForUserAsync(string userId);
