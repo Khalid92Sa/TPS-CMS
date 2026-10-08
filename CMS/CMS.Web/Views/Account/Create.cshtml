@@ -1,193 +1,113 @@
-﻿@model CMS.Application.DTOs.Register
+@model CMS.Application.DTOs.Register
+
 @{
     ViewData["Title"] = "Create User";
 }
 
-<style>
-    .card-header {
-        color: white;
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-    }
+<form asp-action="Create" method="post" class="needs-validation" novalidate id="userForm">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-    .btn-success {
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-        border: none;
-        color: white;
-    }
-
-        .btn-success:hover {
-            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
-            color: white;
-            transition: background 0.3s ease;
-        }
-
-    .btn-secondary {
-        background-color: gray;
-        border-color: gray;
-    }
-
-        .btn-secondary:hover {
-            background-color: darkgray !important;
-            border-color: darkgray !important;
-        }
-</style>
-
-<div class="container mt-5">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h2 style="color:white !important">Create User</h2>
-        </div>
-        <div class="card-body">
-            <form asp-action="Create" method="post" class="needs-validation" novalidate>
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-                <div class="row">
-                    <!-- Email -->
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Email" class="form-label">
-                            <span class="text-danger">*</span> Email
-                            <i class="fas fa-info-circle" data-toggle="tooltip" title="Enter a valid email address."></i>
-                        </label>
-                        <input asp-for="Email" class="form-control" id="email" placeholder="Enter email" required />
-                        <div class="invalid-feedback">Please enter a valid email.</div>
-                        <span id="emailError" class="text-danger"></span>
-                    </div>
-
-                    <!-- Username -->
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="UserName" class="form-label">
-                            <span class="text-danger">*</span> Username
-                            <i class="fas fa-info-circle" data-toggle="tooltip" title="Enter a unique username."></i>
-                        </label>
-                        <input asp-for="UserName" class="form-control" id="userName" placeholder="Enter username" required />
-                        <div class="invalid-feedback">Please enter a username.</div>
-                        <span id="userNameError" class="text-danger"></span>
-                    </div>
-
-                    <!-- Password -->
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Password" class="form-label">
-                            <span class="text-danger">*</span> Password
-                        </label>
-                        <input asp-for="Password" type="password" class="form-control" id="password" placeholder="Enter password" required />
-                        <div class="invalid-feedback">Please enter a password.</div>
-                        <span id="passwordError" class="text-danger"></span>
-                    </div>
-
-                    <!-- Confirm Password -->
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="ConfirmPassword" class="form-label">
-                            <span class="text-danger">*</span> Confirm Password
-                        </label>
-                        <input asp-for="ConfirmPassword" type="password" class="form-control" id="confirmpassword" placeholder="Confirm password" required />
-                        <div class="invalid-feedback">Passwords must match.</div>
-                        <span id="confirmPasswordError" class="text-danger"></span>
-                    </div>
-
-                    <!-- Role Selection -->
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="SelectedRole" class="form-label">
-                            <span class="text-danger">*</span> Role
-                        </label>
-                        @Html.DropDownListFor(model => model.SelectedRole, (SelectList)ViewBag.Roles, "Select a Role", new { @class = "form-control", id = "selectedRole", required = true })
-                        <div class="invalid-feedback">Please select a role.</div>
-                        <span id="selectedRoleError" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <!-- Buttons -->
-                <div class="d-flex justify-content-between mt-4">
-                    <button type="submit" class="btn btn-success px-4" onclick="validateForm(event)">Create</button>
-                    <a class="btn btn-secondary" asp-action="Index">Back to List</a>
-                </div>
-            </form>
+    <div class="tps-ihead">
+        <div class="tps-ihead__who">
+            <span class="tps-ihead__avatar tps-ihead__avatar--entity" aria-hidden="true"><i class="ri-user-add-line"></i></span>
+            <div>
+                <p class="tps-ihead__eyebrow">Users</p>
+                <h2 class="tps-ihead__name">New user</h2>
+            </div>
         </div>
     </div>
-</div>
 
-<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <div class="row">
+        <div class="col-xl-8">
+            <section class="card tps-fsection" aria-labelledby="sec-account">
+                <div class="card-header">
+                    <span class="tps-fsection__icon"><i class="ri-account-circle-line"></i></span>
+                    <div>
+                        <h4 class="tps-fsection__title" id="sec-account">Account</h4>
+                        <p class="tps-fsection__desc">The person signs in with this email.</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tps-fgrid">
+                        <div class="tps-field">
+                            <label asp-for="Email" class="form-label">Email <span class="tps-req">*</span></label>
+                            <input asp-for="Email" type="email" class="form-control" id="email" placeholder="name@techprocess.net" dir="ltr" autocomplete="off" required />
+                            <span id="emailError" class="text-danger"></span>
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                        <div class="tps-field">
+                            <label asp-for="UserName" class="form-label">Username <span class="tps-req">*</span></label>
+                            <input asp-for="UserName" class="form-control" id="userName" placeholder="e.g. lina.haddad" dir="ltr" autocomplete="off" required />
+                            <span id="userNameError" class="text-danger"></span>
+                            <span asp-validation-for="UserName" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-<script>
-    $(function () {
-        $('[data-toggle="tooltip"]').tooltip();
+            <section class="card tps-fsection" aria-labelledby="sec-password">
+                <div class="card-header">
+                    <span class="tps-fsection__icon"><i class="ri-lock-password-line"></i></span>
+                    <div>
+                        <h4 class="tps-fsection__title" id="sec-password">Sign-in password</h4>
+                        <p class="tps-fsection__desc">Share it with the person securely. They can change it after signing in.</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tps-fgrid">
+                        <div class="tps-field">
+                            <label asp-for="Password" class="form-label">Password <span class="tps-req">*</span></label>
+                            <input asp-for="Password" type="password" class="form-control" id="password" autocomplete="new-password" required />
+                            <span id="passwordError" class="text-danger"></span>
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+                        <div class="tps-field">
+                            <label asp-for="ConfirmPassword" class="form-label">Confirm password <span class="tps-req">*</span></label>
+                            <input asp-for="ConfirmPassword" type="password" class="form-control" id="confirmpassword" autocomplete="new-password" required />
+                            <span id="confirmPasswordError" class="text-danger"></span>
+                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-        let emailValid = false;
+            <section class="card tps-fsection" aria-labelledby="sec-role">
+                <div class="card-header">
+                    <span class="tps-fsection__icon"><i class="ri-shield-user-line"></i></span>
+                    <div>
+                        <h4 class="tps-fsection__title" id="sec-role">Access</h4>
+                        <p class="tps-fsection__desc">The role decides which pages and actions the user sees.</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tps-fgrid">
+                        <div class="tps-field">
+                            <label asp-for="SelectedRole" class="form-label">Role <span class="tps-req">*</span></label>
+                            @Html.DropDownListFor(model => model.SelectedRole, (SelectList)ViewBag.Roles, "Select a role…", new { @class = "form-select", id = "selectedRole", required = true })
+                            <span id="selectedRoleError" class="text-danger"></span>
+                            <span asp-validation-for="SelectedRole" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
 
-        function debounce(func, delay) {
-            let timer;
-            return function () {
-                clearTimeout(timer);
-                timer = setTimeout(() => func.apply(this, arguments), delay);
-            };
-        }
+    <div class="tps-factions">
+        <span class="tps-factions__note"><i class="ri-information-line"></i> Fields marked <span class="tps-req">*</span> are required.</span>
+        <div class="tps-factions__buttons">
+            <a class="btn btn-secondary" asp-action="Index">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4"><i class="ri-user-add-line me-1"></i> Create user</button>
+        </div>
+    </div>
+</form>
 
-        $('#email').on('input', debounce(function () {
-            var email = $(this).val().trim();
-            if (email) {
-                $.ajax({
-                    url: '@Url.Action("CheckEmailExists", "Users")',
-                    type: 'GET',
-                    data: { email: email },
-                    success: function (response) {
-                        if (response.exists) {
-                            $('#email').addClass('is-invalid').removeClass('is-valid');
-                            $('#emailError').text('Email already exists. Please use a different email.');
-                            emailValid = false;
-                        } else {
-                            $('#email').removeClass('is-invalid').addClass('is-valid');
-                            $('#emailError').text('');
-                            emailValid = true;
-                        }
-                    },
-                    error: function () {
-                        $('#emailError').text('Error checking email. Please try again.');
-                        emailValid = false;
-                    }
-                });
-            }
-        }, 500));
-
-        $('form').submit(function (e) {
-            let isValid = true;
-
-            function validateField(selector, errorMsg) {
-                var value = $(selector).val().trim();
-                var errorElement = $(selector).siblings('.text-danger'); // Find existing error message
-                if (!value) {
-                    $(selector).addClass('is-invalid');
-                    if (errorElement.length === 0) {
-                        $(selector).after(`<span class="text-danger">${errorMsg}</span>`);
-                    }
-                    isValid = false;
-                } else {
-                    $(selector).removeClass('is-invalid').addClass('is-valid');
-                    errorElement.remove(); // Remove duplicate messages
-                }
-            }
-
-            validateField('#email', 'Please enter a valid email.');
-            validateField('#userName', 'Please enter a username.');
-            validateField('#password', 'Please enter a password.');
-            validateField('#confirmpassword', 'Passwords must match.');
-            validateField('#selectedRole', 'Please select a role.');
-
-            // Check Password Match
-            if ($('#password').val().trim() !== $('#confirmpassword').val().trim()) {
-                $('#confirmpassword').addClass('is-invalid');
-                $('#confirmPasswordError').text('Passwords must match.');
-                isValid = false;
-            }
-
-            // Prevent form submission if email is invalid
-            if (!emailValid) {
-                $('#email').addClass('is-invalid');
-                $('#emailError').text('Please enter a valid, unique email.');
-                isValid = false;
-            }
-
-            if (!isValid) {
-                e.preventDefault();
-            }
-        });
-    });
-</script>
+@await Html.PartialAsync("_UserFormScript", new Dictionary<string, string>
+{
+    ["email"] = "email",
+    ["userName"] = "userName",
+    ["password"] = "password",
+    ["confirm"] = "confirmpassword",
+    ["role"] = "selectedRole",
+    ["checkEmailUrl"] = Url.Action("CheckEmailExists", "Account")
+})

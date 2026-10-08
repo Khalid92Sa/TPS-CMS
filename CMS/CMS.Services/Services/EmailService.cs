@@ -1,4 +1,5 @@
 ﻿using CMS.Application.DTOs;
+using CMS.Application.EmailTemplates;
 using CMS.Application.Extensions;
 using CMS.Repository.Interfaces;
 using CMS.Services.Interfaces;
@@ -192,7 +193,17 @@ public class EmailService : IEmailService
                 EmailDTOs emailModel = new()
                 {
                     EmailTo = new List<string> { interviewerEmail2 },
-                    EmailBody = "You haven't provided a score for the interview. Please provide a score.",
+                    EmailBody = EmailLayout.Render(new EmailContent
+                    {
+                        Title = "Interview Score Reminder",
+                        Tone = EmailTone.Warning,
+                        Eyebrow = "Reminder",
+                        Badge = "Score missing",
+                        Heading = "Interview score reminder",
+                        IntroHtml = "<p style=\"margin:0;\">You haven't provided a score for the interview. Please provide a score.</p>",
+                        ButtonText = "Submit score",
+                        ButtonUrl = $"https://apps.sssprocess.com:6134/interviews/{collection.InterviewsId}/addingresult"
+                    }),
                     Subject = "Interview Score Reminder"
                 };
 
@@ -384,6 +395,29 @@ public class EmailService : IEmailService
         }
     }
 
+    private static string BuildStartingSoonEmail(string interviewerName, string candidateName, InterviewsDTO interview)
+    {
+        var email = new EmailContent
+        {
+            Title = $"Interview Reminder ( {candidateName} )",
+            Preheader = $"Your interview with {candidateName} starts in 15 minutes",
+            Tone = EmailTone.Info,
+            Eyebrow = "Interview reminder",
+            Badge = "Starts in 15 min",
+            Heading = "Your interview starts soon",
+            RecipientName = interviewerName,
+            IntroHtml = "<p style=\"margin:0;\">Your interview is scheduled to start in 15 minutes. Please be prepared.</p>",
+            DetailsTitle = "Interview"
+        };
+        email.Details.Add(new EmailDetail("Candidate", candidateName));
+        if (!string.IsNullOrEmpty(interview.PositionName))
+            email.Details.Add(new EmailDetail("Position", interview.PositionName));
+        if (interview.Date != default)
+            email.Details.Add(new EmailDetail("Starts", interview.Date.ToString("dddd, MMMM dd, yyyy hh:mm tt")));
+
+        return EmailLayout.Render(email);
+    }
+
     public async Task SendInterviewReminderEmail(InterviewsDTO collection)
     {
         try
@@ -399,23 +433,7 @@ public class EmailService : IEmailService
                 {
                     EmailTo = new List<string> { interviewerEmail },
                     Subject = $"Interview Reminder ( {candidateNameresult} )",
-                    EmailBody = $@"<html>
-                    <body style='font-family: Arial, sans-serif;'>
-                        <div style='background-color: #f5f5f5; padding: 20px; border-radius: 10px;'>
-                            <p style='font-size: 18px; color: #333;'>
-                                Dear {userInterviewer.UserName.Replace("_", " ")},
-                            </p>
-                            <p style='font-size: 16px; color: #555;'>
-                           Your interview is scheduled to start in 15 minutes. Please be prepared.
-                            </p>
-                            <p style='font-size: 14px; color: #777;'>
-                                Regards,
-                            </p>
-
-                    <p style='font-size: 14px; color: #777;'>Sent by: CMS</p>
-                        </div>
-                    </body>
-                 </html>"
+                    EmailBody = BuildStartingSoonEmail(userInterviewer.UserName.Replace("_", " "), candidateNameresult, collection)
                 };
 
                 await SendEmailToInterviewer(interviewerEmail, collection, emailModel);

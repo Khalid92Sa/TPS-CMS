@@ -19,7 +19,8 @@ public class DelegationDurationRepository : IDelegationDurationRepository
     {
         return _context.DelegationDurations
             .Where(d => !d.IsDelete)
-            .OrderBy(d => d.DurationMinutes)
+            .OrderBy(d => d.IsUnlimited)
+            .ThenBy(d => d.DurationMinutes)
             .ThenBy(d => d.Name)
             .ToListAsync();
     }
@@ -28,7 +29,8 @@ public class DelegationDurationRepository : IDelegationDurationRepository
     {
         return _context.DelegationDurations
             .Where(d => d.IsActive && !d.IsDelete)
-            .OrderBy(d => d.DurationMinutes)
+            .OrderBy(d => d.IsUnlimited)
+            .ThenBy(d => d.DurationMinutes)
             .ThenBy(d => d.Name)
             .ToListAsync();
     }
@@ -70,6 +72,7 @@ public class DelegationDurationRepository : IDelegationDurationRepository
         existing.Amount = duration.Amount;
         existing.Unit = duration.Unit;
         existing.DurationMinutes = duration.DurationMinutes;
+        existing.IsUnlimited = duration.IsUnlimited;
         existing.IsActive = duration.IsActive;
         existing.ModifiedBy = duration.ModifiedBy;
         existing.ModifiedOn = duration.ModifiedOn;

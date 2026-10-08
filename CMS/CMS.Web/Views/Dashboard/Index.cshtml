@@ -1,4 +1,4 @@
-﻿@model CMS.Application.DTOs.PerformanceReportDTO
+@model CMS.Application.DTOs.PerformanceReportDTO
 @{
     ViewData["Title"] = "Dashboard";
     ViewData["additionalJS"] = new[]
@@ -16,144 +16,97 @@
     };
 }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
+<!-- Pipeline summary -->
+<div class="tps-kpi-grid">
+    <div class="tps-kpi tps-kpi--total">
+        <div>
+            <p class="tps-kpi__label">Candidates</p>
+            <p class="tps-kpi__value"><span class="counter-value" data-target="@Model.NumberOfCandidates">@Model.NumberOfCandidates</span></p>
+            <span class="tps-kpi__hint">In the pipeline</span>
+        </div>
+        <span class="tps-kpi__icon"><i class="ri-user-star-line"></i></span>
+    </div>
+
+    <a asp-action="AcceptedCandidates" class="tps-kpi tps-kpi--accepted">
+        <div>
+            <p class="tps-kpi__label">Accepted</p>
+            <p class="tps-kpi__value"><span class="counter-value" data-target="@Model.NumberOfAccepted">0</span></p>
+            <span class="tps-kpi__hint">View list <i class="ri-arrow-right-s-line"></i></span>
+        </div>
+        <div class="tps-kpi__chart" id="accepted-chart" data-percent="@ViewBag.AcceptedPercentage"></div>
+    </a>
+
+    <a asp-action="PendingCandidates" class="tps-kpi tps-kpi--pending">
+        <div>
+            <p class="tps-kpi__label">Pending</p>
+            <p class="tps-kpi__value"><span class="counter-value" data-target="@Model.NumberOfPending">0</span></p>
+            <span class="tps-kpi__hint">View list <i class="ri-arrow-right-s-line"></i></span>
+        </div>
+        <div class="tps-kpi__chart" id="pending-chart" data-percent="@ViewBag.PendingPercentage"></div>
+    </a>
+
+    <a asp-action="RejectedCandidates" class="tps-kpi tps-kpi--rejected">
+        <div>
+            <p class="tps-kpi__label">Rejected</p>
+            <p class="tps-kpi__value"><span class="counter-value" data-target="@Model.NumberOfRejected">0</span></p>
+            <span class="tps-kpi__hint">View list <i class="ri-arrow-right-s-line"></i></span>
+        </div>
+        <div class="tps-kpi__chart" id="rejected-chart" data-percent="@ViewBag.RejectedPercentage"></div>
+    </a>
+
+    <a asp-action="OnHoldCandidates" class="tps-kpi tps-kpi--hold">
+        <div>
+            <p class="tps-kpi__label">On hold</p>
+            <p class="tps-kpi__value"><span class="counter-value" data-target="@Model.NumberOfOnHold">0</span></p>
+            <span class="tps-kpi__hint">View list <i class="ri-arrow-right-s-line"></i></span>
+        </div>
+        <div class="tps-kpi__chart" id="onhold-chart" data-percent="@ViewBag.OnHoldPercentage"></div>
+    </a>
+
+    <a asp-action="StoppedCyclesCandidates" class="tps-kpi tps-kpi--stopped">
+        <div>
+            <p class="tps-kpi__label">Stopped cycles</p>
+            <p class="tps-kpi__value"><span class="counter-value" data-target="@Model.NumberOfStoppedCycles">0</span></p>
+            <span class="tps-kpi__hint">View list <i class="ri-arrow-right-s-line"></i></span>
+        </div>
+        <div class="tps-kpi__chart" id="stoppedCycles-chart" data-percent="@ViewBag.StoppedCycles"></div>
+    </a>
+</div>
 
 <div class="row">
-    <div class="col-md-4">
-        <div class="card card-animate">
-            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
-                <div class="d-flex justify-content-between">
+    <!-- Job views by location -->
+    <div class="col-xl-7">
+        <div class="card">
+            <div class="card-header">
+                <div class="tps-section-title">
                     <div>
-                        <p class="fw-medium text-muted mb-0">Candidates</p>
-                        <h2 class="mt-4 ff-secondary fw-semibold">
-                            <span class="counter-value" data-target="@Model.NumberOfCandidates">@Model.NumberOfCandidates</span>
-                        </h2>
+                        <h4 class="card-title">Job views by location</h4>
+                        <p>Countries where candidates viewed open positions</p>
                     </div>
-                    <div class="avatar-sm flex-shrink-0">
-                        <span class="avatar-title bg-info-subtle rounded-circle fs-2">
-                            <i class="ri-user-star-fill" style="color:#36a2dd;"></i>
-                        </span>
-                    </div>
+                    <i class="ri-earth-line fs-20 text-muted"></i>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card card-animate">
-            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
-                <a asp-action="AcceptedCandidates">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-uppercase fw-medium text-muted mb-0">Accepted</p>
-                            <h4 class="fs-22 fw-semibold ff-secondary mb-0">
-                                <span class="counter-value" data-target="@Model.NumberOfAccepted">0</span>
-                            </h4>
-                        </div>
-                        <div id="accepted-chart" data-percent="@ViewBag.AcceptedPercentage"></div>
-                    </div>
-                </a>
+            <div class="card-body">
+                <div id="candidate-sources-map" data-locations="@ViewBag.CountriesList"></div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card card-animate">
-            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
-                <a asp-action="PendingCandidates">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-uppercase fw-medium text-muted mb-0">Pending</p>
-                            <h4 class="fs-22 fw-semibold ff-secondary mb-0">
-                                <span class="counter-value" data-target="@Model.NumberOfPending">0</span>
-                            </h4>
-                        </div>
-                        <div id="pending-chart" data-percent="@ViewBag.PendingPercentage"></div>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card card-animate">
-            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
-                <a asp-action="RejectedCandidates">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-uppercase fw-medium text-muted mb-0">Rejected</p>
-                            <h4 class="fs-22 fw-semibold ff-secondary mb-0">
-                                <span class="counter-value" data-target="@Model.NumberOfRejected">0</span>
-                            </h4>
-                        </div>
-                        <div id="rejected-chart" data-percent="@ViewBag.RejectedPercentage"></div>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card card-animate">
-            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
-                <a asp-action="OnHoldCandidates">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-uppercase fw-medium text-muted mb-0">On Hold</p>
-                            <h4 class="fs-22 fw-semibold ff-secondary mb-0">
-                                <span class="counter-value" data-target="@Model.NumberOfOnHold">0</span>
-                            </h4>
-                        </div>
-                        <div id="onhold-chart" data-percent="@ViewBag.OnHoldPercentage"></div>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card card-animate">
-            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
-                <a asp-action="StoppedCyclesCandidates">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-uppercase fw-medium text-muted mb-0">Stopped Cycles</p>
-                            <h4 class="fs-22 fw-semibold ff-secondary mb-0">
-                                <span class="counter-value" data-target="@Model.NumberOfStoppedCycles">0</span>
-                            </h4>
-                        </div>
-                        <div id="stoppedCycles-chart" data-percent="@ViewBag.StoppedCycles"></div>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-
-<!-- Jobs Views Location Map -->
-<div class="row">
-    <div class="col-md-12">
-        <div class="card card-animate">
-            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
-                <h4 class="card-title mb-0">Jobs Views Location</h4>
-                <div style="background-color:#dfe1e2;" id="candidate-sources-map" data-locations="@ViewBag.CountriesList"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!--Tree Chart -->
-<div class="row">
-    <div class="col-md-12">
-        <div class="card card-animate">
+    <!-- Pipeline by country and position -->
+    <div class="col-xl-5">
+        <div class="card">
             <div class="card-header">
-                <h4 class="card-title mb-0">Tree Chart</h4>
+                <div class="tps-section-title">
+                    <div>
+                        <h4 class="card-title">Pipeline by country</h4>
+                        <p>Open a country, then a position, to see its candidates</p>
+                    </div>
+                    <i class="ri-node-tree fs-20 text-muted"></i>
+                </div>
             </div>
-            <div class="card-body" data-aos="fade-up" data-aos-duration="600">
-                <div class="accordion accordion-flush" id="countryAccordion">
+            <div class="card-body pt-1">
+                <div class="accordion accordion-flush tps-tree" id="countryAccordion">
                     @{
                         int i = 1;
                     }
@@ -161,10 +114,14 @@
                     {
                         @if (country.Positions != null && country.Positions.Count > 0)
                         {
+                            int candidateCount = 0;
+                            foreach (var p in country.Positions) { candidateCount += p.Candidates.Count; }
+
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="countryheading-@i">
-                                    <button class="accordion-button collapsed d-flex align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#countrycollapse-@i">
-                                        <i class="ri-earth-line me-2 text-primary"></i> @country.Name
+                                    <button class="accordion-button collapsed d-flex align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#countrycollapse-@i" aria-expanded="false" aria-controls="countrycollapse-@i">
+                                        <i class="ri-map-pin-2-line text-primary"></i> @country.Name
+                                        <span class="tps-count">@country.Positions.Count positions · @candidateCount candidates</span>
                                     </button>
                                 </h2>
                                 <div id="countrycollapse-@i" class="accordion-collapse collapse" data-bs-parent="#countryAccordion">
@@ -175,50 +132,28 @@
                                             }
                                             @foreach (var position in country.Positions)
                                             {
-                                                <li class="list-group-item">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <i class="ri-briefcase-line me-2 text-info"></i>
-                                                            <button class="btn btn-link p-0" data-bs-toggle="collapse" data-bs-target="#positioncollapse-@i-@j">
-                                                                @position.Name
-                                                            </button>
-                                                        </div>
+                                                <li class="list-group-item px-0">
+                                                    <div class="d-flex justify-content-between align-items-center gap-2">
+                                                        <button class="btn btn-link p-0 text-start d-flex align-items-center gap-2" data-bs-toggle="collapse" data-bs-target="#positioncollapse-@i-@j" aria-expanded="false">
+                                                            <i class="ri-briefcase-4-line text-muted"></i> @position.Name
+                                                        </button>
                                                         <span class="badge bg-primary">@position.Candidates.Count candidates</span>
                                                     </div>
                                                     <div id="positioncollapse-@i-@j" class="collapse mt-2">
                                                         <ul class="list-group">
-                                                            @{
-                                                                int k = 1;
-                                                            }
                                                             @foreach (var candidate in position.Candidates)
                                                             {
-                                                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                                    <div>
-                                                                        <i class="ri-user-line me-2 text-success"></i> @candidate.Name
-                                                                    </div>
-                                                                    <div>
-                                                                        @if (candidate.Status == "Approved")
-                                                                        {
-                                                                            <span class="badge" style=" background-color: green !important;">Approved</span>
-                                                                        }
-                                                                        else if (candidate.Status == "Rejected")
-                                                                        {
-                                                                            <span class="badge" style="background-color: #F44336 !important;">Rejected</span>
-                                                                        }
-                                                                        else if (candidate.Status == "Pending")
-                                                                        {
-                                                                            <span class="badge" style="background-color: #cec03d !important;">Pending</span>
-                                                                        }
-                                                                        else if (candidate.Status == "On hold")
-                                                                        {
-                                                                            <span class="badge" style="background-color: #b88383 !important;">On Hold</span>
-                                                                        }
-                                                                        <span class="badge bg-info">
+                                                                <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                                                    <span class="d-flex align-items-center gap-2">
+                                                                        <i class="ri-user-line text-muted"></i> @candidate.Name
+                                                                    </span>
+                                                                    <span class="d-flex flex-wrap align-items-center gap-1">
+                                                                        @InterviewStatusUi.Badge(candidate.Status)
+                                                                        <span class="text-muted fs-12">
                                                                             @(candidate.Status == "Pending" ? "for" : "by") @candidate.InterviewerName
                                                                         </span>
-                                                                    </div>
+                                                                    </span>
                                                                 </li>
-                                                                k++;
                                                             }
                                                         </ul>
                                                     </div>
@@ -232,14 +167,12 @@
                             i++;
                         }
                     }
+                    @if (i == 1)
+                    {
+                        <p class="text-muted text-center py-4 mb-0">No candidates are assigned to positions yet.</p>
+                    }
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<!-- AOS Init Script -->
-<script>
-    AOS.init();
-</script>
-

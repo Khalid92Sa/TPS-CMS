@@ -4,182 +4,138 @@
     ViewData["Title"] = "Delete Interview";
 }
 
-<style>
-    .card-header {
-        color: white;
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-    }
-</style>
-
-<!-- Page Container -->
-<div class="container my-5">
-    <div class="card shadow border-0 rounded-lg">
-        <div class="card-header text-dark text-center py-4 border-bottom" style="background-color:#405189;">
-            <h4 class="mb-0" style="color:white;">Confirm Deletion</h4>
-        </div>
-
-        <div class="card-body px-4 py-5">
-            <div class="alert alert-light text-center shadow-sm border border-warning rounded-lg">
-                <h5 class="mb-3 text-danger">Are you sure you want to delete this interview?</h5>
-                <p class="text-muted">This action cannot be undone.</p>
+<div class="tps-ihead">
+    <div class="tps-ihead__who">
+        <span class="tps-ihead__avatar tps-ihead__avatar--danger" aria-hidden="true"><i class="ri-calendar-close-line"></i></span>
+        <div>
+            <p class="tps-ihead__eyebrow">Delete interview</p>
+            <h2 class="tps-ihead__name" dir="auto">@Model.FullName</h2>
+            <div class="tps-ihead__meta">
+                @InterviewStatusUi.Badge(Model.StatusName)
+                <span class="tps-chip"><i class="ri-calendar-event-line"></i>@Model.Date.ToString("dd MMM yyyy, h:mm tt")</span>
             </div>
-
-            <div class="row justify-content-center">
-                <div class="col-lg-6" >
-                    <!-- Candidate Details -->
-                    <dl class="row mb-4 align-items-center">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Candidate Name:</dt>
-                        <dd class="col-sm-8">@Model.FullName</dd>
-                    </dl>
-
-                    <dl class="row mb-4 align-items-center">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Level:</dt>
-                        <dd class="col-sm-8">@Model.Name</dd>
-                    </dl>
-
-                    <dl class="row mb-4 align-items-center">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Track:</dt>
-                        <dd class="col-sm-8">@Model.TrackName</dd>
-                    </dl>
-
-                    <dl class="row mb-4 align-items-center">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">First Interviewer Name:</dt>
-                        <dd class="col-sm-8">@Model.InterviewerName</dd>
-                    </dl>
-
-                    <dl class="row mb-4 align-items-center">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Second Interviewer Name:</dt>
-                        <dd class="col-sm-8">
-                            @if (Model.SecondInterviewerId != null)
-                            {
-                                @Model.SecondInterviewerName
-                            }
-                            else
-                            {
-                                <span class="text-muted">No second interviewer</span>
-                            }
-                        </dd>
-                    </dl>
-
-                    <dl class="row mb-4 align-items-center">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Date:</dt>
-                        <dd class="col-sm-8">@Model.Date</dd>
-                    </dl>
-                </div>
-
-                <div class="col-lg-6">
-                    <!-- Interview Details -->
-                    <dl class="row mb-4 align-items-center">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">First Interview Score:</dt>
-                        <dd class="col-sm-8">
-                            @if (@Model.FirstInterviewScore != null)
-                            {
-                                @Model.FirstInterviewScore
-                            }
-                            else
-                            {
-                                <span class="text-muted">No score available</span>
-                            }
-                        </dd>
-                    </dl>
-
-                    <dl class="row mb-4 align-items-center">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Actual Experience:</dt>
-                        <dd class="col-sm-8">
-                            @if (@Model.ActualExperience != null)
-                            {
-                                @Model.ActualExperience
-                            }
-                            else
-                            {
-                                <span class="text-muted">No actual experience provided</span>
-                            }
-                        </dd>
-                    </dl>
-
-                    <dl class="row mb-4 align-items-center">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Status:</dt>
-                        <dd class="col-sm-8">@Model.StatusName</dd>
-                    </dl>
-
-                    <dl class="row mb-4 align-items-center">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Notes:</dt>
-                        <dd class="col-sm-8">
-                            @if (@Model.Notes != null)
-                            {
-                                @await Html.PartialAsync("_NotesContent", new { Content = Model.Notes, MaxLength = 100 })
-                            }
-                            else
-                            {
-                                <span class="text-muted">No notes available</span>
-                            }
-                        </dd>
-                    </dl>
-
-                    <dl class="row mb-4 align-items-center">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Stop Cycle Note:</dt>
-                        <dd class="col-sm-8">
-                            @if (@Model.StopCycleNote != null)
-                            {
-                                @Model.StopCycleNote
-                            }
-                            else
-                            {
-                                <span class="text-muted">No stop cycle note provided</span>
-                            }
-                        </dd>
-                    </dl>
-
-                    <dl class="row mb-4 align-items-center">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Evaluation:</dt>
-                        <dd class="col-sm-8">
-                            @if (Model.AttachmentId != null)
-                            {
-                                <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.AttachmentId" class="btn btn-sm btn-outline-primary">
-                                    Download Evaluation
-                                </a>
-                            }
-                            else
-                            {
-                                <span class="text-muted">No evaluation available</span>
-                            }
-                        </dd>
-                    </dl>
-                </div>
-            </div>
-        </div>
-        <!-- Action Buttons -->
-        <div class="text-center mt-4">
-            <form id="deleteForm" asp-action="Delete">
-                <div class="d-flex justify-content-between mt-4" style="margin-bottom: 3.5%;">
-                    <button type="button" class="btn btn-danger px-4" onclick="showSwalConfirm()" style="margin-left: 23px;">Delete</button>
-                    <a class="btn btn-secondary" asp-action="Index" style="margin-right: 23px;">Back to list</a>
-                 </div>
-            </form>
         </div>
     </div>
 </div>
 
-<!-- SweetAlert2 Script -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    function showSwalConfirm() {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'This action will permanently delete the interview and its data!',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#e3342f',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                document.getElementById('deleteForm').submit();
-            }
-        });
-    }
-</script>
+<div class="row justify-content-center">
+    <div class="col-xl-9">
+        <div class="tps-danger-note" role="note">
+            <i class="ri-error-warning-line"></i>
+            <div>The interview and its result are removed permanently.</div>
+        </div>
 
-<!-- Font Awesome for Icons -->
-<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+        <div class="card tps-delete-card">
+            <div class="card-header">
+                <i class="ri-delete-bin-6-line"></i>
+                <h4 class="card-title">What will be deleted</h4>
+            </div>
+            <div class="card-body">
+                <dl class="tps-dl">
+                <div>
+                    <dt>Candidate</dt>
+                    <dd>@Model.FullName</dd>
+                </div>
+                <div>
+                    <dt>Level</dt>
+                    <dd>@Model.Name</dd>
+                </div>
+                <div>
+                    <dt>Track</dt>
+                    <dd>@Model.TrackName</dd>
+                </div>
+                <div>
+                    <dt>Interviewer 1</dt>
+                    <dd>@Model.InterviewerName</dd>
+                </div>
+                <div>
+                    <dt>Interviewer 2</dt>
+                    <dd>@if (Model.SecondInterviewerId != null)
+                        {
+                            @Model.SecondInterviewerName
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic fw-normal">No second interviewer</span>
+                        }</dd>
+                </div>
+                <div>
+                    <dt>Date</dt>
+                    <dd>@Model.Date.ToString("dd MMM yyyy, h:mm tt")</dd>
+                </div>
+                <div>
+                    <dt>Status</dt>
+                    <dd>@InterviewStatusUi.Badge(Model.StatusName)</dd>
+                </div>
+                <div>
+                    <dt>First interview score</dt>
+                    <dd>@if (Model.FirstInterviewScore != null)
+                        {
+                            <text>@Model.FirstInterviewScore / 5</text>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic fw-normal">No score</span>
+                        }</dd>
+                </div>
+                <div>
+                    <dt>Actual experience</dt>
+                    <dd>@if (Model.ActualExperience != null)
+                        {
+                            <text>@Model.ActualExperience years</text>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic fw-normal">Not recorded</span>
+                        }</dd>
+                </div>
+                <div>
+                    <dt>Notes</dt>
+                    <dd>@if (Model.Notes != null)
+                        {
+                            <div class="fw-normal">@await Html.PartialAsync("_NotesContent", new { Content = Model.Notes, MaxLength = 100 })</div>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic fw-normal">No notes</span>
+                        }</dd>
+                </div>
+                <div>
+                    <dt>Stop cycle note</dt>
+                    <dd>@if (Model.StopCycleNote != null)
+                        {
+                            <span class="fw-normal">@Model.StopCycleNote</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic fw-normal">No stop cycle note</span>
+                        }</dd>
+                </div>
+                <div>
+                    <dt>Evaluation</dt>
+                    <dd>@if (Model.AttachmentId != null)
+                        {
+                            <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.AttachmentId"><i class="ri-file-download-line me-1"></i>Download evaluation</a>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic fw-normal">No evaluation</span>
+                        }</dd>
+                </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="deleteForm" asp-action="Delete">
+    <div class="tps-factions">
+        <span class="tps-factions__note"><i class="ri-information-line"></i> You'll be asked to confirm. This can't be undone.</span>
+        <div class="tps-factions__buttons">
+            <a class="btn btn-secondary" asp-action="Index">Cancel</a>
+            <button type="button" class="btn btn-danger px-4" data-tps-delete data-confirm-title="Delete this interview?" data-confirm-text="The interview and its data are deleted. This can't be undone."><i class="ri-delete-bin-6-line me-1"></i> Delete interview</button>
+        </div>
+    </div>
+</form>
+
+@await Html.PartialAsync("_DeleteConfirm")

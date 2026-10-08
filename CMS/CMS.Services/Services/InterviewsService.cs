@@ -1,5 +1,6 @@
 ﻿using CMS.Application.DTOs;
 using CMS.Application.Extensions;
+using CMS.Application.Helpers;
 using CMS.Domain.Entities;
 using CMS.Domain.Enums;
 using CMS.Repository.Interfaces;
@@ -32,6 +33,7 @@ public class InterviewsService : IInterviewsService
     private readonly IWorkflowService _workflowService;
     private readonly ISelectedInterviewersRepository _selectedInterviewersRepository;
     private readonly IDelegationDurationRepository _delegationDurationRepository;
+    private readonly IUserRepository _userRepository;
 
     public InterviewsService(
         IInterviewsRepository interviewsRepository,
@@ -47,7 +49,8 @@ public class InterviewsService : IInterviewsService
         IDynamicWorkflowService dynamicWorkflowService,
         IWorkflowService workflowService,
         ISelectedInterviewersRepository selectedInterviewersRepository,
-        IDelegationDurationRepository delegationDurationRepository)
+        IDelegationDurationRepository delegationDurationRepository,
+        IUserRepository userRepository)
     {
         _interviewsRepository = interviewsRepository;
         _candidateService = candidateService;
@@ -63,6 +66,7 @@ public class InterviewsService : IInterviewsService
         _workflowService = workflowService;
         _selectedInterviewersRepository = selectedInterviewersRepository;
         _delegationDurationRepository = delegationDurationRepository;
+        _userRepository = userRepository;
     }
 
 
@@ -243,12 +247,72 @@ public class InterviewsService : IInterviewsService
                     interviewDTO.CompanyName = null;
             }
 
+            await EnrichHistoryStepsAsync(interviewsDTOs);
             return Result<List<InterviewsDTO>>.Success(interviewsDTOs);
         }
         catch (Exception ex)
         {
             return Result<List<InterviewsDTO>>.Failure(null, $"Unable to get interview History: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// History rows come from the interview-details mapping, which copies some values (interviewer,
+    /// notes, experience, evaluation) from the first interview. Fill each step from its own record and
+    /// record who submitted it and when, so the history shows what actually happened at each step.
+    /// </summary>
+    private async Task EnrichHistoryStepsAsync(List<InterviewsDTO> steps)
+    {
+        if (steps == null)
+            return;
+
+        foreach (InterviewsDTO dto in steps)
+        {
+            if (dto == null)
+                continue;
+
+            Interviews step = await _interviewsRepository.GetById(dto.InterviewsId);
+            if (step == null)
+                continue;
+
+            dto.InterviewerId = step.InterviewerId;
+            dto.InterviewerName = await HistoryUserNameAsync(step.InterviewerId);
+            dto.SecondInterviewerId = step.SecondInterviewerId;
+            dto.SecondInterviewerName = await HistoryUserNameAsync(step.SecondInterviewerId);
+            dto.InterviewerRole = await HistoryUserRoleAsync(step.InterviewerId);
+            dto.Score = step.Score;
+            dto.Notes = step.Notes;
+            dto.ActualExperience = step.ActualExperience;
+            dto.AttachmentId = step.AttachmentId;
+            dto.isUpdated = step.IsUpdated;
+            dto.StartFromHR = step.StartFromHR;
+            dto.CreatedOn = step.CreatedOn;
+            dto.ModifiedOn = step.ModifiedOn;
+            dto.modifiedBy = await HistoryUserNameAsync(step.ModifiedBy);
+            await ApplyDelegatedSubmitterAsync(dto, step.InterviewsId);
+        }
+    }
+
+    private async Task<string> HistoryUserNameAsync(string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+            return null;
+
+        IdentityUser user = await _userManager.FindByIdAsync(userId);
+        return user?.UserName;
+    }
+
+    private async Task<string> HistoryUserRoleAsync(string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+            return null;
+
+        IdentityUser user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+            return null;
+
+        IList<string> roles = await _userManager.GetRolesAsync(user);
+        return roles?.FirstOrDefault();
     }
 
     public async Task<Result<List<InterviewsDTO>>> GetAll()
@@ -260,56 +324,97 @@ public class InterviewsService : IInterviewsService
             if (interviews is null)
                 return Result<List<InterviewsDTO>>.Failure(null, "No interviews found");
 
-            List<InterviewsDTO> interviewsDTO = [];
-
-            foreach (Interviews c in interviews)
-            {
-                string userName = await GetInterviewerName(c.InterviewerId);
-                string SeconduserName = await GetInterviewerName(c.SecondInterviewerId);
-                string archiName = await GetArchitectureName(c.ArchitectureInterviewerId);
-                string interviewerRole = await GetInterviewerRole(c.InterviewerId);
-
-                InterviewsDTO com = new InterviewsDTO
-                {
-                    InterviewsId = c.InterviewsId,
-                    Score = c.Score,
-                    StatusId = c.StatusId,
-                    StatusName = c.Status.Name,
-                    Date = c.Date,
-                    PositionId = c.PositionId,
-                    Name = c.Position.Name,
-                    TrackId = c.TrackId,
-                    TrackName = c.Track.Name,
-                    EvalutaionFormId = c.Position.EvaluationId,
-                    Notes = c.Notes,
-                    StopCycleNote = c.StopCycleNote,
-                    ParentId = c.ParentId,
-                    InterviewerId = c.InterviewerId,
-                    InterviewerName = userName,
-                    CandidateId = c.CandidateId,
-                    FullName = c.Candidate.FullName,
-                    CandidateCVAttachmentId = c.Candidate.CVAttachmentId,
-                    AttachmentId = c.AttachmentId,
-                    InterviewerRole = interviewerRole,
-                    ActualExperience = c.ActualExperience,
-                    SecondInterviewerId = c.SecondInterviewerId,
-                    SecondInterviewerName = SeconduserName,
-                    CreatedOn = c.CreatedOn,
-                    ArchitectureInterviewerId = c.ArchitectureInterviewerId,
-                    ArchitectureInterviewerName = archiName,
-                    WorkflowStageId = c.WorkflowStageId,
-                    StageName = c.WorkflowStage?.Name,
-                    StartFromHR = c.StartFromHR,
-                };
-
-                interviewsDTO.Add(com);
-            }
-            return Result<List<InterviewsDTO>>.Success(interviewsDTO);
+            return Result<List<InterviewsDTO>>.Success(await ToInterviewListDtosAsync(interviews));
         }
         catch (Exception ex)
         {
             return Result<List<InterviewsDTO>>.Failure(null, $"Unable to get Interview: {ex.InnerException.Message}");
         }
+    }
+
+    /// <summary>
+    /// One page of the Interviews list: each candidate's latest interview matching the filter,
+    /// newest first. Only the page rows are loaded and mapped.
+    /// </summary>
+    public async Task<Result<PaginatedList<InterviewsDTO>>> GetLatestInterviewPerCandidatePageAsync(
+        InterviewListFilter filter,
+        int pageNumber,
+        int pageSize)
+    {
+        try
+        {
+            (List<Interviews> items, int totalCount) = await _interviewsRepository.GetLatestInterviewPerCandidatePageAsync(filter, pageNumber, pageSize);
+            List<InterviewsDTO> page = await ToInterviewListDtosAsync(items);
+            return Result<PaginatedList<InterviewsDTO>>.Success(new PaginatedList<InterviewsDTO>(page, totalCount, pageNumber, pageSize));
+        }
+        catch (Exception ex)
+        {
+            return Result<PaginatedList<InterviewsDTO>>.Failure(null, $"Unable to get Interview: {ex.InnerException?.Message ?? ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Maps interviews for the list pages. Interviewer names and roles are read for all rows in two
+    /// queries instead of several identity lookups per row; values match GetInterviewerName /
+    /// GetArchitectureName / GetInterviewerRole ("User not found" when missing).
+    /// </summary>
+    private async Task<List<InterviewsDTO>> ToInterviewListDtosAsync(List<Interviews> interviews)
+    {
+        List<string> userIds = interviews
+            .SelectMany(i => new[] { i.InterviewerId, i.SecondInterviewerId, i.ArchitectureInterviewerId })
+            .ToList();
+        Dictionary<string, string> names = await _userRepository.GetUserNamesAsync(userIds);
+        Dictionary<string, string> roles = await _userRepository.GetFirstRoleNamesAsync(interviews.Select(i => i.InterviewerId));
+
+        string NameOf(string id) => !string.IsNullOrEmpty(id) && names.TryGetValue(id, out string name) ? name : "User not found";
+        string RoleOf(string id) => !string.IsNullOrEmpty(id) && names.ContainsKey(id) && roles.TryGetValue(id, out string role) ? role : "User not found";
+
+        List<InterviewsDTO> interviewsDTO = [];
+
+        foreach (Interviews c in interviews)
+        {
+            string userName = NameOf(c.InterviewerId);
+            string SeconduserName = NameOf(c.SecondInterviewerId);
+            string archiName = NameOf(c.ArchitectureInterviewerId);
+            string interviewerRole = RoleOf(c.InterviewerId);
+
+            InterviewsDTO com = new InterviewsDTO
+            {
+                InterviewsId = c.InterviewsId,
+                Score = c.Score,
+                StatusId = c.StatusId,
+                StatusName = c.Status.Name,
+                Date = c.Date,
+                PositionId = c.PositionId,
+                Name = c.Position.Name,
+                TrackId = c.TrackId,
+                TrackName = c.Track.Name,
+                EvalutaionFormId = c.Position.EvaluationId,
+                Notes = c.Notes,
+                StopCycleNote = c.StopCycleNote,
+                ParentId = c.ParentId,
+                InterviewerId = c.InterviewerId,
+                InterviewerName = userName,
+                CandidateId = c.CandidateId,
+                FullName = c.Candidate.FullName,
+                CandidateCVAttachmentId = c.Candidate.CVAttachmentId,
+                AttachmentId = c.AttachmentId,
+                InterviewerRole = interviewerRole,
+                ActualExperience = c.ActualExperience,
+                SecondInterviewerId = c.SecondInterviewerId,
+                SecondInterviewerName = SeconduserName,
+                CreatedOn = c.CreatedOn,
+                ArchitectureInterviewerId = c.ArchitectureInterviewerId,
+                ArchitectureInterviewerName = archiName,
+                WorkflowStageId = c.WorkflowStageId,
+                StageName = c.WorkflowStage?.Name,
+                StartFromHR = c.StartFromHR,
+            };
+
+            interviewsDTO.Add(com);
+        }
+
+        return interviewsDTO;
     }
 
     public async Task<Result<List<InterviewsDTO>>> GetAllForGeneralManager()
@@ -440,6 +545,8 @@ public class InterviewsService : IInterviewsService
 
             else
                 interviewDTO.HRNotes = null;
+
+            await ApplyDelegatedSubmitterAsync(interviewDTO, interview.InterviewsId);
 
             return Result<InterviewsDTO>.Success(interviewDTO);
         }
@@ -1397,6 +1504,7 @@ public class InterviewsService : IInterviewsService
                     ModifiedOn = interview.ModifiedOn
                 };
 
+                await ApplyDelegatedSubmitterAsync(interviewDTO, interview.InterviewsId);
                 interviewsDTOs.Add(interviewDTO);
             }
 
@@ -1542,6 +1650,7 @@ public class InterviewsService : IInterviewsService
             gmInterviews = [.. gmInterviews.OrderBy(i => i.Date).ThenBy(i => i.InterviewsId)];
             interviewsDTOs.AddRange(gmInterviews);
 
+            await EnrichHistoryStepsAsync(interviewsDTOs);
             return Result<List<InterviewsDTO>>.Success(interviewsDTOs);
         }
         catch (Exception ex)
@@ -1662,43 +1771,56 @@ public class InterviewsService : IInterviewsService
 
     public async Task<bool> DoesInterviewExistForCandidate(int candidateId) => await _interviewsRepository.DoesInterviewExistForCandidateAsync(candidateId);
 
+    /// <summary>
+    /// Re-reads the interview right before a reminder is sent, so one scored or moved off Pending
+    /// while the job was running is skipped.
+    /// </summary>
+    public async Task<bool> IsInterviewStillPendingForReminderAsync(int interviewId)
+    {
+        Status pending = await _statusRepository.GetByCode(StatusCode.Pending);
+        return await _interviewsRepository.IsStillPendingAsync(interviewId, pending.Id);
+    }
+
+    public Task MarkReminderSentAsync(int interviewId) => _interviewsRepository.MarkReminderSentAsync(interviewId, DateTime.Now);
+
     public async Task<Result<List<InterviewsDTO>>> GetInterviewsWithoutResults()
     {
         try
         {
-            List<Interviews> firstInterviews = await _interviewsRepository.GetFirstInterviews();
             int interviewReminderDaysDelay = _configuration.GetValue<int>("HangfireSettings:InterviewReminderDaysDelay");
+            Status pending = await _statusRepository.GetByCode(StatusCode.Pending);
 
-            if (firstInterviews == null || firstInterviews.Count == 0)
-                return Result<List<InterviewsDTO>>.Failure(null, "No interviews found.");
+            // The latest state is decided in the query: only the candidate's current step, only
+            // Pending records without a score, overdue, and not already reminded today.
+            DateTime now = DateTime.Now;
+            List<Interviews> dueInterviews = await _interviewsRepository.GetCurrentPendingInterviewsDueReminderAsync(
+                pending.Id,
+                notBefore: DateTime.Parse("2025-01-01 00:00:00.000"),
+                dueBy: now.AddDays(-interviewReminderDaysDelay),
+                remindedBefore: now.Date);
 
             List<InterviewsDTO> interviewsDtoList = [];
 
-            foreach (var interview in firstInterviews)
+            foreach (var interview in dueInterviews)
             {
-                if (interview.Score == null
-                    && DateTime.UtcNow >= interview.Date.ToUniversalTime().AddDays(interviewReminderDaysDelay)
-                    && interview.Date >= DateTime.Parse("2025-01-01 00:00:00.000"))
+                IdentityUser interviewer = await _userManager.FindByIdAsync(interview.InterviewerId);
+
+                if (interviewer != null)
                 {
-                    IdentityUser interviewer = await _userManager.FindByIdAsync(interview.InterviewerId);
+                    IList<string> roles = await _userManager.GetRolesAsync(interviewer);
 
-                    if (interviewer != null)
+                    if (!roles.Contains("General Manager", StringComparer.OrdinalIgnoreCase))
                     {
-                        IList<string> roles = await _userManager.GetRolesAsync(interviewer);
-
-                        if (!roles.Contains("General Manager", StringComparer.OrdinalIgnoreCase))
+                        interviewsDtoList.Add(new InterviewsDTO
                         {
-                            interviewsDtoList.Add(new InterviewsDTO
-                            {
-                                InterviewsId = interview.InterviewsId,
-                                CandidateId = interview.CandidateId,
-                                FullName = interview.Candidate?.FullName,
-                                InterviewerId = interview.InterviewerId,
-                                Date = interview.Date,
-                                StatusId = interview.StatusId,
-                                PositionName = interview.Position.Name
-                            });
-                        }
+                            InterviewsId = interview.InterviewsId,
+                            CandidateId = interview.CandidateId,
+                            FullName = interview.Candidate?.FullName,
+                            InterviewerId = interview.InterviewerId,
+                            Date = interview.Date,
+                            StatusId = interview.StatusId,
+                            PositionName = interview.Position.Name
+                        });
                     }
                 }
             }
@@ -1726,9 +1848,7 @@ public class InterviewsService : IInterviewsService
             if (interview == null)
                 return Result<DelegateInterviewPageDTO>.Failure(null, "Interview not found.");
 
-            if (!IsInterviewStillPending(interview))
-                return Result<DelegateInterviewPageDTO>.Failure(null, "This interview is no longer pending.");
-
+            // A scored interview still opens, read-only, so its delegation history stays visible.
             List<InterviewDelegation> history = await _interviewsRepository.GetDelegationsByInterviewIdAsync(interviewId);
             List<DelegationDuration> durations = await _delegationDurationRepository.GetActiveAsync();
 
@@ -1756,6 +1876,7 @@ public class InterviewsService : IInterviewsService
                     Amount = d.Amount,
                     Unit = d.Unit,
                     DurationMinutes = d.DurationMinutes,
+                    IsUnlimited = d.IsUnlimited,
                     IsActive = d.IsActive
                 }).ToList(),
                 DelegateCandidates = await GetDelegationCandidateUsersAsync(interview.InterviewerId, interview.SecondInterviewerId),
@@ -1764,28 +1885,18 @@ public class InterviewsService : IInterviewsService
 
             DateTime now = DateTime.Now;
             bool interviewIsPending = IsInterviewStillPending(interview);
-            foreach (InterviewDelegation item in history)
+            page.IsPending = interviewIsPending;
+            if (!interviewIsPending)
             {
-                string status = DescribeDelegationStatus(item, now);
-                page.History.Add(new InterviewDelegationHistoryItemDTO
-                {
-                    Id = item.Id,
-                    OriginalInterviewerName = await GetInterviewerName(item.OriginalInterviewerId),
-                    DelegatedUserName = await GetInterviewerName(item.DelegatedUserId),
-                    DelegatedByName = await GetInterviewerName(item.DelegatedByUserId),
-                    StartDate = item.StartDate,
-                    ExpirationDate = item.ExpirationDate,
-                    CreatedOn = item.CreatedOn,
-                    Duration = DescribeStoredDuration(item),
-                    InterviewerSlot = item.InterviewerSlot,
-                    Status = status,
-                    CanRemove = interviewIsPending && (status == "Active" || status == "Not started"),
-                    RemovedByName = string.IsNullOrEmpty(item.RemovedByUserId)
-                        ? null
-                        : await GetInterviewerName(item.RemovedByUserId),
-                    RemovedOn = item.RemovedOn
-                });
+                page.Durations = [];
+                page.DelegateCandidates = [];
             }
+
+            foreach (InterviewDelegation item in history)
+                page.History.Add(await ToHistoryItemAsync(item, interview, now, interviewIsPending));
+
+            page.ActivePrimary = page.History.FirstOrDefault(h => h.IsOpen && h.InterviewerSlot == PrimaryInterviewerSlot);
+            page.ActiveSecond = page.History.FirstOrDefault(h => h.IsOpen && h.InterviewerSlot == SecondInterviewerSlot);
 
             return Result<DelegateInterviewPageDTO>.Success(page);
         }
@@ -1800,7 +1911,8 @@ public class InterviewsService : IInterviewsService
         string interviewerSlot,
         string originalInterviewerId,
         string delegatedUserId,
-        int durationId)
+        int durationId,
+        int? replaceDelegationId = null)
     {
         try
         {
@@ -1819,7 +1931,9 @@ public class InterviewsService : IInterviewsService
                 return Result<InterviewDelegationDTO>.Failure(null, "Please select an active delegation duration.");
 
             DateTime startDate = DateTime.Now;
-            DateTime expirationDate = startDate.AddMinutes(duration.DurationMinutes);
+            DateTime expirationDate = duration.IsUnlimited
+                ? InterviewDelegation.NoExpirationDate
+                : startDate.AddMinutes(duration.DurationMinutes);
 
             bool secondSlot = string.Equals(interviewerSlot, SecondInterviewerSlot, StringComparison.OrdinalIgnoreCase);
             if (!secondSlot && !string.Equals(interviewerSlot, PrimaryInterviewerSlot, StringComparison.OrdinalIgnoreCase))
@@ -1858,7 +1972,7 @@ public class InterviewsService : IInterviewsService
                 StartDate = startDate,
                 ExpirationDate = expirationDate,
                 DurationName = duration.Name,
-                DurationMinutes = duration.DurationMinutes,
+                DurationMinutes = duration.IsUnlimited ? null : duration.DurationMinutes,
                 WorkflowStageId = interview.WorkflowStageId,
                 InterviewerSlot = secondSlot ? SecondInterviewerSlot : PrimaryInterviewerSlot,
                 Status = InterviewDelegation.StatusActive,
@@ -1870,7 +1984,8 @@ public class InterviewsService : IInterviewsService
                 interview.InterviewsId,
                 currentInterviewerId,
                 secondSlot,
-                delegation);
+                delegation,
+                replaceDelegationId);
 
             string failure = MapDelegationFailure(updateResult);
             if (failure != null)
@@ -1926,7 +2041,8 @@ public class InterviewsService : IInterviewsService
                 "Success" => null,
                 "NotFound" => "This delegation could not be found.",
                 "AlreadyRemoved" => "This delegation has already been removed.",
-                "ScoreSubmitted" => "The delegate has already submitted the score.",
+                "ScoreSubmitted" => "The score has already been submitted, so this delegation is complete and can't be removed.",
+                "Expired" => "This delegation has already expired. The original interviewer can already submit the score.",
                 _ => "The delegation could not be removed."
             };
             if (failure != null)
@@ -1972,13 +2088,27 @@ public class InterviewsService : IInterviewsService
 
             Status pending = await _statusRepository.GetByCode(StatusCode.Pending);
             List<DelegationDuration> durations = await _delegationDurationRepository.GetActiveAsync();
+            List<InterviewsDTO> pendingInterviews = interviews.Value
+                .Where(i => i.StatusId == pending.Id)
+                .OrderByDescending(i => i.Date)
+                .ToList();
+
+            DateTime now = DateTime.Now;
+            Dictionary<int, List<InterviewDelegationHistoryItemDTO>> openDelegations = [];
+            List<InterviewDelegation> open = await _interviewsRepository.GetOpenDelegationsForInterviewsAsync(
+                pendingInterviews.Select(i => i.InterviewsId), now);
+            foreach (InterviewDelegation item in open.OrderBy(d => d.InterviewerSlot))
+            {
+                if (!openDelegations.TryGetValue(item.InterviewId, out List<InterviewDelegationHistoryItemDTO> list))
+                    openDelegations[item.InterviewId] = list = [];
+
+                list.Add(await ToHistoryItemAsync(item, null, now, interviewIsPending: true));
+            }
 
             return Result<BulkDelegationPageDTO>.Success(new BulkDelegationPageDTO
             {
-                Interviews = interviews.Value
-                    .Where(i => i.StatusId == pending.Id)
-                    .OrderByDescending(i => i.Date)
-                    .ToList(),
+                Interviews = pendingInterviews,
+                OpenDelegations = openDelegations,
                 DelegateCandidates = await GetEligibleDelegateUsersAsync(),
                 Durations = durations.Select(d => new DelegationDurationDTO
                 {
@@ -1987,6 +2117,7 @@ public class InterviewsService : IInterviewsService
                     Amount = d.Amount,
                     Unit = d.Unit,
                     DurationMinutes = d.DurationMinutes,
+                    IsUnlimited = d.IsUnlimited,
                     IsActive = d.IsActive
                 }).ToList()
             });
@@ -2069,6 +2200,7 @@ public class InterviewsService : IInterviewsService
             return Result<bool>.Success(true);
 
         IdentityUser user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+        // Assigned interviewers can always submit, even while their slot is delegated
         if (user != null && IsUserAssigned(interview, user.Id))
             return Result<bool>.Success(true);
 
@@ -2102,6 +2234,16 @@ public class InterviewsService : IInterviewsService
         if (delegations.Count == 0)
             return Result<bool>.Success(true);
 
+        // The delegate keeps access after submitting the result, until the delegation period ends
+        // (never, for an unlimited delegation).
+        DateTime now = DateTime.Now;
+        if (delegations.Any(d => d.IsActive
+                && !d.IsDelete
+                && (d.Status == InterviewDelegation.StatusActive || d.Status == InterviewDelegation.StatusCompleted)
+                && d.StartDate <= now
+                && d.ExpirationDate > now))
+            return Result<bool>.Success(true);
+
         string delegationBlock = await DescribeWhyDelegationDoesNotAllowAsync(interviewId, user.Id);
         if (delegationBlock == null)
             return Result<bool>.Success(true);
@@ -2126,13 +2268,69 @@ public class InterviewsService : IInterviewsService
         return role == "User not found" ? null : role;
     }
 
-    public async Task<bool> HasActiveDelegationAsync()
+    /// <summary>
+    /// True while the current user has a delegation that keeps an interview in their My Interviews:
+    /// open, or already used to submit the result, until the delegation period ends.
+    /// </summary>
+    public async Task<bool> HasVisibleDelegationAsync()
     {
         IdentityUser user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
         if (user == null)
             return false;
 
-        return await _interviewsRepository.HasActiveDelegationAsync(user.Id, DateTime.Now);
+        return await _interviewsRepository.HasVisibleDelegationAsync(user.Id, DateTime.Now);
+    }
+
+    /// <summary>
+    /// The delegation through which the current user sees this interview, or null when they are
+    /// assigned to it themselves or have no delegation in force on it.
+    /// </summary>
+    public async Task<InterviewDelegationDTO> GetCurrentUserDelegationAccessAsync(int interviewId)
+    {
+        IdentityUser user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+        if (user == null)
+            return null;
+
+        Interviews interview = await _interviewsRepository.GetById(interviewId);
+        if (interview == null || IsUserAssigned(interview, user.Id))
+            return null;
+
+        List<InterviewDelegation> visible = await _interviewsRepository.GetVisibleDelegationsForUserAsync(user.Id, [interviewId], DateTime.Now);
+        InterviewDelegation delegation = visible.FirstOrDefault();
+        if (delegation == null)
+            return null;
+
+        return new InterviewDelegationDTO
+        {
+            InterviewId = delegation.InterviewId,
+            CandidateId = delegation.CandidateId,
+            OriginalInterviewerId = delegation.OriginalInterviewerId,
+            OriginalInterviewerName = await GetInterviewerName(delegation.OriginalInterviewerId),
+            DelegatedUserId = delegation.DelegatedUserId,
+            DelegatedUserName = user.UserName,
+            DelegatedByUserId = delegation.DelegatedByUserId,
+            StartDate = delegation.StartDate,
+            ExpirationDate = delegation.ExpirationDate,
+            WorkflowStageId = delegation.WorkflowStageId,
+            InterviewerSlot = delegation.InterviewerSlot,
+            Status = delegation.Status
+        };
+    }
+
+    /// <summary>
+    /// When the interview's result was submitted by a delegate, records the delegate as the submitter
+    /// and the original interviewer they acted for. Read from the Completed delegation, so it stays
+    /// correct even if the interview row is edited later. The interview's own audit fields are untouched.
+    /// </summary>
+    private async Task ApplyDelegatedSubmitterAsync(InterviewsDTO dto, int interviewId)
+    {
+        InterviewDelegation delegation = await _interviewsRepository.GetCompletedDelegationAsync(interviewId);
+        if (delegation == null)
+            return;
+
+        dto.ResultSubmittedByName = await HistoryUserNameAsync(delegation.DelegatedUserId);
+        dto.ResultSubmittedForName = await HistoryUserNameAsync(delegation.OriginalInterviewerId);
+        dto.ResultSubmittedOn = delegation.ModifiedOn;
     }
 
     public async Task<bool> HasInForceDelegationAsync(int interviewId)
@@ -2252,7 +2450,9 @@ public class InterviewsService : IInterviewsService
             "NotPending" => "This interview is no longer pending. It may already have been completed.",
             "InterviewerChanged" => "The original interviewer changed. Refresh the page and try again.",
             "AlreadyAssigned" => "The selected delegate is already the assigned interviewer.",
-            "Overlap" => "This user already has a delegation for this interview during the selected period.",
+            "Overlap" => "This user already has an open delegation on this interview.",
+            "SlotDelegated" => "This interviewer is already delegated. Change or remove the current delegation instead of adding another.",
+            "ReplaceNotOpen" => "The delegation you are changing has ended or was removed. Refresh the page and try again.",
             _ => "Unable to delegate the pending interview."
         };
     }
@@ -2264,6 +2464,9 @@ public class InterviewsService : IInterviewsService
 
         if (delegation.DurationMinutes.HasValue && delegation.DurationMinutes.Value > 0)
             return FormatMinutes(delegation.DurationMinutes.Value);
+
+        if (delegation.IsUnlimited)
+            return "Unlimited";
 
         TimeSpan span = delegation.ExpirationDate - delegation.StartDate;
         if (span.TotalMinutes < 1)
@@ -2295,10 +2498,30 @@ public class InterviewsService : IInterviewsService
         return minutes == 1 ? "1 minute" : $"{minutes} minutes";
     }
 
-    private static string DescribeDelegationStatus(InterviewDelegation delegation, DateTime now)
+    /// <summary>
+    /// Display status: Active, Not started, Expired, Removed, Completed (the delegate scored)
+    /// or Closed (someone else scored first). <paramref name="interview"/> is optional and lets
+    /// rows saved before Completed/Closed were recorded show the right final state.
+    /// </summary>
+    private static string DescribeDelegationStatus(InterviewDelegation delegation, DateTime now, Interviews interview = null)
     {
-        if (delegation == null || !delegation.IsActive || delegation.IsDelete || delegation.Status == InterviewDelegation.StatusCancelled)
-            return "Cancelled";
+        if (delegation == null || delegation.IsDelete || delegation.Status == InterviewDelegation.StatusCancelled || !delegation.IsActive)
+            return "Removed";
+
+        if (delegation.Status == InterviewDelegation.StatusCompleted)
+            return "Completed";
+
+        if (delegation.Status == InterviewDelegation.StatusClosed)
+            return "Closed";
+
+        if (interview != null && !IsInterviewStillPending(interview))
+        {
+            DateTime scoredOn = interview.ModifiedOn;
+            if (scoredOn >= delegation.ExpirationDate)
+                return "Expired";
+
+            return interview.ModifiedBy == delegation.DelegatedUserId ? "Completed" : "Closed";
+        }
 
         if (now < delegation.StartDate)
             return "Not started";
@@ -2320,12 +2543,50 @@ public class InterviewsService : IInterviewsService
         };
     }
 
+    private async Task<InterviewDelegationHistoryItemDTO> ToHistoryItemAsync(
+        InterviewDelegation item,
+        Interviews interview,
+        DateTime now,
+        bool interviewIsPending)
+    {
+        string status = DescribeDelegationStatus(item, now, interview);
+        DateTime? endedOn = status switch
+        {
+            "Removed" => item.RemovedOn,
+            "Completed" or "Closed" => interview?.ModifiedOn ?? item.ModifiedOn,
+            "Expired" => item.ExpirationDate,
+            _ => null
+        };
+
+        return new InterviewDelegationHistoryItemDTO
+        {
+            Id = item.Id,
+            InterviewId = item.InterviewId,
+            OriginalInterviewerName = await GetInterviewerName(item.OriginalInterviewerId),
+            DelegatedUserId = item.DelegatedUserId,
+            DelegatedUserName = await GetInterviewerName(item.DelegatedUserId),
+            DelegatedByName = await GetInterviewerName(item.DelegatedByUserId),
+            StartDate = item.StartDate,
+            ExpirationDate = item.ExpirationDate,
+            CreatedOn = item.CreatedOn,
+            Duration = DescribeStoredDuration(item),
+            InterviewerSlot = item.InterviewerSlot,
+            Status = status,
+            CanRemove = interviewIsPending && (status == "Active" || status == "Not started"),
+            RemovedByName = string.IsNullOrEmpty(item.RemovedByUserId)
+                ? null
+                : await GetInterviewerName(item.RemovedByUserId),
+            RemovedOn = item.RemovedOn,
+            EndedOn = endedOn
+        };
+    }
+
     private async Task<string> DescribeWhyDelegationDoesNotAllowAsync(int interviewId, string userId)
     {
         DateTime now = DateTime.Now;
         List<InterviewDelegation> delegations = await _interviewsRepository.GetUserDelegationsForInterviewAsync(interviewId, userId);
         List<InterviewDelegation> openDelegations = delegations
-            .Where(d => d.IsActive && !d.IsDelete && d.Status != InterviewDelegation.StatusCancelled)
+            .Where(d => d.IsActive && !d.IsDelete && d.Status == InterviewDelegation.StatusActive)
             .ToList();
 
         if (openDelegations.Any(d => d.StartDate <= now && d.ExpirationDate > now))

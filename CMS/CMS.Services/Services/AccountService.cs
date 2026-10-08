@@ -1,5 +1,6 @@
 ﻿using CMS.Application.DTOs;
 using CMS.Application.Extensions;
+using CMS.Application.Helpers;
 using CMS.Domain;
 using CMS.Repository.Interfaces;
 using CMS.Services.Interfaces;
@@ -260,6 +261,12 @@ public class AccountService : IAccountService
         {
             throw;
         }
+    }
+
+    public async Task<PaginatedList<Register>> GetUsersPageAsync(string userNameFilter, int pageNumber, int pageSize)
+    {
+        (List<Register> users, int totalCount) = await _userRepository.GetUsersPageAsync(userNameFilter, pageNumber, pageSize);
+        return new PaginatedList<Register>(users, totalCount, pageNumber, pageSize);
     }
 
     public async Task<Register> GetUsersById(string userId)

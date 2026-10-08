@@ -1,0 +1,210 @@
+@{
+    Layout = null;
+}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>TPS Candidate Management · Recruitment &amp; Interview Platform</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Manage candidates, schedule interviews, delegate interviewers, record evaluations and run the full recruitment workflow at TechProcess Solutions.">
+    <meta content="TechProcess Solutions" name="author" />
+    <link rel="shortcut icon" href="~/theme/images/favicon.ico">
+    <script src="~/js/tps-theme-init.js" asp-append-version="true"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="~/theme/css/icons.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/css/tps-design.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+    <link href="~/css/tps-components.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+    <link href="~/css/tps-landing.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+</head>
+<body class="tps-landing">
+
+    <!-- ========== Hero ========== -->
+    <header class="lp-hero">
+        <nav class="lp-nav lp-wrap" aria-label="Main">
+            <a href="/" class="lp-nav__logo">
+                <img src="~/theme/images/TechProcessSolutions-logo_White.svg" alt="TechProcess Solutions" />
+            </a>
+            <ul class="lp-nav__links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#workflow">Workflow</a></li>
+            </ul>
+            <div class="lp-nav__end">
+                <button type="button" class="lp-theme" data-tps-theme-toggle aria-label="Switch to dark mode">
+                    <i class="ri-moon-clear-line" data-tps-theme-icon></i>
+                </button>
+                <a href="/users/login" class="lp-btn lp-btn--light lp-btn--sm">
+                    <i class="ri-login-box-line"></i> Sign in
+                </a>
+            </div>
+        </nav>
+
+        <div class="lp-hero__body lp-wrap">
+            <div class="lp-hero__copy">
+                <p class="lp-eyebrow">Candidate &amp; Interview Management System</p>
+                <h1>Hire through a process everyone can follow.</h1>
+                <p class="lp-hero__lede">
+                    Track every candidate from first contact to final decision. Schedule HR, technical and
+                    architecture interviews, delegate when an interviewer is away, and keep every evaluation
+                    in one record.
+                </p>
+                <div class="lp-hero__ctas">
+                    <a href="/users/login" class="lp-btn lp-btn--primary">
+                        Sign in to your workspace <i class="ri-arrow-right-line"></i>
+                    </a>
+                    <a href="#workflow" class="lp-btn lp-btn--ghost">See how it works</a>
+                </div>
+                <ul class="lp-hero__facts">
+                    <li><i class="ri-shield-check-line"></i> Role-based access</li>
+                    <li><i class="ri-mail-send-line"></i> Automatic interview reminders</li>
+                    <li><i class="ri-history-line"></i> Full interview history</li>
+                </ul>
+            </div>
+
+            <!-- Product preview (illustrative sample data) -->
+            <figure class="lp-preview" aria-label="Preview of the recruitment dashboard with sample data">
+                <div class="lp-preview__bar">
+                    <span></span><span></span><span></span>
+                    <em>Dashboard</em>
+                </div>
+                <div class="lp-preview__body">
+                    <div class="lp-preview__kpis">
+                        <div class="lp-kpi"><span>Candidates</span><strong>248</strong></div>
+                        <div class="lp-kpi lp-kpi--ok"><span>Accepted</span><strong>36</strong></div>
+                        <div class="lp-kpi lp-kpi--wait"><span>Pending</span><strong>52</strong></div>
+                        <div class="lp-kpi lp-kpi--no"><span>Rejected</span><strong>91</strong></div>
+                    </div>
+
+                    <div class="lp-preview__table">
+                        <div class="lp-row lp-row--head">
+                            <span>Candidate</span><span>Stage</span><span>Status</span>
+                        </div>
+                        <div class="lp-row">
+                            <span><b class="lp-av">LH</b><span>Lina Haddad<small>Senior .NET Developer</small></span></span>
+                            <span>Technical</span>
+                            <span><i class="tps-status tps-status--pending">Pending</i></span>
+                        </div>
+                        <div class="lp-row">
+                            <span><b class="lp-av lp-av--2">OK</b><span>Omar Khalil<small>QA Engineer</small></span></span>
+                            <span>HR interview</span>
+                            <span><i class="tps-status tps-status--approved">Approved</i></span>
+                        </div>
+                        <div class="lp-row">
+                            <span><b class="lp-av lp-av--3">SN</b><span>Sara Nasser<small>Solution Architect</small></span></span>
+                            <span>Architecture</span>
+                            <span><i class="tps-status tps-status--hold">On hold</i></span>
+                        </div>
+                    </div>
+
+                </div>
+                <figcaption>Sample data for illustration</figcaption>
+            </figure>
+        </div>
+    </header>
+
+    <main>
+        <!-- ========== Features ========== -->
+        <section class="lp-section lp-wrap" id="features" aria-labelledby="features-title">
+            <div class="lp-section__head">
+                <p class="lp-eyebrow lp-eyebrow--dark">What the system does</p>
+                <h2 id="features-title">Everything recruitment needs, in one controlled workspace</h2>
+                <p>Built around how TPS hires: structured stages, named owners, and a record of every decision.</p>
+            </div>
+
+            <div class="lp-features">
+                <article class="lp-feature">
+                    <span class="lp-feature__icon"><i class="ri-user-star-line"></i></span>
+                    <h3>Candidate management</h3>
+                    <p>Keep profiles, CVs, experience, track and target position together. Search by name, phone or track and find anyone in seconds.</p>
+                </article>
+                <article class="lp-feature">
+                    <span class="lp-feature__icon"><i class="ri-calendar-check-line"></i></span>
+                    <h3>Interview scheduling</h3>
+                    <p>Book HR, technical and architecture interviews against a candidate. Interviewers get email reminders before each session.</p>
+                </article>
+                <article class="lp-feature">
+                    <span class="lp-feature__icon"><i class="ri-team-line"></i></span>
+                    <h3>Interviewer management</h3>
+                    <p>Assign interviewers by role and track. Each person sees only the interviews they own in <em>My Interviews</em>.</p>
+                </article>
+                <article class="lp-feature">
+                    <span class="lp-feature__icon"><i class="ri-user-shared-line"></i></span>
+                    <h3>Delegation</h3>
+                    <p>Hand interviews to a colleague for a set period. The delegation ends when the period expires, and every hand-off is recorded.</p>
+                </article>
+                <article class="lp-feature">
+                    <span class="lp-feature__icon"><i class="ri-file-list-3-line"></i></span>
+                    <h3>Evaluation &amp; notes</h3>
+                    <p>Record results and rich-text notes after each interview. Reviewers see the full history before they decide.</p>
+                </article>
+                <article class="lp-feature">
+                    <span class="lp-feature__icon"><i class="ri-dashboard-2-line"></i></span>
+                    <h3>Pipeline dashboard</h3>
+                    <p>See accepted, pending, rejected, on-hold and stopped candidates at a glance, broken down by country and position.</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- ========== Workflow ========== -->
+        <section class="lp-section lp-wrap" id="workflow" aria-labelledby="workflow-title">
+            <div class="lp-wrap">
+                <div class="lp-section__head">
+                    <p class="lp-eyebrow lp-eyebrow--dark">Recruitment workflow</p>
+                    <h2 id="workflow-title">From application to offer in five clear stages</h2>
+                    <p>Each stage has an owner and a recorded outcome, so a candidate never stalls without someone knowing.</p>
+                </div>
+
+                <ol class="lp-steps">
+                    <li>
+                        <span class="lp-steps__num">1</span>
+                        <h3>Register the candidate</h3>
+                        <p>HR adds the profile, uploads the CV and links the position and track.</p>
+                    </li>
+                    <li>
+                        <span class="lp-steps__num">2</span>
+                        <h3>HR interview</h3>
+                        <p>Screening for fit, expectations and availability.</p>
+                    </li>
+                    <li>
+                        <span class="lp-steps__num">3</span>
+                        <h3>Technical interview</h3>
+                        <p>A track specialist evaluates skills and records a result.</p>
+                    </li>
+                    <li>
+                        <span class="lp-steps__num">4</span>
+                        <h3>Architecture review</h3>
+                        <p>Added for senior roles when a solution architect is required.</p>
+                    </li>
+                    <li>
+                        <span class="lp-steps__num">5</span>
+                        <h3>Decision &amp; offer</h3>
+                        <p>Management approves, rejects or holds, and the career offer follows.</p>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- ========== CTA ========== -->
+        <section class="lp-wrap">
+            <div class="lp-cta">
+                <div>
+                    <h2>Ready to review your pipeline?</h2>
+                    <p>Sign in with your TPS work email. Need an account? Ask your HR administrator.</p>
+                </div>
+                <a href="/users/login" class="lp-btn lp-btn--light">
+                    Sign in to your workspace <i class="ri-arrow-right-line"></i>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="lp-footer lp-wrap">
+        <span>&copy; @DateTime.Now.Year TechProcess Solutions</span>
+        <span>Candidate &amp; Interview Management System · For authorized staff</span>
+    </footer>
+
+    <script src="~/js/tps-ui.js" asp-append-version="true"></script>
+</body>
+</html>

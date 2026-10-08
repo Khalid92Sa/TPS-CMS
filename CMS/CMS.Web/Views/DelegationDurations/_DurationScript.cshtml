@@ -1,0 +1,129 @@
+@* Shared validation + preview for Delegation Durations Create and Edit.
+   ViewData["ConfirmVerb"]: "add" shows a confirmation before submitting (Create); empty submits directly (Edit). *@
+@{
+    string confirmVerb = ViewData["ConfirmVerb"] as string;
+}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    (function () {
+        var allowDurationSubmit = false;
+        var form = document.getElementById('durationForm');
+        var nameInput = document.getElementById('Name');
+        var amountInput = document.getElementById('Amount');
+        var unitInput = document.getElementById('Unit');
+        var unlimitedInput = document.getElementById('IsUnlimited');
+        var preview = document.getElementById('durationPreview');
+        var confirmVerb = '@confirmVerb';
+
+        function setFieldError(input, errorId, message) {
+            var error = document.getElementById(errorId);
+            var invalid = !!message;
+            error.textContent = message || '';
+            error.style.display = invalid ? 'block' : 'none';
+            input.classList.toggle('is-invalid', invalid);
+            if (input.tomselect) input.tomselect.wrapper.classList.toggle('is-invalid', invalid);
+            return !invalid;
+        }
+
+        function amountMessage() {
+            var value = amountInput.value.trim();
+            var amount = Number(value);
+            if (!value || Number.isNaN(amount)) return 'Enter how long the access lasts.';
+            if (!Number.isInteger(amount) || amount < 1 || amount > 10000) return 'Enter a whole number from 1 to 10000.';
+            return '';
+        }
+
+        function unitText() {
+            return unitInput.value ? unitInput.options[unitInput.selectedIndex].text : '';
+        }
+
+        function isUnlimited() {
+            return unlimitedInput.checked;
+        }
+
+        // Unlimited durations have no amount or unit, so those fields are disabled (and not posted).
+        function applyUnlimited() {
+            var unlimited = isUnlimited();
+            amountInput.disabled = unlimited;
+            unitInput.disabled = unlimited;
+            if (unitInput.tomselect) unlimited ? unitInput.tomselect.disable() : unitInput.tomselect.enable();
+            form.querySelectorAll('[data-limited-only]').forEach(function (el) { el.hidden = unlimited; });
+            if (unlimited) {
+                setFieldError(amountInput, 'amountError', '');
+                setFieldError(unitInput, 'unitError', '');
+            }
+            updatePreview();
+        }
+
+        function lengthText() {
+            return isUnlimited() ? 'Unlimited, no end date' : amountInput.value.trim() + ' ' + unitText();
+        }
+
+        function updatePreview() {
+            if (isUnlimited()) {
+                preview.innerHTML = '<span>Delegations using this option have <strong>no end date</strong>. '
+                    + 'Access lasts until the delegation is removed or the interview is scored.</span>';
+                return;
+            }
+            var amount = Number(amountInput.value);
+            var unit = unitText();
+            if (!unit || !amountInput.value || amountMessage()) {
+                preview.innerHTML = '<span>Enter an amount and unit to see how long access lasts.</span>';
+                return;
+            }
+            preview.innerHTML = '<span>Delegations using this option give access for <strong>'
+                + amount + ' ' + $('<div>').text(unit.toLowerCase()).html() + '</strong>.</span>';
+        }
+
+        function validateDurationForm() {
+            var nameOk = setFieldError(nameInput, 'nameError', nameInput.value.trim() ? '' : 'Enter a display name.');
+            if (isUnlimited()) return nameOk;
+            var amountOk = setFieldError(amountInput, 'amountError', amountMessage());
+            var unitOk = setFieldError(unitInput, 'unitError', unitInput.value ? '' : 'Select a unit.');
+            return nameOk && amountOk && unitOk;
+        }
+
+        nameInput.addEventListener('input', function () {
+            if (nameInput.value.trim()) setFieldError(nameInput, 'nameError', '');
+        });
+        amountInput.addEventListener('input', function () {
+            if (amountInput.value.trim()) setFieldError(amountInput, 'amountError', '');
+            updatePreview();
+        });
+        unitInput.addEventListener('change', function () {
+            if (unitInput.value) setFieldError(unitInput, 'unitError', '');
+            updatePreview();
+        });
+        unlimitedInput.addEventListener('change', applyUnlimited);
+
+        form.addEventListener('submit', function (event) {
+            if (allowDurationSubmit) return;
+            event.preventDefault();
+            if (!validateDurationForm()) return;
+
+            if (!confirmVerb) {
+                allowDurationSubmit = true;
+                form.submit();
+                return;
+            }
+
+            Swal.fire({
+                title: 'Add this access period?',
+                html: '<strong>' + $('<div>').text(nameInput.value.trim()).html() + '</strong> ('
+                    + $('<div>').text(lengthText()).html() + ')',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Add period',
+                cancelButtonText: 'Back',
+                reverseButtons: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    allowDurationSubmit = true;
+                    form.submit();
+                }
+            });
+        });
+
+        applyUnlimited();
+    })();
+</script>

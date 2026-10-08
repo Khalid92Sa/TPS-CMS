@@ -1,235 +1,344 @@
 @model CMS.Application.DTOs.BulkDelegationPageDTO
+@using CMS.Application.DTOs
 @{
     ViewData["Title"] = "Delegation";
-}
+    int total = Model.Interviews?.Count ?? 0;
+    int delegatedCount = Model.Interviews?.Count(i => Model.OpenDelegations.ContainsKey(i.InterviewsId)) ?? 0;
 
-<style>
-    .card-body {
-        width: 100%;
-        max-width: 100%;
-        overflow-y: hidden;
-    }
-</style>
+    InterviewDelegationHistoryItemDTO OpenFor(int interviewId, string slot) =>
+        Model.OpenDelegations.TryGetValue(interviewId, out var list)
+            ? list.FirstOrDefault(d => d.InterviewerSlot == slot)
+            : null;
+}
 
 @if (TempData["SuccessMessage"] != null)
 {
-    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    <div class="alert alert-success tps-flash" role="status"><i class="ri-checkbox-circle-line"></i><div>@TempData["SuccessMessage"]</div></div>
 }
 @if (TempData["ErrorMessage"] != null)
 {
-    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    <div class="alert alert-danger tps-flash" role="alert"><i class="ri-error-warning-line"></i><div>@TempData["ErrorMessage"]</div></div>
 }
 
-<div class="row">
-    <div class="col-lg-12">
-        <div class="card">
-            <div class="card-header d-flex align-items-center">
-                <h5 class="card-title mb-0 flex-grow-1">Pending Interviews</h5>
-                <button type="button" id="openDelegate" class="btn btn-primary">Delegate</button>
+<div class="tps-kpi-grid">
+    <div class="tps-kpi tps-kpi--pending">
+        <div>
+            <p class="tps-kpi__label">Pending interviews</p>
+            <p class="tps-kpi__value">@total</p>
+            <span class="tps-kpi__hint">Waiting for a score</span>
+        </div>
+        <span class="tps-kpi__icon"><i class="ri-calendar-check-line"></i></span>
+    </div>
+    <div class="tps-kpi" style="--kpi-color: var(--tps-accent)">
+        <div>
+            <p class="tps-kpi__label">Currently delegated</p>
+            <p class="tps-kpi__value">@delegatedCount</p>
+            <span class="tps-kpi__hint">At least one interviewer covered</span>
+        </div>
+        <span class="tps-kpi__icon" style="background:var(--tps-accent-soft);color:var(--tps-accent)"><i class="ri-user-shared-line"></i></span>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="tps-toolbar">
+            <div class="tps-search">
+                <i class="ri-search-line"></i>
+                <label for="delegationSearch" class="visually-hidden">Search pending interviews</label>
+                <input type="search" id="delegationSearch" class="form-control" placeholder="Search candidate, track or interviewer" autocomplete="off" />
             </div>
-            <div class="card-body">
-                <span id="selectionError" class="text-danger" style="display:none;">Select at least one interview.</span>
-                <form id="bulkDelegateForm" asp-action="Delegation" method="post" novalidate>
-                    @Html.AntiForgeryToken()
-                    <table class="table table-bordered" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th style="width:40px;">
-                                    <input type="checkbox" id="selectAllInterviews" title="Select all" />
-                                </th>
-                                <th>Candidate Name</th>
-                                <th>Level</th>
-                                <th>Track</th>
-                                <th>Interviewer</th>
-                                <th>Date and Time</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (Model.Interviews != null && Model.Interviews.Count > 0)
+            <div class="tps-segmented" role="radiogroup" aria-label="Show">
+                <input type="radio" name="delegationView" id="viewAll" value="all" checked />
+                <label for="viewAll">All</label>
+                <input type="radio" name="delegationView" id="viewFree" value="free" />
+                <label for="viewFree" style="--dot: var(--tps-success)">Not delegated</label>
+                <input type="radio" name="delegationView" id="viewDelegated" value="delegated" />
+                <label for="viewDelegated" style="--dot: var(--tps-accent)">Delegated</label>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <form id="bulkDelegateForm" asp-action="Delegation" method="post" novalidate>
+            @Html.AntiForgeryToken()
+            <div class="table-responsive">
+                <table class="table align-middle mb-0" id="delegationTable">
+                    <thead>
+                        <tr>
+                            <th style="width:44px;">
+                                <input type="checkbox" id="selectAllInterviews" class="form-check-input tps-check" aria-label="Select all visible interviews" />
+                            </th>
+                            <th>Candidate</th>
+                            <th>Track</th>
+                            <th>Interviewers</th>
+                            <th>Interview date</th>
+                            <th>Status</th>
+                            <th class="text-end">Manage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (total > 0)
+                        {
+                            foreach (var item in Model.Interviews)
                             {
-                                foreach (var item in Model.Interviews)
-                                {
-                                    <tr>
-                                        <td>
-                                            <input type="checkbox" class="interview-check" name="interviewIds" value="@item.InterviewsId" />
-                                        </td>
-                                        <td>@item.FullName</td>
-                                        <td>@item.Name</td>
-                                        <td>@item.TrackName</td>
-                                        @if (item.SecondInterviewerName == "User not found")
+                                var primary = OpenFor(item.InterviewsId, "Primary");
+                                var second = OpenFor(item.InterviewsId, "Second");
+                                bool hasSecond = !string.IsNullOrEmpty(item.SecondInterviewerName) && item.SecondInterviewerName != "User not found";
+                                bool isDelegated = primary != null || second != null;
+                                string searchText = $"{item.FullName} {item.Name} {item.TrackName} {item.InterviewerName} {(hasSecond ? item.SecondInterviewerName : "")} {primary?.DelegatedUserName} {second?.DelegatedUserName}".ToLowerInvariant();
+
+                                <tr data-search="@searchText" data-delegated="@(isDelegated ? "true" : "false")">
+                                    <td>
+                                        @if (primary == null)
                                         {
-                                            <td>@item.InterviewerName</td>
+                                            <input type="checkbox" class="form-check-input tps-check interview-check" name="interviewIds" value="@item.InterviewsId"
+                                                   aria-label="Select @item.FullName" data-name="@item.FullName" />
                                         }
                                         else
                                         {
-                                            <td>
-                                                <div>1-@item.InterviewerName</div>
-                                                <div>2-@item.SecondInterviewerName</div>
-                                            </td>
+                                            <input type="checkbox" class="form-check-input tps-check" disabled
+                                                   title="Interviewer 1 is already delegated. Manage it individually."
+                                                   aria-label="@item.FullName is already delegated" />
                                         }
-                                        <td>@item.Date.ToString("dd-MM-yyyy hh:mm tt")</td>
-                                        <td>@item.StatusName</td>
-                                        <td>
-                                            <a class="bx bx-detail" style="font-size:x-large"
-                                               asp-action="Delegate"
-                                               asp-route-id="@item.InterviewsId"
-                                               data-bs-toggle="tooltip"
-                                               data-bs-placement="bottom"
-                                               data-bs-original-title="Delegation details"></a>
-                                        </td>
-                                    </tr>
-                                }
-                            }
-                            else
-                            {
-                                <tr>
-                                    <td colspan="8" class="text-center text-muted">No pending interviews are available for delegation.</td>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-body">@item.FullName</div>
+                                        <div class="text-muted fs-12">@item.Name</div>
+                                    </td>
+                                    <td>@item.TrackName</td>
+                                    <td>
+                                        <div class="d-flex flex-column gap-1">
+                                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                                <span>@(hasSecond ? "1 · " : "")@item.InterviewerName</span>
+                                                @if (primary != null)
+                                                {
+                                                    <span class="tps-delegated-chip" title="@(primary.IsUnlimited ? "Delegated with no end date" : "Delegated until " + primary.ExpirationDate.ToString("dd MMM yyyy, hh:mm tt"))">
+                                                        <i class="ri-arrow-right-line"></i> @primary.DelegatedUserName · @(primary.IsUnlimited ? "no end date" : "until " + primary.ExpirationDate.ToString("dd MMM, hh:mm tt"))
+                                                    </span>
+                                                }
+                                            </div>
+                                            @if (hasSecond)
+                                            {
+                                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                                    <span>2 · @item.SecondInterviewerName</span>
+                                                    @if (second != null)
+                                                    {
+                                                        <span class="tps-delegated-chip" title="@(second.IsUnlimited ? "Delegated with no end date" : "Delegated until " + second.ExpirationDate.ToString("dd MMM yyyy, hh:mm tt"))">
+                                                            <i class="ri-arrow-right-line"></i> @second.DelegatedUserName · @(second.IsUnlimited ? "no end date" : "until " + second.ExpirationDate.ToString("dd MMM, hh:mm tt"))
+                                                        </span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <div>@item.Date.ToString("dd MMM yyyy")</div>
+                                        <div class="text-muted fs-12">@item.Date.ToString("hh:mm tt")</div>
+                                    </td>
+                                    <td>@InterviewStatusUi.Badge(item.StatusName)</td>
+                                    <td class="text-end">
+                                        <a asp-action="Delegate" asp-route-id="@item.InterviewsId" class="btn btn-secondary btn-sm text-nowrap">
+                                            @(isDelegated ? "Manage" : "Delegate") <i class="ri-arrow-right-s-line"></i>
+                                        </a>
+                                    </td>
                                 </tr>
                             }
-                        </tbody>
-                    </table>
+                        }
+                        <tr id="noRows" class="@(total > 0 ? "d-none" : "")">
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="ri-inbox-line fs-24 d-block mb-2"></i>
+                                <span id="noRowsText">@(total > 0 ? "No interviews match your search." : "No pending interviews need delegation right now.")</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-                    <div class="modal fade" id="delegateModal" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Delegate Selected Interviews</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="form-group mb-3">
-                                        <label class="form-label" for="delegatedUserId">Delegated User <span class="text-danger">*</span></label>
-                                        <select id="delegatedUserId" name="delegatedUserId" class="form-control">
-                                            <option value="">-- Select user --</option>
-                                            @foreach (var user in Model.DelegateCandidates)
-                                            {
-                                                <option value="@user.Id">@user.Name</option>
-                                            }
-                                        </select>
-                                        <span id="delegatedUserError" class="text-danger" style="display:none;">Please select a delegated user.</span>
-                                    </div>
-                                    <div class="form-group mb-0">
-                                        <label class="form-label" for="durationId">Duration</label>
-                                        <select id="durationId" name="durationId" class="form-control">
-                                            <option value="">-- Select duration --</option>
-                                            @foreach (var duration in Model.Durations)
-                                            {
-                                                <option value="@duration.Id">@duration.Name</option>
-                                            }
-                                        </select>
-                                        <span id="durationError" class="text-danger" style="display:none;">Please select an active delegation duration.</span>
-                                        @if (Model.Durations.Count == 0)
-                                        {
-                                            <span class="text-muted">No active durations are available. Add one from Delegation Durations.</span>
-                                        }
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <button type="button" id="confirmDelegate" class="btn btn-primary">Delegate</button>
-                                </div>
+            <div class="tps-bulkbar d-none" id="bulkBar" role="region" aria-label="Selected interviews">
+                <span><strong id="selectedCount">0</strong> <span id="selectedWord">interviews</span> selected</span>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-light btn-sm" id="clearSelection">Clear</button>
+                    <button type="button" id="openDelegate" class="btn btn-primary btn-sm">
+                        <i class="ri-user-shared-line me-1"></i> Delegate selected
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal fade" id="delegateModal" tabindex="-1" aria-labelledby="delegateModalTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="delegateModalTitle">Delegate selected interviews</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body d-flex flex-column gap-3">
+                            <p class="text-muted mb-0">
+                                The delegate covers <strong>Interviewer 1</strong> on each selected interview. To cover Interviewer 2,
+                                open the interview and delegate it individually.
+                            </p>
+                            <div>
+                                <label class="form-label" for="delegatedUserId">Delegate to <span class="text-danger">*</span></label>
+                                <select id="delegatedUserId" name="delegatedUserId" class="form-select" data-searchable>
+                                    <option value="">Search for a colleague…</option>
+                                    @foreach (var user in Model.DelegateCandidates)
+                                    {
+                                        <option value="@user.Id">@user.Name</option>
+                                    }
+                                </select>
+                                <span id="delegatedUserError" class="text-danger d-none">Choose who will submit the scores.</span>
+                            </div>
+                            <div>
+                                <label class="form-label" for="durationId">Access period <span class="text-danger">*</span></label>
+                                <select id="durationId" name="durationId" class="form-select">
+                                    <option value="">Choose how long…</option>
+                                    @foreach (var duration in Model.Durations)
+                                    {
+                                        <option value="@duration.Id">@duration.Name</option>
+                                    }
+                                </select>
+                                <span id="durationError" class="text-danger d-none">Choose how long the delegation lasts.</span>
+                                @if (Model.Durations.Count == 0)
+                                {
+                                    <div class="form-text text-danger">No active durations. Add one under Delegation Durations.</div>
+                                }
                             </div>
                         </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" id="confirmDelegate" class="btn btn-primary">Review delegation</button>
+                        </div>
                     </div>
-                </form>
+                </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    var table = document.getElementById('delegationTable');
+    var rows = Array.prototype.slice.call(table.querySelectorAll('tbody tr[data-search]'));
+    var noRows = document.getElementById('noRows');
+    var search = document.getElementById('delegationSearch');
     var selectAll = document.getElementById('selectAllInterviews');
-    var selectionError = document.getElementById('selectionError');
+    var bulkBar = document.getElementById('bulkBar');
     var userSelect = document.getElementById('delegatedUserId');
-    var userError = document.getElementById('delegatedUserError');
     var durationSelect = document.getElementById('durationId');
-    var durationError = document.getElementById('durationError');
     var delegateModal = new bootstrap.Modal(document.getElementById('delegateModal'));
 
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text == null ? '' : String(text);
+        return div.innerHTML;
+    }
+
+    function visibleChecks() {
+        return rows.filter(function (r) { return !r.classList.contains('d-none'); })
+                   .map(function (r) { return r.querySelector('.interview-check'); })
+                   .filter(Boolean);
+    }
+
     function selectedChecks() {
-        return Array.prototype.slice.call(document.querySelectorAll('.interview-check:checked'));
+        return Array.prototype.slice.call(table.querySelectorAll('.interview-check:checked'));
     }
 
-    if (selectAll) {
-        selectAll.addEventListener('change', function () {
-            document.querySelectorAll('.interview-check').forEach(function (box) {
-                box.checked = selectAll.checked;
-            });
-            if (selectAll.checked)
-                selectionError.style.display = 'none';
+    function refreshSelection() {
+        var selected = selectedChecks();
+        rows.forEach(function (r) {
+            var box = r.querySelector('.interview-check');
+            r.classList.toggle('tps-row-selected', !!(box && box.checked));
         });
+        document.getElementById('selectedCount').textContent = selected.length;
+        document.getElementById('selectedWord').textContent = selected.length === 1 ? 'interview' : 'interviews';
+        bulkBar.classList.toggle('d-none', selected.length === 0);
+
+        var visible = visibleChecks();
+        var visibleSelected = visible.filter(function (b) { return b.checked; }).length;
+        selectAll.checked = visible.length > 0 && visibleSelected === visible.length;
+        selectAll.indeterminate = visibleSelected > 0 && visibleSelected < visible.length;
+        selectAll.disabled = visible.length === 0;
     }
 
-    document.querySelectorAll('.interview-check').forEach(function (box) {
-        box.addEventListener('change', function () {
-            var checks = document.querySelectorAll('.interview-check');
-            var checked = document.querySelectorAll('.interview-check:checked');
-            if (selectAll)
-                selectAll.checked = checks.length > 0 && checked.length === checks.length;
-            if (checked.length > 0)
-                selectionError.style.display = 'none';
+    function applyFilters() {
+        var term = (search.value || '').trim().toLowerCase();
+        var view = document.querySelector('input[name="delegationView"]:checked').value;
+        var shown = 0;
+        rows.forEach(function (r) {
+            var matchesText = !term || r.getAttribute('data-search').indexOf(term) !== -1;
+            var delegated = r.getAttribute('data-delegated') === 'true';
+            var matchesView = view === 'all' || (view === 'delegated' ? delegated : !delegated);
+            var show = matchesText && matchesView;
+            r.classList.toggle('d-none', !show);
+            if (show) shown++;
         });
+        if (rows.length > 0) noRows.classList.toggle('d-none', shown > 0);
+        refreshSelection();
+    }
+
+    search.addEventListener('input', applyFilters);
+    document.querySelectorAll('input[name="delegationView"]').forEach(function (r) { r.addEventListener('change', applyFilters); });
+
+    selectAll.addEventListener('change', function () {
+        visibleChecks().forEach(function (box) { box.checked = selectAll.checked; });
+        refreshSelection();
+    });
+
+    table.addEventListener('change', function (e) {
+        if (e.target.classList.contains('interview-check')) refreshSelection();
+    });
+
+    document.getElementById('clearSelection').addEventListener('click', function () {
+        selectedChecks().forEach(function (box) { box.checked = false; });
+        refreshSelection();
     });
 
     document.getElementById('openDelegate').addEventListener('click', function () {
-        if (selectedChecks().length === 0) {
-            selectionError.style.display = 'block';
-            return;
-        }
-
-        selectionError.style.display = 'none';
-        delegateModal.show();
+        if (selectedChecks().length > 0) delegateModal.show();
     });
 
     userSelect.addEventListener('change', function () {
-        if (userSelect.value)
-            userError.style.display = 'none';
+        if (userSelect.value) document.getElementById('delegatedUserError').classList.add('d-none');
     });
-
     durationSelect.addEventListener('change', function () {
-        if (durationSelect.value)
-            durationError.style.display = 'none';
+        if (durationSelect.value) document.getElementById('durationError').classList.add('d-none');
+        if (durationSelect.tomselect) durationSelect.tomselect.wrapper.classList.remove('is-invalid');
     });
 
     document.getElementById('confirmDelegate').addEventListener('click', function () {
         var valid = true;
-        if (!userSelect.value) {
-            userError.style.display = 'block';
-            valid = false;
-        } else {
-            userError.style.display = 'none';
-        }
+        document.getElementById('delegatedUserError').classList.toggle('d-none', !!userSelect.value);
+        document.getElementById('durationError').classList.toggle('d-none', !!durationSelect.value);
+        [userSelect, durationSelect].forEach(function (s) {
+            if (s.tomselect) s.tomselect.wrapper.classList.toggle('is-invalid', !s.value);
+        });
+        if (!userSelect.value || !durationSelect.value) valid = false;
+        if (!valid) return;
 
-        if (!durationSelect.value) {
-            durationError.style.display = 'block';
-            valid = false;
-        } else {
-            durationError.style.display = 'none';
-        }
+        var selected = selectedChecks();
+        var names = selected.slice(0, 5).map(function (b) { return '<li>' + escapeHtml(b.getAttribute('data-name')) + '</li>'; }).join('');
+        if (selected.length > 5) names += '<li>and ' + (selected.length - 5) + ' more</li>';
 
-        if (!valid)
-            return;
-
-        var count = selectedChecks().length;
         var userName = userSelect.options[userSelect.selectedIndex].text;
         var durationName = durationSelect.options[durationSelect.selectedIndex].text;
-        var interviewWord = count === 1 ? 'interview' : 'interviews';
 
+        delegateModal.hide();
         Swal.fire({
-            title: 'Are you sure?',
-            text: 'You are about to delegate ' + count + ' ' + interviewWord + ' to ' + userName + ' for ' + durationName + '.',
-            icon: 'warning',
+            title: 'Delegate ' + selected.length + ' ' + (selected.length === 1 ? 'interview' : 'interviews') + '?',
+            html: '<strong>' + escapeHtml(userName) + '</strong> can submit the score for <strong>' + escapeHtml(durationName)
+                + '</strong> on:<ul class="text-start mt-2 mb-2">' + names + '</ul>'
+                + 'Interviewer 1 on each one can still submit too; whoever submits first completes it.',
+            icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delegate!',
-            cancelButtonText: 'No, cancel!'
+            confirmButtonText: 'Delegate',
+            cancelButtonText: 'Back',
+            reverseButtons: true,
+            focusCancel: true
         }).then(function (result) {
-            if (result.isConfirmed)
-                document.getElementById('bulkDelegateForm').submit();
+            if (result.isConfirmed) document.getElementById('bulkDelegateForm').submit();
+            else delegateModal.show();
         });
     });
+
+    applyFilters();
 });
 </script>

@@ -1,43 +1,62 @@
 ﻿@model CMS.Application.DTOs.NotificationsDTO
 
 @{
-    ViewData["Title"] = "Delete";
+    ViewData["Title"] = "Delete Notification";
 }
 
-<h1>Delete</h1>
-
-<h3>Are you sure you want to delete this?</h3>
-<div>
-    <h4>Notifications</h4>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.ReceiverId)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.ReceiverId)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SendDate)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SendDate)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Title)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Title)
-        </dd>
-
- 
-      
-      
-    </dl>
-    
-    <form asp-action="Delete">
-        <a class="btn btn-secondary" asp-action="Index">Back to List</a>
-        <input type="submit" value="Delete" class="btn btn-danger" /> 
-        
-    </form>
+<div class="tps-ihead">
+    <div class="tps-ihead__who">
+        <span class="tps-ihead__avatar tps-ihead__avatar--danger" aria-hidden="true"><i class="ri-notification-off-line"></i></span>
+        <div>
+            <p class="tps-ihead__eyebrow">Delete notification</p>
+            <h2 class="tps-ihead__name" dir="auto">@Html.Raw(Model.Title)</h2>
+            <div class="tps-ihead__meta">
+                <span class="tps-chip"><i class="ri-time-line"></i>@Model.SendDate.ToString("dd MMM yyyy, h:mm tt")</span>
+            </div>
+        </div>
+    </div>
 </div>
+
+<div class="row justify-content-center">
+    <div class="col-xl-9">
+        <div class="tps-danger-note" role="note">
+            <i class="ri-error-warning-line"></i>
+            <div>The notification is removed from the receiver's inbox.</div>
+        </div>
+
+        <div class="card tps-delete-card">
+            <div class="card-header">
+                <i class="ri-delete-bin-6-line"></i>
+                <h4 class="card-title">What will be deleted</h4>
+            </div>
+            <div class="card-body">
+                <dl class="tps-dl">
+                <div>
+                    <dt>Title</dt>
+                    <dd>@Html.Raw(Model.Title)</dd>
+                </div>
+                <div>
+                    <dt>Sent</dt>
+                    <dd>@Model.SendDate.ToString("dd MMM yyyy, h:mm tt")</dd>
+                </div>
+                <div>
+                    <dt>Receiver</dt>
+                    <dd>@Model.ReceiverId</dd>
+                </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="deleteForm" asp-action="Delete">
+    <div class="tps-factions">
+        <span class="tps-factions__note"><i class="ri-information-line"></i> You'll be asked to confirm. This can't be undone.</span>
+        <div class="tps-factions__buttons">
+            <a class="btn btn-secondary" asp-action="Index">Cancel</a>
+            <button type="button" class="btn btn-danger px-4" data-tps-delete data-confirm-title="Delete this notification?"><i class="ri-delete-bin-6-line me-1"></i> Delete notification</button>
+        </div>
+    </div>
+</form>
+
+@await Html.PartialAsync("_DeleteConfirm")

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using CMS.Application.DTOs;
+using Microsoft.AspNetCore.Identity;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -10,4 +11,7 @@ public interface IUserRepository
     List<string> GetUserRoles(IdentityUser user);
     Task<bool> Delete(string id);
     Task<IdentityUser> GetUserById(string userId);
+    Task<Dictionary<string, string>> GetUserNamesAsync(IEnumerable<string> userIds);
+    Task<Dictionary<string, string>> GetFirstRoleNamesAsync(IEnumerable<string> userIds);
+    Task<(List<Register> Users, int TotalCount)> GetUsersPageAsync(string userNameFilter, int pageNumber, int pageSize);
 }

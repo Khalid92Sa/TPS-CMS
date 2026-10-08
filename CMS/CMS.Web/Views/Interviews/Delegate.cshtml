@@ -1,256 +1,632 @@
 @model CMS.Application.DTOs.DelegateInterviewPageDTO
+@using CMS.Application.DTOs
 @{
-    ViewData["Title"] = "Delegate Pending Interview";
+    ViewData["Title"] = "Interview Delegation";
     bool hasSecondInterviewer = !string.IsNullOrEmpty(Model.SecondInterviewerId);
+    DateTime now = DateTime.Now;
+
+    var slots = new List<(string Key, string Label, string PersonId, string PersonName, string Role, InterviewDelegationHistoryItemDTO Active)>
+    {
+        ("Primary", hasSecondInterviewer ? "Interviewer 1" : "Assigned interviewer", Model.PrimaryInterviewerId, Model.PrimaryInterviewerName, Model.PrimaryRole, Model.ActivePrimary)
+    };
+    if (hasSecondInterviewer)
+    {
+        slots.Add(("Second", "Interviewer 2", Model.SecondInterviewerId, Model.SecondInterviewerName, Model.SecondRole, Model.ActiveSecond));
+    }
+
+    bool anyFreeSlot = slots.Any(s => s.Active == null);
+
+    string Initials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(new[] { ' ', '.', '_', '-', '@' }, StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 1
+            ? parts[0].Substring(0, Math.Min(2, parts[0].Length))
+            : $"{parts[0][0]}{parts[1][0]}";
+    }
+
+    string StatusClass(string status) => status switch
+    {
+        "Active" => "tps-status--active",
+        "Not started" => "tps-status--pending",
+        "Completed" => "tps-status--completed",
+        "Removed" => "tps-status--removed",
+        "Closed" => "tps-status--closed",
+        _ => "tps-status--expired"
+    };
+
+    string TimelineClass(string status) => status switch
+    {
+        "Active" or "Not started" => "tps-timeline__item--active",
+        "Completed" => "tps-timeline__item--completed",
+        "Removed" => "tps-timeline__item--removed",
+        _ => ""
+    };
+
+    string TimelineIcon(string status) => status switch
+    {
+        "Active" or "Not started" => "ri-user-shared-line",
+        "Completed" => "ri-checkbox-circle-line",
+        "Removed" => "ri-close-circle-line",
+        "Closed" => "ri-lock-line",
+        _ => "ri-time-line"
+    };
+
+    string Remaining(DateTime until)
+    {
+        TimeSpan left = until - now;
+        if (left.TotalMinutes < 1) return "less than a minute";
+        if (left.TotalHours < 1) return $"{(int)left.TotalMinutes} min";
+        if (left.TotalDays < 1) return $"{(int)left.TotalHours} h {left.Minutes} min";
+        return $"{(int)left.TotalDays} d {left.Hours} h";
+    }
+
+    int ElapsedPercent(InterviewDelegationHistoryItemDTO d)
+    {
+        double total = (d.ExpirationDate - d.StartDate).TotalMinutes;
+        if (total <= 0) return 100;
+        double done = (now - d.StartDate).TotalMinutes;
+        return (int)Math.Clamp(Math.Round(done / total * 100), 0, 100);
+    }
 }
 
-<style>
-    .details-card {
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        border-radius: 10px;
-        overflow: hidden;
-    }
+@* ---------- Messages ---------- *@
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success tps-flash" role="status"><i class="ri-checkbox-circle-line"></i><div>@TempData["SuccessMessage"]</div></div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger tps-flash" role="alert"><i class="ri-error-warning-line"></i><div>@TempData["ErrorMessage"]</div></div>
+}
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="alert alert-danger tps-flash" role="alert"><i class="ri-error-warning-line"></i><div>@ViewBag.ErrorMessage</div></div>
+}
+@if (!Model.IsPending)
+{
+    <div class="alert alert-info tps-flash" role="status">
+        <i class="ri-lock-line"></i>
+        <div>This interview has been scored, so its delegations are closed. The history below is read-only.</div>
+    </div>
+}
 
-    .card-header-custom {
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-        color: white;
-        padding: 20px;
-    }
+<div class="mb-3">
+    <a asp-action="Delegation" class="btn btn-secondary btn-sm"><i class="ri-arrow-left-line me-1"></i> All pending interviews</a>
+</div>
 
-    .card-body-custom {
-        padding: 20px;
-    }
-</style>
+<div class="row">
+    <div class="col-xl-8">
 
-<div class="container mt-4">
-    <div class="card details-card">
-        <div class="card-header card-header-custom">
-            <h4 class="mb-0" style="color:white;">Delegate Pending Interview</h4>
-        </div>
-        <div class="card-body card-body-custom">
-            @if (TempData["SuccessMessage"] != null)
-            {
-                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
-            }
-            @if (TempData["ErrorMessage"] != null)
-            {
-                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
-            }
-            @if (ViewBag.ErrorMessage != null)
-            {
-                <div class="alert alert-danger">@ViewBag.ErrorMessage</div>
-            }
-
-            <p>
-                The assigned interviewer stays on this interview.
-                The delegated user receives temporary access to enter the score for this interview only, until the expiration time.
-                Their account role is not changed.
-            </p>
-
-            <dl class="row">
-                <dt class="col-sm-3">Candidate</dt>
-                <dd class="col-sm-9">@Model.CandidateName</dd>
-                <dt class="col-sm-3">Position</dt>
-                <dd class="col-sm-9">@Model.PositionName</dd>
-                <dt class="col-sm-3">Interview date</dt>
-                <dd class="col-sm-9">@Model.InterviewDate.ToString("dd/MM/yyyy hh:mm tt")</dd>
-                <dt class="col-sm-3">Status</dt>
-                <dd class="col-sm-9">@Model.StatusName</dd>
-                <dt class="col-sm-3">Assigned interviewer</dt>
-                <dd class="col-sm-9">@Model.PrimaryInterviewerName (@Model.PrimaryRole)</dd>
-                @if (hasSecondInterviewer)
-                {
-                    <dt class="col-sm-3">Second interviewer</dt>
-                    <dd class="col-sm-9">@Model.SecondInterviewerName (@Model.SecondRole)</dd>
-                }
-            </dl>
-
-            <form id="delegateForm" asp-action="Delegate" asp-route-id="@Model.InterviewId" method="post" novalidate data-candidate="@Model.CandidateName">
-                @Html.AntiForgeryToken()
-
-                @if (hasSecondInterviewer)
-                {
-                    <div class="form-group mb-3">
-                        <label class="form-label">Cover this interviewer</label>
-                        <div>
-                            <label class="me-3">
-                                <input type="radio" name="interviewerSlot" value="Primary|@Model.PrimaryInterviewerId" checked />
-                                @Model.PrimaryInterviewerName
-                            </label>
-                            <label>
-                                <input type="radio" name="interviewerSlot" value="Second|@Model.SecondInterviewerId" />
-                                @Model.SecondInterviewerName
-                            </label>
-                        </div>
+        @* ---------- Interview summary ---------- *@
+        <div class="card">
+            <div class="card-body">
+                <dl class="tps-dlg-facts">
+                    <div>
+                        <dt>Candidate</dt>
+                        <dd>@Model.CandidateName</dd>
                     </div>
-                }
-                else
-                {
-                    <input type="hidden" name="interviewerSlot" value="Primary|@Model.PrimaryInterviewerId" />
-                }
+                    <div>
+                        <dt>Position</dt>
+                        <dd>@Model.PositionName</dd>
+                    </div>
+                    <div>
+                        <dt>Interview date</dt>
+                        <dd>@Model.InterviewDate.ToString("ddd, dd MMM yyyy")<small>@Model.InterviewDate.ToString("hh:mm tt")</small></dd>
+                    </div>
+                    <div>
+                        <dt>Interview status</dt>
+                        <dd>
+                            @InterviewStatusUi.Badge(Model.StatusName)
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
 
-                <div class="form-group mb-3">
-                    <label class="form-label" for="delegatedUserId">Delegated User <span class="text-danger">*</span></label>
-                    <select id="delegatedUserId" name="delegatedUserId" class="form-control">
-                        <option value="">-- Select user --</option>
-                        @foreach (var user in Model.DelegateCandidates)
-                        {
-                            <option value="@user.Id">@user.Name</option>
-                        }
-                    </select>
-                    <span id="delegatedUserError" class="text-danger" style="display:none;">Please select a delegated user.</span>
+        @* ---------- Interviewer slots ---------- *@
+        <div class="card">
+            <div class="card-header">
+                <div class="tps-section-title">
+                    <div>
+                        <h4 class="card-title">Who can submit the score</h4>
+                        <p>While a delegation is active, the original interviewer and the delegate can both submit. Whoever submits first completes the interview.</p>
+                    </div>
                 </div>
-
-                <div class="form-group mb-3">
-                    <label class="form-label" for="durationId">Duration</label>
-                    <select id="durationId" name="durationId" class="form-control">
-                        <option value="">-- Select duration --</option>
-                        @foreach (var duration in Model.Durations)
-                        {
-                            <option value="@duration.Id">@duration.Name</option>
-                        }
-                    </select>
-                    @if (Model.Durations.Count == 0)
+            </div>
+            <div class="card-body">
+                <div class="tps-slots">
+                    @foreach (var slot in slots)
                     {
-                        <span class="text-muted">No active durations are available. Add one from Delegation Durations.</span>
+                        var active = slot.Active;
+                        <section class="tps-slot @(active != null ? "tps-slot--delegated" : "")" aria-label="@slot.Label">
+                            <div class="tps-slot__head">
+                                <span class="tps-slot__label">@slot.Label</span>
+                                @if (active != null)
+                                {
+                                    <span class="tps-status @StatusClass(active.Status)">Delegated</span>
+                                }
+                                else if (Model.IsPending)
+                                {
+                                    <span class="tps-status tps-status--approved">Can submit</span>
+                                }
+                            </div>
+
+                            @if (active == null)
+                            {
+                                <div class="tps-person">
+                                    <span class="tps-person__av">@Initials(slot.PersonName)</span>
+                                    <div>
+                                        <div class="tps-person__name">@slot.PersonName</div>
+                                        <div class="tps-person__meta">@slot.Role · Original assigned interviewer</div>
+                                    </div>
+                                </div>
+                                @if (Model.IsPending)
+                                {
+                                    <div class="tps-slot__actions">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" data-delegate-slot="@slot.Key">
+                                            <i class="ri-user-shared-line me-1"></i> Delegate this interviewer
+                                        </button>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="tps-handoff">
+                                    <div class="tps-person">
+                                        <span class="tps-person__av">@Initials(slot.PersonName)</span>
+                                        <div>
+                                            <div class="tps-person__name">@slot.PersonName</div>
+                                            <div class="tps-person__meta">Original · can submit</div>
+                                        </div>
+                                    </div>
+                                    <span class="tps-handoff__arrow" aria-hidden="true"><i class="ri-arrow-right-line"></i></span>
+                                    <div class="tps-person">
+                                        <span class="tps-person__av tps-person__av--accent">@Initials(active.DelegatedUserName)</span>
+                                        <div>
+                                            <div class="tps-person__name">@active.DelegatedUserName</div>
+                                            <div class="tps-person__meta">Delegate · can submit</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="tps-slot__window">
+                                        <span>From <strong>@active.StartDate.ToString("dd MMM, hh:mm tt")</strong></span>
+                                        @if (active.IsUnlimited)
+                                        {
+                                            <span><span aria-hidden="true">∞</span> <strong>No end date</strong> · stays until removed or scored</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Until <strong>@active.ExpirationDate.ToString("dd MMM, hh:mm tt")</strong></span>
+                                            <span><strong>@Remaining(active.ExpirationDate)</strong> left</span>
+                                        }
+                                    </div>
+                                    @if (!active.IsUnlimited)
+                                    {
+                                        <div class="tps-progress mt-2" role="progressbar" aria-label="Delegation time used" aria-valuenow="@ElapsedPercent(active)" aria-valuemin="0" aria-valuemax="100">
+                                            <span style="width:@ElapsedPercent(active)%"></span>
+                                        </div>
+                                    }
+                                    <div class="tps-person__meta mt-2">Delegated by @active.DelegatedByName · @active.Duration</div>
+                                </div>
+
+                                @if (active.CanRemove)
+                                {
+                                    <div class="tps-slot__actions">
+                                        <button type="button" class="btn btn-secondary btn-sm"
+                                                data-change-delegation="@active.Id"
+                                                data-change-slot="@slot.Key"
+                                                data-change-original="@slot.PersonName"
+                                                data-change-delegate="@active.DelegatedUserName"
+                                                data-change-duration="@active.Duration">
+                                            <i class="ri-swap-line me-1"></i> Change delegate
+                                        </button>
+                                        <form id="removeDelegate-@active.Id" asp-action="RemoveDelegate" asp-route-id="@Model.InterviewId" asp-route-delegationId="@active.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="button" class="btn btn-danger btn-sm remove-delegate"
+                                                    data-form="removeDelegate-@active.Id"
+                                                    data-user="@active.DelegatedUserName"
+                                                    data-original="@slot.PersonName">
+                                                <i class="ri-user-unfollow-line me-1"></i> Remove delegation
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                            }
+                        </section>
                     }
                 </div>
-
-                <button type="submit" class="btn btn-primary">Delegate</button>
-                <a asp-action="Delegation" class="btn btn-secondary">Cancel</a>
-            </form>
-
-            <hr />
-            <h5>Delegation History</h5>
-            @if (Model.History.Count == 0)
-            {
-                <p class="text-muted mb-0">No previous delegations.</p>
-            }
-            else
-            {
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Original interviewer</th>
-                            <th>Delegated user</th>
-                            <th>Delegated by</th>
-                            <th>Delegation date</th>
-                            <th>Duration</th>
-                            <th>Expiry</th>
-                            <th>Status</th>
-                            <th>Removed by</th>
-                            <th>Removed on</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model.History)
-                        {
-                            <tr class="@(item.Status == "Active" ? "table-success" : null)">
-                                <td>@item.OriginalInterviewerName</td>
-                                <td>
-                                    @item.DelegatedUserName
-                                    @if (item.CanRemove)
-                                    {
-                                        <form id="removeDelegate-@item.Id" asp-action="RemoveDelegate" asp-route-id="@Model.InterviewId" asp-route-delegationId="@item.Id" method="post" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <button type="button" class="btn btn-link btn-sm text-danger p-0 ms-2 remove-delegate" data-user="@item.DelegatedUserName" data-form="removeDelegate-@item.Id">Remove delegate</button>
-                                        </form>
-                                    }
-                                </td>
-                                <td>@item.DelegatedByName</td>
-                                <td>@item.CreatedOn.ToString("dd/MM/yyyy hh:mm tt")</td>
-                                <td>@item.Duration</td>
-                                <td>@item.ExpirationDate.ToString("dd/MM/yyyy hh:mm tt")</td>
-                                <td>
-                                    @if (item.Status == "Active")
-                                    {
-                                        <span class="badge bg-success">Active</span>
-                                    }
-                                    else if (item.Status == "Expired")
-                                    {
-                                        <span class="badge bg-secondary">Expired</span>
-                                    }
-                                    else if (item.Status == "Cancelled")
-                                    {
-                                        <span class="badge bg-danger">Removed</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-warning text-dark">@item.Status</span>
-                                    }
-                                </td>
-                                <td>@item.RemovedByName</td>
-                                <td>@(item.RemovedOn.HasValue ? item.RemovedOn.Value.ToString("dd/MM/yyyy hh:mm tt") : null)</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
+            </div>
         </div>
+    </div>
+
+    <div class="col-xl-4">
+        @* ---------- Delegate form ---------- *@
+        @if (Model.IsPending)
+        {
+            <div class="card" id="delegateCard">
+                <div class="card-header">
+                    <h4 class="card-title" id="delegateFormTitle">New delegation</h4>
+                </div>
+                <div class="card-body">
+                    @if (!anyFreeSlot)
+                    {
+                        <p class="text-muted mb-3" id="allDelegatedNote">
+                            Every interviewer on this interview is already delegated. Use <strong>Change delegate</strong> or
+                            <strong>Remove delegation</strong> on the left.
+                        </p>
+                    }
+
+                    <form id="delegateForm" asp-action="Delegate" asp-route-id="@Model.InterviewId" method="post" novalidate
+                          data-candidate="@Model.CandidateName" class="d-flex flex-column gap-3 @(anyFreeSlot ? "" : "d-none")">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="replaceDelegationId" id="replaceDelegationId" value="" />
+
+                        <div id="changeBanner" class="alert alert-info tps-flash mb-0 d-none">
+                            <i class="ri-swap-line"></i>
+                            <div>
+                                Replacing <strong data-change-text="delegate"></strong> for <strong data-change-text="original"></strong>.
+                                The current delegation ends the moment you confirm.
+                                <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline" id="cancelChange">Cancel change</button>
+                            </div>
+                        </div>
+
+                        <fieldset>
+                            <legend class="form-label">Interviewer to cover</legend>
+                            <div class="tps-choice-group">
+                                @foreach (var slot in slots)
+                                {
+                                    bool taken = slot.Active != null;
+                                    bool firstFree = slot.Key == slots.First(s => s.Active == null || !anyFreeSlot).Key && !taken;
+                                    <label class="tps-choice">
+                                        <input type="radio" name="interviewerSlot" value="@slot.Key|@slot.PersonId"
+                                               data-slot="@slot.Key" data-person="@slot.PersonName" data-taken="@(taken ? "true" : "false")"
+                                               @(taken ? "disabled" : "") @(firstFree ? "checked" : "") />
+                                        <span class="tps-choice__body">
+                                            <span class="tps-person__av" style="width:32px;height:32px;font-size:0.72rem;">@Initials(slot.PersonName)</span>
+                                            <span>
+                                                <span class="tps-person__name d-block">@slot.PersonName</span>
+                                                <span class="tps-person__meta">@slot.Label</span>
+                                            </span>
+                                            @if (taken)
+                                            {
+                                                <span class="tps-choice__note">Delegated</span>
+                                            }
+                                        </span>
+                                    </label>
+                                }
+                            </div>
+                        </fieldset>
+
+                        <div>
+                            <label class="form-label" for="delegatedUserId">Delegate to <span class="text-danger">*</span></label>
+                            <select id="delegatedUserId" name="delegatedUserId" class="form-select" data-searchable>
+                                <option value="">Search for a colleague…</option>
+                                @foreach (var user in Model.DelegateCandidates)
+                                {
+                                    <option value="@user.Id">@user.Name</option>
+                                }
+                            </select>
+                            <span id="delegatedUserError" class="text-danger d-none">Choose who will submit the score.</span>
+                            <div class="form-text">Assigned interviewers, administrators and viewers are not listed.</div>
+                        </div>
+
+                        <div>
+                            <label class="form-label" for="durationId">Access period <span class="text-danger">*</span></label>
+                            <select id="durationId" name="durationId" class="form-select">
+                                <option value="">Choose how long…</option>
+                                @foreach (var duration in Model.Durations)
+                                {
+                                    <option value="@duration.Id" data-minutes="@duration.DurationMinutes" data-unlimited="@(duration.IsUnlimited ? "true" : "false")">@duration.Name</option>
+                                }
+                            </select>
+                            <span id="durationError" class="text-danger d-none">Choose how long the delegation lasts.</span>
+                            @if (Model.Durations.Count == 0)
+                            {
+                                <div class="form-text text-danger">No active durations. Add one under Delegation Durations.</div>
+                            }
+                        </div>
+
+                        <div class="tps-slot__window d-none" id="delegatePreview" aria-live="polite"></div>
+
+                        <button type="submit" class="btn btn-primary w-100" id="delegateSubmit">
+                            <i class="ri-user-shared-line me-1"></i> <span>Review delegation</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        @* ---------- Rules ---------- *@
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">How delegation works</h4>
+            </div>
+            <div class="card-body">
+                <ul class="tps-rule-list">
+                    <li><i class="ri-user-shared-line"></i><span>The delegate can submit the score for this interview only, for the period you choose. Their role doesn't change.</span></li>
+                    <li><i class="ri-team-line"></i><span>The original interviewer stays assigned and can still submit. Whoever submits first completes the interview.</span></li>
+                    <li><i class="ri-time-line"></i><span>The delegate's access ends on its own when the period expires.</span></li>
+                    <li><i class="ri-user-unfollow-line"></i><span>You can remove or change a delegation any time before the score is submitted. The delegate loses access immediately.</span></li>
+                    <li><i class="ri-checkbox-circle-line"></i><span>Once the delegate submits the score, the delegation is completed and can no longer be removed.</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ---------- History ---------- *@
+<div class="card">
+    <div class="card-header">
+        <div class="tps-section-title">
+            <div>
+                <h4 class="card-title">Delegation history</h4>
+                <p>Every delegation on this interview, newest first.</p>
+            </div>
+            <span class="tps-results-count"><strong>@Model.History.Count</strong> @(Model.History.Count == 1 ? "record" : "records")</span>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (Model.History.Count == 0)
+        {
+            <div class="text-center text-muted py-4">
+                <i class="ri-history-line fs-24 d-block mb-2"></i>
+                No delegations yet. The assigned interviewers are the only people who can submit the score.
+            </div>
+        }
+        else
+        {
+            <ol class="tps-timeline">
+                @foreach (var item in Model.History)
+                {
+                    <li class="tps-timeline__item @TimelineClass(item.Status)">
+                        <span class="tps-timeline__dot" aria-hidden="true"><i class="@TimelineIcon(item.Status)"></i></span>
+                        <div class="tps-timeline__card">
+                            <div class="tps-timeline__top">
+                                <span class="tps-timeline__title">
+                                    @item.OriginalInterviewerName <i class="ri-arrow-right-line text-muted mx-1" aria-label="to"></i> @item.DelegatedUserName
+                                </span>
+                                <span class="tps-status @StatusClass(item.Status)">@item.Status</span>
+                            </div>
+                            <dl class="tps-timeline__meta">
+                                <div><dt>Slot</dt><dd>@(item.InterviewerSlot == "Second" ? "Interviewer 2" : "Interviewer 1")</dd></div>
+                                <div><dt>Delegated by</dt><dd>@item.DelegatedByName</dd></div>
+                                <div><dt>Created</dt><dd>@item.CreatedOn.ToString("dd MMM yyyy, hh:mm tt")</dd></div>
+                                <div><dt>Period</dt><dd>@item.Duration@(item.IsUnlimited ? " (no end date)" : $" (until {item.ExpirationDate:dd MMM, hh:mm tt})")</dd></div>
+                                @if (item.Status == "Removed" && item.RemovedOn.HasValue)
+                                {
+                                    <div><dt>Removed</dt><dd>@item.RemovedOn.Value.ToString("dd MMM yyyy, hh:mm tt")@(item.RemovedByName != null ? $" by {item.RemovedByName}" : "")</dd></div>
+                                }
+                                else if ((item.Status == "Completed" || item.Status == "Closed") && item.EndedOn.HasValue)
+                                {
+                                    <div><dt>@(item.Status == "Completed" ? "Score submitted" : "Interview scored")</dt><dd>@item.EndedOn.Value.ToString("dd MMM yyyy, hh:mm tt")</dd></div>
+                                }
+                            </dl>
+                        </div>
+                    </li>
+                }
+            </ol>
+        }
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    var allowDelegateSubmit = false;
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('delegateForm');
+    var card = document.getElementById('delegateCard');
 
-    document.getElementById('delegateForm').addEventListener('submit', function (event) {
-        if (allowDelegateSubmit)
-            return;
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text == null ? '' : String(text);
+        return div.innerHTML;
+    }
 
-        event.preventDefault();
-        var userSelect = document.getElementById('delegatedUserId');
-        var userError = document.getElementById('delegatedUserError');
-        if (!userSelect.value) {
-            userError.style.display = 'block';
-            userSelect.focus();
-            return;
+    function pickSlot(slotKey, allowTaken) {
+        if (!form) return;
+        form.querySelectorAll('input[name="interviewerSlot"]').forEach(function (radio) {
+            var isTarget = radio.getAttribute('data-slot') === slotKey;
+            if (radio.getAttribute('data-taken') === 'true')
+                radio.disabled = !(allowTaken && isTarget);
+            if (isTarget) radio.checked = true;
+        });
+        updatePreview();
+    }
+
+    function focusForm() {
+        if (!card) return;
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        var control = document.getElementById('delegatedUserId');
+        window.setTimeout(function () {
+            if (control && control.tomselect) control.tomselect.focus(); else if (control) control.focus();
+        }, 350);
+    }
+
+    // "Delegate this interviewer" on a free slot
+    document.querySelectorAll('[data-delegate-slot]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            leaveChangeMode();
+            pickSlot(btn.getAttribute('data-delegate-slot'), false);
+            focusForm();
+        });
+    });
+
+    // "Change delegate" on a delegated slot
+    var changeBanner = document.getElementById('changeBanner');
+    var replaceInput = document.getElementById('replaceDelegationId');
+    var formTitle = document.getElementById('delegateFormTitle');
+    var allDelegatedNote = document.getElementById('allDelegatedNote');
+
+    function enterChangeMode(btn) {
+        if (!form) return;
+        replaceInput.value = btn.getAttribute('data-change-delegation');
+        changeBanner.querySelector('[data-change-text="delegate"]').textContent = btn.getAttribute('data-change-delegate');
+        changeBanner.querySelector('[data-change-text="original"]').textContent = btn.getAttribute('data-change-original');
+        changeBanner.classList.remove('d-none');
+        formTitle.textContent = 'Change delegation';
+        form.classList.remove('d-none');
+        if (allDelegatedNote) allDelegatedNote.classList.add('d-none');
+        form.querySelector('#delegateSubmit span').textContent = 'Review change';
+        pickSlot(btn.getAttribute('data-change-slot'), true);
+        preselectDuration(btn.getAttribute('data-change-duration'));
+        focusForm();
+    }
+
+    // Start the period on the one the current delegation uses (matched by its name)
+    function preselectDuration(name) {
+        var select = document.getElementById('durationId');
+        if (!select || !name) return;
+        var match = Array.prototype.find.call(select.options, function (o) { return o.value && o.text.trim() === name.trim(); });
+        if (!match) return;
+        if (select.tomselect) select.tomselect.setValue(match.value);
+        else { select.value = match.value; select.dispatchEvent(new Event('change', { bubbles: true })); }
+    }
+
+    function markInvalid(select, invalid) {
+        if (select && select.tomselect) select.tomselect.wrapper.classList.toggle('is-invalid', invalid);
+    }
+
+    function leaveChangeMode() {
+        if (!form || !replaceInput.value) return;
+        replaceInput.value = '';
+        changeBanner.classList.add('d-none');
+        formTitle.textContent = 'New delegation';
+        form.querySelector('#delegateSubmit span').textContent = 'Review delegation';
+        var free = form.querySelector('input[name="interviewerSlot"][data-taken="false"]');
+        if (free) {
+            pickSlot(free.getAttribute('data-slot'), false);
+        } else {
+            form.classList.add('d-none');
+            if (allDelegatedNote) allDelegatedNote.classList.remove('d-none');
         }
+    }
 
-        userError.style.display = 'none';
-        var userName = userSelect.options[userSelect.selectedIndex].text;
-        var durationSelect = document.getElementById('durationId');
-        var durationName = durationSelect.value
-            ? durationSelect.options[durationSelect.selectedIndex].text
-            : 'no duration selected';
-        var candidate = this.getAttribute('data-candidate') || 'this candidate';
+    document.querySelectorAll('[data-change-delegation]').forEach(function (btn) {
+        btn.addEventListener('click', function () { enterChangeMode(btn); });
+    });
+    var cancelChange = document.getElementById('cancelChange');
+    if (cancelChange) cancelChange.addEventListener('click', leaveChangeMode);
+
+    // Live preview of what will happen
+    var userSelect = document.getElementById('delegatedUserId');
+    var durationSelect = document.getElementById('durationId');
+    var preview = document.getElementById('delegatePreview');
+
+    function selectedText(select) {
+        return select && select.value ? select.options[select.selectedIndex].text : null;
+    }
+
+    function selectedSlot() {
+        return form ? form.querySelector('input[name="interviewerSlot"]:checked') : null;
+    }
+
+    function expiryFor(select) {
+        var option = select && select.value ? select.options[select.selectedIndex] : null;
+        if (option && option.getAttribute('data-unlimited') === 'true') return 'unlimited';
+        var minutes = option ? parseInt(option.getAttribute('data-minutes'), 10) : NaN;
+        if (isNaN(minutes)) return null;
+        return new Date(Date.now() + minutes * 60000);
+    }
+
+    function formatDate(date) {
+        return date.toLocaleString(undefined, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function updatePreview() {
+        if (!preview) return;
+        var user = selectedText(userSelect);
+        var expiry = expiryFor(durationSelect);
+        var slot = selectedSlot();
+        if (!user || !expiry || !slot) { preview.classList.add('d-none'); return; }
+        preview.innerHTML = '<span><strong>' + escapeHtml(user) + '</strong> can submit instead of <strong>'
+            + escapeHtml(slot.getAttribute('data-person')) + '</strong> '
+            + (expiry === 'unlimited'
+                ? 'with <strong>no end date</strong>, until the delegation is removed or the interview is scored.</span>'
+                : 'until about <strong>' + escapeHtml(formatDate(expiry)) + '</strong>.</span>');
+        preview.classList.remove('d-none');
+    }
+
+    if (userSelect) userSelect.addEventListener('change', function () {
+        if (userSelect.value) document.getElementById('delegatedUserError').classList.add('d-none');
+        markInvalid(userSelect, false);
+        updatePreview();
+    });
+    if (durationSelect) durationSelect.addEventListener('change', function () {
+        if (durationSelect.value) document.getElementById('durationError').classList.add('d-none');
+        markInvalid(durationSelect, false);
+        updatePreview();
+    });
+    if (form) form.querySelectorAll('input[name="interviewerSlot"]').forEach(function (r) { r.addEventListener('change', updatePreview); });
+
+    // Confirm before creating or changing
+    var allowSubmit = false;
+    if (form) form.addEventListener('submit', function (event) {
+        if (allowSubmit) return;
+        event.preventDefault();
+
+        var valid = true;
+        if (!userSelect.value) { document.getElementById('delegatedUserError').classList.remove('d-none'); valid = false; }
+        if (!durationSelect.value) { document.getElementById('durationError').classList.remove('d-none'); valid = false; }
+        markInvalid(userSelect, !userSelect.value);
+        markInvalid(durationSelect, !durationSelect.value);
+        if (!selectedSlot()) valid = false;
+        if (!valid) return;
+
+        var user = selectedText(userSelect);
+        var duration = selectedText(durationSelect);
+        var original = selectedSlot().getAttribute('data-person');
+        var candidate = form.getAttribute('data-candidate') || 'this candidate';
+        var changing = !!replaceInput.value;
+
+        var html = changing
+            ? 'The current delegate loses access now. <strong>' + escapeHtml(user) + '</strong> can submit the score for <strong>'
+              + escapeHtml(candidate) + '</strong> for <strong>' + escapeHtml(duration) + '</strong>.'
+            : '<strong>' + escapeHtml(user) + '</strong> can submit the score for <strong>' + escapeHtml(candidate)
+              + '</strong> for <strong>' + escapeHtml(duration) + '</strong>. <strong>' + escapeHtml(original)
+              + '</strong> stays assigned and can still submit. Whoever submits first completes the interview.';
 
         Swal.fire({
-            title: 'Are you sure?',
-            text: 'You are about to give ' + userName + ' temporary access to score ' + candidate + ' for ' + durationName + '.',
-            icon: 'warning',
+            title: changing ? 'Change this delegation?' : 'Delegate this interview?',
+            html: html,
+            icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delegate!',
-            cancelButtonText: 'No, cancel!'
+            confirmButtonText: changing ? 'Change delegate' : 'Delegate',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true,
+            focusCancel: true
         }).then(function (result) {
             if (result.isConfirmed) {
-                allowDelegateSubmit = true;
-                document.getElementById('delegateForm').submit();
+                allowSubmit = true;
+                form.submit();
             }
         });
     });
 
-    document.getElementById('delegatedUserId').addEventListener('change', function () {
-        if (this.value) {
-            document.getElementById('delegatedUserError').style.display = 'none';
-        }
-    });
-
+    // Confirm before removing
     document.querySelectorAll('.remove-delegate').forEach(function (button) {
         button.addEventListener('click', function () {
-            var userName = button.getAttribute('data-user') || 'this user';
-            var form = document.getElementById(button.getAttribute('data-form'));
+            var user = button.getAttribute('data-user') || 'the delegate';
+            var original = button.getAttribute('data-original') || 'the original interviewer';
+            var target = document.getElementById(button.getAttribute('data-form'));
             Swal.fire({
-                title: 'Are you sure?',
-                text: 'You are about to remove ' + userName + ' from this interview. They will lose access immediately.',
+                title: 'Remove this delegation?',
+                html: '<strong>' + escapeHtml(user) + '</strong> loses access immediately. <strong>'
+                    + escapeHtml(original) + '</strong> remains the assigned interviewer.',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Yes, remove!',
-                cancelButtonText: 'No, cancel!'
+                confirmButtonText: 'Remove delegation',
+                cancelButtonText: 'Keep it',
+                reverseButtons: true,
+                focusCancel: true,
+                customClass: { confirmButton: 'tps-swal-danger' }
             }).then(function (result) {
-                if (result.isConfirmed && form)
-                    form.submit();
+                if (result.isConfirmed && target) target.submit();
             });
         });
     });
+
+    updatePreview();
+});
 </script>

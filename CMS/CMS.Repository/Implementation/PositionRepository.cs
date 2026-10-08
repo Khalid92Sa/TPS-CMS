@@ -60,7 +60,9 @@ public class PositionRepository : IPositionRepository
     {
         try
         {
-            return await _context.Positions.Include(c => c.CarrerOffer).Include(c => c.Interviews).Include(c => c.Candidates).AsNoTracking().ToListAsync();
+            // Only the position columns are used (PositionService.GetAll). Including the Interviews and
+            // Candidates collections joined every interview and candidate into this query.
+            return await _context.Positions.AsNoTracking().ToListAsync();
         }
         catch (Exception)
         {

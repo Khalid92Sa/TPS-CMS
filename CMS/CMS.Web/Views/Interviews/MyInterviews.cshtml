@@ -1,323 +1,412 @@
-﻿@using CMS.Domain.Enums;
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet" />
-<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+@using CMS.Domain.Enums;
 @model IEnumerable<CMS.Application.DTOs.InterviewsDTO>
 
 @{
     ViewData["Title"] = "My Interviews";
+
+    bool isInterviewer = User.IsInRole("Interviewer");
+    bool isHr = User.IsInRole("HR Manager");
+    bool isGm = User.IsInRole("General Manager");
+    DateTime now = DateTime.Now;
+
+    var delegations = ViewBag.Delegations as Dictionary<int, (string Kind, string OtherName, DateTime Until)>
+                      ?? new Dictionary<int, (string Kind, string OtherName, DateTime Until)>();
+    int? pendingStatusId = ViewBag.PendingStatusId as int?;
+    int? statusFilter = ViewBag.statusFilter as int?;
+    bool showingPending = pendingStatusId.HasValue && statusFilter == pendingStatusId;
+
+    var paged = Model as CMS.Application.Helpers.PaginatedList<CMS.Application.DTOs.InterviewsDTO>;
+    int totalCount = paged?.TotalCount ?? Model?.Count() ?? 0;
+    int firstRow = paged != null && totalCount > 0 ? (paged.PageIndex - 1) * paged.PageSize + 1 : (totalCount > 0 ? 1 : 0);
+    int lastRow = paged != null ? Math.Min(firstRow + paged.Count - 1, totalCount) : totalCount;
 }
-<style>
-    .card-body {
-        width: 100%;
-        max-width: 100%;
-        overflow-y: hidden;
-    }
-</style>
 
 @if (TempData["ErrorMessage"] != null)
 {
-    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    <div class="alert alert-danger tps-flash" role="alert"><i class="ri-error-warning-line"></i><div>@TempData["ErrorMessage"]</div></div>
+}
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success tps-flash" role="status"><i class="ri-checkbox-circle-line"></i><div>@TempData["SuccessMessage"]</div></div>
 }
 
-@using (Html.BeginForm("MyInterviews", "Interviews", FormMethod.Get))
+@* ---------- Overview (all of your interviews, not just this page) ---------- *@
+<div class="tps-kpi-grid">
+    <a class="tps-kpi tps-kpi--pending" asp-action="MyInterviews" asp-route-statusFilter="@pendingStatusId"
+       asp-route-companyFilter="@ViewBag.companyFilter" asp-route-trackFilter="@ViewBag.trackFilter">
+        <div>
+            <p class="tps-kpi__label">Awaiting your result</p>
+            <p class="tps-kpi__value">@(ViewBag.CountAwaiting ?? 0)</p>
+            <span class="tps-kpi__hint">Show pending <i class="ri-arrow-right-s-line"></i></span>
+        </div>
+        <span class="tps-kpi__icon" style="background:var(--tps-status-pending-bg);color:var(--tps-status-pending)"><i class="ri-edit-box-line"></i></span>
+    </a>
+    <div class="tps-kpi" style="--kpi-color: var(--tps-info)">
+        <div>
+            <p class="tps-kpi__label">Upcoming</p>
+            <p class="tps-kpi__value">@(ViewBag.CountUpcoming ?? 0)</p>
+            <span class="tps-kpi__hint">Scheduled later than now</span>
+        </div>
+        <span class="tps-kpi__icon" style="background:var(--tps-info-soft);color:var(--tps-info)"><i class="ri-calendar-event-line"></i></span>
+    </div>
+    <div class="tps-kpi" style="--kpi-color: var(--tps-accent)">
+        <div>
+            <p class="tps-kpi__label">Delegated to you</p>
+            <p class="tps-kpi__value">@(ViewBag.CountDelegatedToMe ?? 0)</p>
+            <span class="tps-kpi__hint">
+                @if ((ViewBag.CountDelegatedAway ?? 0) > 0)
+                {
+                    <text>@ViewBag.CountDelegatedAway of yours handed to others</text>
+                }
+                else
+                {
+                    <text>Covering for a colleague</text>
+                }
+            </span>
+        </div>
+        <span class="tps-kpi__icon" style="background:var(--tps-accent-soft);color:var(--tps-accent)"><i class="ri-user-shared-line"></i></span>
+    </div>
+    <div class="tps-kpi tps-kpi--accepted">
+        <div>
+            <p class="tps-kpi__label">Completed</p>
+            <p class="tps-kpi__value">@(ViewBag.CountCompleted ?? 0)</p>
+            <span class="tps-kpi__hint">Result submitted</span>
+        </div>
+        <span class="tps-kpi__icon" style="background:var(--tps-status-approved-bg);color:var(--tps-status-approved)"><i class="ri-checkbox-circle-line"></i></span>
+    </div>
+</div>
+
+@* ---------- Filters ---------- *@
+@using (Html.BeginForm("MyInterviews", "Interviews", FormMethod.Get, new { id = "myInterviewsFilter" }))
 {
-    <div class="form-group mb-3">
-        <div class="row align-items-end">
-            <div class="col-md-3">
-                @Html.Label("Filter by Status:")
-                @Html.DropDownList("statusFilter", ViewBag.StatusList as SelectList, null, new { @class = "form-control" })
-            </div>
-
-            @if (User.IsInRole("General Manager"))
-            {
-                <div class="col-md-3">
-                    @Html.Label("Filter by Company:")
-                    @Html.DropDownList("companyFilter", ViewBag.CompanyList as SelectList, "Select a Company", new { @class = "form-control" })
+    <div class="card tps-filter">
+        <div class="tps-filter__body">
+            <div class="tps-filter__grid">
+                <div>
+                    <label for="statusFilter" class="form-label">Status</label>
+                    @Html.DropDownList("statusFilter", ViewBag.StatusList as SelectList, null, new { @class = "form-select", id = "statusFilter" })
                 </div>
 
-                <div class="col-md-3">
-                    @Html.Label("Filter by Track:")
-                    @Html.DropDownList("trackFilter", ViewBag.TrackList as SelectList, "Select a Track", new { @class = "form-control" })
-                </div>
-            }
+                @if (isGm)
+                {
+                    <div>
+                        <label for="companyFilter" class="form-label">Company</label>
+                        @Html.DropDownList("companyFilter", ViewBag.CompanyList as SelectList, "Any company", new { @class = "form-select", id = "companyFilter" })
+                    </div>
+                    <div>
+                        <label for="trackFilter" class="form-label">Track</label>
+                        @Html.DropDownList("trackFilter", ViewBag.TrackList as SelectList, "Any track", new { @class = "form-select", id = "trackFilter" })
+                    </div>
+                }
 
-            <div class="col-md-3 d-flex">
-                <button type="submit" class="btn btn-primary mt-4 w-50 me-2" title="Filter your Interviews">
-                    Filter
-                </button>
-                <button type="button" id="resetButton" class="btn btn-secondary mt-4 w-50" title="Reset Filters">
-                    Reset
-                </button>
+                <div class="tps-filter__actions align-self-end">
+                    <button type="button" id="resetButton" class="btn btn-secondary">
+                        <i class="ri-filter-off-line me-1"></i> Clear
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ri-search-line me-1"></i> Apply
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 }
 
-<div class="row">
-    <div class="col-lg-12">
-        <div class="card">
-       
-            <div class="card-body">
-             
-                <table id="add-rows" class="display nowrap" style="width:100%">
-                    <thead>
+@* ---------- Results ---------- *@
+<div class="card">
+    <div class="card-header">
+        <div class="tps-results-head">
+            <div>
+                <h4 class="card-title">@(showingPending ? "Waiting for your result" : "Your interviews")</h4>
+                <p class="text-muted fs-13 mb-0 mt-1">Newest first. Use <strong>Add result</strong> after the interview has taken place.</p>
+            </div>
+            <span class="tps-results-count">
+                @if (totalCount > 0)
+                {
+                    <text>Showing <strong>@firstRow–@lastRow</strong> of <strong>@totalCount</strong></text>
+                }
+                else
+                {
+                    <text>No interviews</text>
+                }
+            </span>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="add-rows" class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:44px;">#</th>
+                        <th>Candidate</th>
+                        <th>Track</th>
+                        <th>Interview date</th>
+                        <th>Status</th>
+                        @if (isInterviewer)
+                        {
+                            <th>Score</th>
+                        }
+                        @if (!isHr)
+                        {
+                            <th>Experience</th>
+                        }
+                        @if (isInterviewer)
+                        {
+                            <th>Evaluation</th>
+                        }
+                        <th>CV</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model == null || !Model.Any())
+                    {
                         <tr>
-                            <th>#</th>
-                            <th>Candidate Name</th>
-                            <th>Level</th>
-                            <th>Track</th>
-                            <th hidden>Interviewer</th>
-                            <th>Date and Time</th>
-                            <th hidden>Parent ID</th>
-                            @if (User.IsInRole("Interviewer"))
-                            {
-                                <th>Score</th>
-                            }
-                            @if (!User.IsInRole("HR Manager"))
-                            {
-                                <th>Actual Experience</th>
-                            }
-                          
-                            <th>Status</th>
-                            <th hidden>Notes</th>
-                             @if (User.IsInRole("Interviewer"))
-                            {
-                                <th>Evaluation</th>
-                            }
-                            <th>CV</th>
-                            <th>Details</th>
-                            <th>Add Result</th>
-                            <th> History</th>
-                            <th>Edit</th>
-
+                            <td colspan="10" class="text-center text-muted py-5">
+                                <i class="ri-calendar-check-line fs-24 d-block mb-2"></i>
+                                @(showingPending ? "You're all caught up. No interviews are waiting for your result." : "No interviews match these filters.")
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @for (var i = 0; i < Model.Count(); i++)
+                    }
+                    else
+                    {
+                        for (var i = 0; i < Model.Count(); i++)
                         {
                             var item = Model.ElementAt(i);
+                            bool isPending = item.StatusName == StatusCode.GetName("PND");
+                            bool hasDelegation = delegations.TryGetValue(item.InterviewsId, out var dlg);
+                            bool delegatedAway = hasDelegation && dlg.Kind == "Away";
+                            bool delegatedToMe = hasDelegation && dlg.Kind == "ToMe";
+                            bool unlimitedDlg = hasDelegation && CMS.Domain.Entities.InterviewDelegation.IsNoExpiration(dlg.Until);
+
                             <tr>
-                                <td>@(i + 1)</td>
-                                <td>@Html.DisplayFor(modelItem => item.FullName)</td>
-                                <td>@Html.DisplayFor(modelItem => item.Name)</td>
-                                <td>@Html.DisplayFor(modelItem => item.TrackName)</td>
-                                <td hidden>@item.InterviewerName</td>
+                                <td>@(firstRow > 0 ? firstRow + i : i + 1)</td>
                                 <td>
-                                    <div>@item.Date.ToString("dd-MM-yyyy")</div>
-                                    <div>@item.Date.ToString("h:mm tt")</div>
-                                </td>
-                                <td hidden>@item.ParentId</td>
-                                @if (User.IsInRole("Interviewer"))
-                                {
-                                    if (item.Score != null)
+                                    <div class="fw-semibold text-body" dir="auto">@item.FullName</div>
+                                    <div class="text-muted fs-12">@item.Name</div>
+                                    @if (delegatedToMe)
                                     {
-                                        <td>@item.Score</td>
+                                        <span class="tps-row-flag tps-row-flag--delegated mt-1" title="@(unlimitedDlg ? "No end date" : "Until " + dlg.Until.ToString("dd MMM yyyy, h:mm tt"))">
+                                            <i class="ri-user-received-2-line"></i> Covering for @dlg.OtherName @(unlimitedDlg ? "· no end date" : "until " + dlg.Until.ToString("dd MMM, h:mm tt"))
+                                        </span>
                                     }
-                                    else
+                                    else if (delegatedAway)
                                     {
-                                       <td class="text-danger">Please Add Result</td>
-                                    }
-
-                                }
-                                @if (!User.IsInRole("HR Manager"))
-                                {
-                                    @if (item.StatusName == StatusCode.GetName("PND"))
-                                    {
-                                        <td class="text-danger">Please Add Result</td>
-                                    }
-                                    else
-                                    {
-                                        <td>@item.ActualExperience</td>
-                                    }
-                                }
-                                <td>@item.StatusName</td>
-                                <td hidden>@item.Notes</td>
-                                @if (User.IsInRole("Interviewer"))
-                                {
-                                    @if (item.AttachmentId != null)
-                                    {
-                                        <td><a asp-controller="Attachments" asp-action="Download" asp-route-id="@item.AttachmentId">Download</a></td>
-                                    }
-                                    else
-                                    {
-                                        <td class="text-danger">Please Add Result</td>
-                                    }
-                                }
-                                @if (item.CandidateCVAttachmentId != null)
-                                {
-                                    <td><a asp-controller="Attachments" asp-action="Download" asp-route-id="@item.CandidateCVAttachmentId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Download CV"><i style="font-size: x-large;" class="bx bxs-cloud-download"></i></a></td>
-                                }
-                                else
-                                {
-                                    <td>CV not added for<br />
-                                        this candidate</td>
-                                }
-                                
-                                
-                                <td>
-                                    @if (item.StartFromHR)
-                                    {
-                                        <a class="bx bx-detail" style="font-size:x-large" 
-                                           asp-action="HRFirstDetails" 
-                                           asp-route-id="@item.InterviewsId" 
-                                           asp-route-previousAction="MyInterviews"
-                                           asp-route-statusFilter="@ViewBag.statusFilter"
-                                           asp-route-companyFilter="@ViewBag.companyFilter"
-                                           asp-route-trackFilter="@ViewBag.trackFilter"></a>
-                                    }
-                                    else
-                                    {
-                                        <a class="bx bx-detail" style="font-size:x-large" asp-action="Details" asp-route-id="@item.InterviewsId" asp-route-previousAction="MyInterviews"></a>
+                                        <span class="tps-row-flag tps-row-flag--away mt-1" title="You or @dlg.OtherName can add the result. @(unlimitedDlg ? "Delegation has no end date." : "Delegation ends " + dlg.Until.ToString("dd MMM yyyy, h:mm tt"))">
+                                            <i class="ri-user-shared-line"></i> Also delegated to @dlg.OtherName @(unlimitedDlg ? "· no end date" : "until " + dlg.Until.ToString("dd MMM, h:mm tt"))
+                                        </span>
                                     }
                                 </td>
-                                @if (item.isUpdated == false && item.StatusName == StatusCode.GetName("REJ"))
-                                {
-                                    <td>Not available</td>
-                                }
-                                else{
-                                    
-                                    if ((item.isUpdated == false || User.IsInRole("HR Manager"))  && item.StatusName == StatusCode.GetName("PND"))
+                                <td>@item.TrackName</td>
+                                <td class="text-nowrap">
+                                    <div>@item.Date.ToString("dd MMM yyyy")</div>
+                                    <div class="text-muted fs-12">@item.Date.ToString("h:mm tt")</div>
+                                    @if (isPending && item.Date > now)
                                     {
+                                        <span class="tps-row-flag tps-row-flag--upcoming"><i class="ri-calendar-event-line"></i> Upcoming</span>
+                                    }
+                                    else if (isPending && !item.isUpdated)
+                                    {
+                                        <span class="tps-row-flag tps-row-flag--due"><i class="ri-time-line"></i> Result due</span>
+                                    }
+                                </td>
+                                <td>@InterviewStatusUi.Badge(item.StatusName)</td>
+                                @if (isInterviewer)
+                                {
+                                    <td>
+                                        @if (item.Score != null)
+                                        {
+                                            <span class="fw-semibold">@item.Score</span><span class="text-muted"> / 5</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fs-12">Not scored</span>
+                                        }
+                                    </td>
+                                }
+                                @if (!isHr)
+                                {
+                                    <td>
+                                        @if (isPending)
+                                        {
+                                            <span class="text-muted fs-12">Awaiting result</span>
+                                        }
+                                        else
+                                        {
+                                            @(item.ActualExperience.HasValue ? $"{item.ActualExperience} yrs" : "—")
+                                        }
+                                    </td>
+                                }
+                                @if (isInterviewer)
+                                {
+                                    <td>
+                                        @if (item.AttachmentId != null)
+                                        {
+                                            <a class="tps-icon-btn" asp-controller="Attachments" asp-action="Download" asp-route-id="@item.AttachmentId"
+                                               data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Download evaluation" aria-label="Download evaluation">
+                                                <i class="ri-file-download-line"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fs-12">Not uploaded</span>
+                                        }
+                                    </td>
+                                }
                                 <td>
-                                            <input type="hidden" name="InterviewerId" value="@item.InterviewerId" />
-
-                                            <a class="bx bx-plus" style="font-size:x-large" 
-                                               asp-action="UpdateAfterInterview" 
-                                               asp-route-id="@item.InterviewsId" 
+                                    @if (item.CandidateCVAttachmentId != null)
+                                    {
+                                        <a class="tps-icon-btn" asp-controller="Attachments" asp-action="Download" asp-route-id="@item.CandidateCVAttachmentId"
+                                           data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Download CV" aria-label="Download CV">
+                                            <i class="ri-file-user-line"></i>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fs-12">No CV</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex align-items-center gap-2 flex-nowrap">
+                                        @* Primary action: add result (same conditions as before) *@
+                                        @if (item.isUpdated == false && item.StatusName == StatusCode.GetName("REJ"))
+                                        {
+                                            <span class="text-muted fs-12 text-nowrap">Not available</span>
+                                        }
+                                        else if ((item.isUpdated == false || isHr) && isPending)
+                                        {
+                                            @* Also shown when the interview is delegated: either person can add the result *@
+                                            <a class="btn btn-primary btn-sm text-nowrap"
+                                               asp-action="UpdateAfterInterview"
+                                               asp-route-id="@item.InterviewsId"
                                                asp-route-iddd="@item.EvalutaionFormId"
                                                asp-route-statusFilter="@ViewBag.statusFilter"
                                                asp-route-companyFilter="@ViewBag.companyFilter"
-                                               asp-route-trackFilter="@ViewBag.trackFilter"
-                                               data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Add result"> </a>
-                                    </td>
-                                }
-                                else
-                                {
-                                    <td>ADDED</td>
-                                }
-                                   
-                                }
-                                @if (item.StartFromHR)
-                                {
-                                    <td><a class="bx bx-history" style="font-size:x-large" 
-                                           asp-action="ShowHistoryForHRFirstFlow" 
-                                           asp-route-id="@item.InterviewsId"
-                                           asp-route-previousAction="MyInterviews"
-                                           asp-route-statusFilter="@ViewBag.statusFilter"
-                                           asp-route-companyFilter="@ViewBag.companyFilter"
-                                           asp-route-trackFilter="@ViewBag.trackFilter"
-                                           data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="View Candidate History"></a></td>
-                                }
-                                else
-                                {
-                                    <td><a class="bx bx-history" style="font-size:x-large" asp-action="ShowHistory" asp-route-id="@item.InterviewsId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="View Candidate History"></a></td>
-                                }
-                                <td>
-                                    <input type="hidden" name="StatusId" value="@item.StatusId" />
-                                    @if (User.IsInRole("Interviewer"))
-                                    {
-                                        @if (item.Score != null)
-                                        {
-                                            <a class="bx bxs-edit-alt" style="font-size:x-large" 
-                                               asp-action="UpdateAfterInterviewForEdit" 
-                                               asp-route-id="@item.InterviewsId"
-                                               asp-route-statusFilter="@ViewBag.statusFilter"
-                                               asp-route-companyFilter="@ViewBag.companyFilter"
-                                               asp-route-trackFilter="@ViewBag.trackFilter"
-                                               data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit"></a>
+                                               asp-route-trackFilter="@ViewBag.trackFilter">
+                                                <i class="ri-add-line me-1"></i> Add result
+                                            </a>
                                         }
                                         else
                                         {
-                                            <a class="bx bxs-edit-alt" style="font-size:x-large" href="javascript:void(0);" onclick="showScoreWarningModal()" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit"></a>
+                                            <span class="tps-row-flag" style="color:var(--tps-status-approved)"><i class="ri-check-line"></i> Result added</span>
                                         }
-                                    }
-                                    else if (User.IsInRole("General Manager") || User.IsInRole("HR Manager") || User.IsInRole("Solution Architecture"))
-                                    {
-                                        if (item.StatusName == StatusCode.GetName("PND"))
-                                        {
-                                            <a class="bx bxs-edit-alt" style="font-size:x-large" href="javascript:void(0);" onclick="showScoreWarningModalForGM()" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit"></a>
-                                        }
-                                        else
-                                        {
-                                            <a class="bx bxs-edit-alt" style="font-size:x-large" 
-                                               asp-action="UpdateAfterInterviewForEdit" 
-                                               asp-route-id="@item.InterviewsId"
-                                               asp-route-statusFilter="@ViewBag.statusFilter"
-                                               asp-route-companyFilter="@ViewBag.companyFilter"
-                                               asp-route-trackFilter="@ViewBag.trackFilter"
-                                               data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit"></a>
-                                        }
-                                    }
-                                </td>
 
+                                        <div class="tps-actions">
+                                            @if (item.StartFromHR)
+                                            {
+                                                <a class="tps-icon-btn"
+                                                   asp-action="HRFirstDetails"
+                                                   asp-route-id="@item.InterviewsId"
+                                                   asp-route-previousAction="MyInterviews"
+                                                   asp-route-statusFilter="@ViewBag.statusFilter"
+                                                   asp-route-companyFilter="@ViewBag.companyFilter"
+                                                   asp-route-trackFilter="@ViewBag.trackFilter"
+                                                   data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Details" aria-label="Details">
+                                                    <i class="ri-file-list-3-line"></i>
+                                                </a>
+                                                <a class="tps-icon-btn"
+                                                   asp-action="ShowHistoryForHRFirstFlow"
+                                                   asp-route-id="@item.InterviewsId"
+                                                   asp-route-previousAction="MyInterviews"
+                                                   asp-route-statusFilter="@ViewBag.statusFilter"
+                                                   asp-route-companyFilter="@ViewBag.companyFilter"
+                                                   asp-route-trackFilter="@ViewBag.trackFilter"
+                                                   data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Candidate history" aria-label="Candidate history">
+                                                    <i class="ri-history-line"></i>
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <a class="tps-icon-btn" asp-action="Details" asp-route-id="@item.InterviewsId" asp-route-previousAction="MyInterviews"
+                                                   data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Details" aria-label="Details">
+                                                    <i class="ri-file-list-3-line"></i>
+                                                </a>
+                                                <a class="tps-icon-btn" asp-action="ShowHistory" asp-route-id="@item.InterviewsId"
+                                                   data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Candidate history" aria-label="Candidate history">
+                                                    <i class="ri-history-line"></i>
+                                                </a>
+                                            }
+
+                                            @* Edit submitted result (same conditions as before) *@
+                                            @if (isInterviewer)
+                                            {
+                                                if (item.Score != null)
+                                                {
+                                                    <a class="tps-icon-btn"
+                                                       asp-action="UpdateAfterInterviewForEdit"
+                                                       asp-route-id="@item.InterviewsId"
+                                                       asp-route-statusFilter="@ViewBag.statusFilter"
+                                                       asp-route-companyFilter="@ViewBag.companyFilter"
+                                                       asp-route-trackFilter="@ViewBag.trackFilter"
+                                                       data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit result" aria-label="Edit result">
+                                                        <i class="ri-edit-line"></i>
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <a class="tps-icon-btn" href="javascript:void(0);" onclick="showScoreWarningModal()"
+                                                       data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit result" aria-label="Edit result">
+                                                        <i class="ri-edit-line"></i>
+                                                    </a>
+                                                }
+                                            }
+                                            else if (isGm || isHr || User.IsInRole("Solution Architecture"))
+                                            {
+                                                if (isPending)
+                                                {
+                                                    <a class="tps-icon-btn" href="javascript:void(0);" onclick="showScoreWarningModalForGM()"
+                                                       data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit result" aria-label="Edit result">
+                                                        <i class="ri-edit-line"></i>
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <a class="tps-icon-btn"
+                                                       asp-action="UpdateAfterInterviewForEdit"
+                                                       asp-route-id="@item.InterviewsId"
+                                                       asp-route-statusFilter="@ViewBag.statusFilter"
+                                                       asp-route-companyFilter="@ViewBag.companyFilter"
+                                                       asp-route-trackFilter="@ViewBag.trackFilter"
+                                                       data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Edit result" aria-label="Edit result">
+                                                        <i class="ri-edit-line"></i>
+                                                    </a>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
                         }
-                    </tbody>
-                </table>
-
-                @await Html.PartialAsync("_PaginationPartial", Model)
-
-            </div>
+                    }
+                </tbody>
+            </table>
         </div>
-    </div><!--end col-->
-</div><!--end row-->
 
+        @if (Model != null && Model.Any())
+        {
+            @await Html.PartialAsync("_PaginationPartial", Model)
+        }
+    </div>
+</div>
 
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10">
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    function showScoreWarningModal() {
+    function showResultMissing() {
         Swal.fire({
-            icon: 'warning',
-            title: 'Oops! The Result Is Missing',
-            text: 'Uh-oh! It seems like the result is missing. Before you proceed, make sure to add the result for this interview. Your insights matter!',
-            showCancelButton: false,
-            confirmButtonText: 'Close',
-            allowOutsideClick: false,
+            icon: 'info',
+            title: 'Add the result first',
+            text: 'There is no result to edit yet. Use "Add result" on this interview to submit the score and evaluation.',
+            confirmButtonText: 'OK'
         });
     }
 
-    function showScoreWarningModalForGM() {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Oops! The Result Is Missing',
-            text: 'Uh-oh! It seems like the result is missing. Before you proceed, make sure to add the result for this interview. Your insights matter!',
-            showCancelButton: false,
-            confirmButtonText: 'Close',
-            allowOutsideClick: false,
-        });
-    }
-</script>
+    // Names kept for the existing onclick handlers
+    function showScoreWarningModal() { showResultMissing(); }
+    function showScoreWarningModalForGM() { showResultMissing(); }
 
-<script>
-    $.noConflict();
-     jQuery(document).ready(function ($) {
-        $('#add-rows').DataTable({
-            paging: false,
-            searching: false,
-            info: false,
-            ordering: false,
-            scrollCollapse: true,
-            scrollY: '50vh',  // Ensures proper height management
-            scrollX: true,     // Enables horizontal scrolling to prevent misalignment
-            autoWidth: false,  // Prevents columns from being resized incorrectly
-            fixedHeader: true, // Keeps column headers aligned correctly
-            columnDefs: [
-                { targets: 'hidden', visible: false } // Ensures hidden columns remain hidden
-            ]
-        });
-
-        // Reset button functionality
-        $('#resetButton').on('click', function () {
-            $('#statusFilter').val(''); // Clear the status filter
-            $('#companyFilter').val(''); // Clear the company filter (if present)
-            $('#trackFilter').val(''); // Clear the track filter (if present)
-            window.location.href = '@Url.Action("MyInterviews", "Interviews")'; // Redirect to base URL without filters
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('resetButton').addEventListener('click', function () {
+            window.location.href = '@Url.Action("MyInterviews", "Interviews")';
         });
     });
 </script>
-

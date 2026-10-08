@@ -1,0 +1,26 @@
+@model CMS.Application.DTOs.InterviewDelegationDTO
+@*
+    Shown on interview details pages when the current user sees the interview through a delegation
+    (InterviewsService.GetCurrentUserDelegationAccessAsync) rather than as an assigned interviewer.
+*@
+@if (Model != null)
+{
+    bool submitted = Model.Status == CMS.Domain.Entities.InterviewDelegation.StatusCompleted;
+    <div class="tps-callout mb-3" role="status">
+        <i class="ri-user-received-2-line"></i>
+        <div>
+            <div class="tps-callout__title">You're viewing this interview as a delegate for @(Model.OriginalInterviewerName ?? "the assigned interviewer")</div>
+            <p class="tps-callout__text mb-0">
+                @(submitted ? "You submitted the result through this delegation. " : "")
+                @if (Model.IsUnlimited)
+                {
+                    <text>Your access has no end date.</text>
+                }
+                else
+                {
+                    <text>Your access ends @Model.ExpirationDate.ToString("dd MMM yyyy, h:mm tt").</text>
+                }
+            </p>
+        </div>
+    </div>
+}

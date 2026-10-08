@@ -1,6 +1,7 @@
 ﻿// CMS.Domain.Interfaces/IInterviewsService.cs
 using CMS.Application.DTOs;
 using CMS.Application.Extensions;
+using CMS.Application.Helpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,6 +19,7 @@ public interface IInterviewsService
     Task<Result<List<InterviewsDTO>>> MyInterviews(int? companyFilter, int? trackFilter);
     Task<Result<InterviewsDTO>> Insert(InterviewsDTO data);
     Task<Result<List<InterviewsDTO>>> GetAll();
+    Task<Result<PaginatedList<InterviewsDTO>>> GetLatestInterviewPerCandidatePageAsync(InterviewListFilter filter, int pageNumber, int pageSize);
     Task<Result<List<InterviewsDTO>>> GetAllForGeneralManager();
     Task<Result<InterviewsDTO>> Delete(int id);
     Task<Result<InterviewsDTO>> GetInterviewDetails(int id);
@@ -35,10 +37,12 @@ public interface IInterviewsService
     Task<Result<bool>> RemoveArchitectureInterviewer(int interviewId);
     Task<Result<bool>> AddOrUpdateArchitectureInterviewer(int interviewId, string architectureId);
     Task<Result<List<InterviewsDTO>>> GetInterviewsWithoutResults();
+    Task<bool> IsInterviewStillPendingForReminderAsync(int interviewId);
+    Task MarkReminderSentAsync(int interviewId);
     Task<Result<List<InterviewsDTO>>> GetHRFirstFlowInterviewDetails(int interviewId);
     Task<Result<List<InterviewsDTO>>> ShowHistoryForHRFirstFlow(int id);
     Task<Result<DelegateInterviewPageDTO>> GetPendingInterviewDelegationAsync(int interviewId);
-    Task<Result<InterviewDelegationDTO>> DelegatePendingInterviewAsync(int interviewId, string interviewerSlot, string originalInterviewerId, string delegatedUserId, int durationId);
+    Task<Result<InterviewDelegationDTO>> DelegatePendingInterviewAsync(int interviewId, string interviewerSlot, string originalInterviewerId, string delegatedUserId, int durationId, int? replaceDelegationId = null);
     Task<Result<InterviewDelegationDTO>> RemoveInterviewDelegationAsync(int interviewId, int delegationId);
     Task<Result<BulkDelegationPageDTO>> GetBulkDelegationPageAsync();
     Task<Result<BulkDelegationResultDTO>> DelegatePendingInterviewsAsync(IEnumerable<int> interviewIds, string delegatedUserId, int durationId);
@@ -46,7 +50,8 @@ public interface IInterviewsService
     Task<Result<bool>> EnsureCurrentUserCanOpenSubmittedResultAsync(int interviewId);
     Task<bool> IsCurrentUserAssignedToInterviewAsync(int interviewId);
     Task<string> GetDelegatedWorkflowRoleAsync(int interviewId, string userId);
-    Task<bool> HasActiveDelegationAsync();
+    Task<bool> HasVisibleDelegationAsync();
+    Task<InterviewDelegationDTO> GetCurrentUserDelegationAccessAsync(int interviewId);
     Task<bool> HasInForceDelegationAsync(int interviewId);
     Task EnsureDelegatedSuccessorAsync(int interviewId);
 }

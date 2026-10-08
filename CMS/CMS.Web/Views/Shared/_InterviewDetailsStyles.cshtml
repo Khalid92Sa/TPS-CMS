@@ -1,3 +1,5 @@
+@* Shared styles for the interview detail pages (Interviews/SearchInterviews Details and HRFirstDetails).
+   Colors come from the design tokens in wwwroot/css/tps-design.css so both themes work. *@
 @{
     const string Key = "InterviewDetails_Styles_Loaded";
     bool stylesLoaded = Context.Items.ContainsKey(Key);
@@ -5,269 +7,219 @@
 }
 @if (!stylesLoaded)
 {
-<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
 <style>
-    .interview-details-page {
-        padding: 1.5rem 0 2.5rem;
-    }
+    .interview-details-page { padding: 0 0 1rem; max-width: 100%; }
 
     .interview-details-page__header {
         display: flex;
         flex-wrap: wrap;
-        align-items: flex-end;
+        align-items: center;
         justify-content: space-between;
-        gap: 1rem;
-        margin-bottom: 1.75rem;
-        padding-bottom: 1.25rem;
-        border-bottom: 1px solid #e9ecef;
+        gap: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        padding: 1.1rem 1.25rem;
+        background: var(--tps-surface);
+        border: 1px solid var(--tps-border);
+        border-radius: var(--tps-radius-lg);
+        box-shadow: var(--tps-shadow-sm);
     }
 
     .interview-details-page__title h2 {
-        margin: 0 0 0.25rem;
-        font-size: 1.65rem;
-        font-weight: 700;
-        color: #2d3748;
+        margin: 0 0 0.2rem;
+        font-family: var(--tps-font-display);
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--tps-heading);
     }
 
-    .interview-details-page__title p {
-        margin: 0;
-        color: #718096;
-        font-size: 0.95rem;
-    }
+    .interview-details-page__title p { margin: 0; color: var(--tps-muted); font-size: var(--tps-fs-sm); }
 
-    .interview-details-page__badges {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
+    .interview-details-page__badges { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
     .detail-badge {
         display: inline-flex;
         align-items: center;
         gap: 0.35rem;
-        padding: 0.4rem 0.85rem;
+        padding: 0.25rem 0.7rem;
         border-radius: 999px;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         font-weight: 600;
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-        color: #fff;
+        background: var(--tps-surface-3);
+        color: var(--tps-muted);
     }
 
-    .detail-badge--muted {
-        background: #edf2f7;
-        color: #4a5568;
-    }
+    .detail-badge--muted { background: var(--tps-surface-3); color: var(--tps-muted); }
+    .detail-badge--score { background: var(--tps-primary-soft); color: var(--tps-primary); }
 
-    .detail-badge--score {
-        background: #ebf8ff;
-        color: #2b6cb0;
-    }
-
-    .interview-cards-row {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: stretch;
-        margin-left: -0.75rem;
-        margin-right: -0.75rem;
-    }
+    .interview-cards-row { display: flex; flex-wrap: wrap; align-items: stretch; margin-left: -0.625rem; margin-right: -0.625rem; }
 
     .interview-card-col {
         display: flex;
         flex-direction: column;
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
-        margin-bottom: 1.5rem;
+        padding-left: 0.625rem;
+        padding-right: 0.625rem;
+        margin-bottom: 1.25rem;
     }
 
-    .interview-card-col > .interview-detail-card {
-        flex: 1;
-        width: 100%;
-    }
+    .interview-card-col > .interview-detail-card { flex: 1; width: 100%; }
 
     .interview-detail-card {
         display: flex;
         flex-direction: column;
         flex: 1;
         width: 100%;
-        background: #fff;
-        border: 1px solid #e9ecef;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(72, 111, 199, 0.08);
+        background: var(--tps-surface);
+        border: 1px solid var(--tps-border);
+        border-radius: var(--tps-radius-lg);
+        box-shadow: var(--tps-shadow-sm);
         overflow: hidden;
-        transition: box-shadow 0.2s ease;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
     .interview-card-col:not(.interview-card-col-wide) .interview-detail-card:hover {
-        box-shadow: 0 6px 18px rgba(72, 111, 199, 0.14);
+        border-color: var(--tps-border-strong);
+        box-shadow: var(--tps-shadow);
     }
 
     .interview-detail-card__header {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 1rem 1.25rem;
-        background: linear-gradient(135deg, rgba(72, 111, 199, 0.08), rgba(49, 156, 167, 0.08));
-        border-bottom: 1px solid #edf2f7;
+        gap: 0.7rem;
+        padding: 0.9rem 1.1rem;
+        border-bottom: 1px solid var(--tps-border);
     }
 
     .interview-detail-card__icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 2.25rem;
-        height: 2.25rem;
+        display: grid;
+        place-items: center;
+        width: 2.1rem;
+        height: 2.1rem;
         border-radius: 10px;
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-        color: #fff;
-        font-size: 1.1rem;
+        background: var(--tps-primary-soft);
+        color: var(--tps-primary);
+        font-size: 1.05rem;
         flex-shrink: 0;
     }
 
-    .interview-detail-card__title {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 700;
-        color: #2d3748;
-    }
+    .interview-detail-card__title { margin: 0; font-size: 0.975rem; font-weight: 700; color: var(--tps-heading); }
 
-    .interview-detail-card__body {
-        padding: 1.1rem 1.25rem 1.25rem;
-        flex: 1;
-    }
+    .interview-detail-card__body { padding: 1rem 1.1rem 1.1rem; flex: 1; }
 
     .detail-field + .detail-field {
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px dashed #edf2f7;
+        margin-top: 0.85rem;
+        padding-top: 0.85rem;
+        border-top: 1px dashed var(--tps-border);
     }
 
     .detail-field__label {
-        font-size: 0.75rem;
+        font-size: 0.6875rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
-        color: #718096;
-        margin-bottom: 0.35rem;
+        letter-spacing: 0.06em;
+        color: var(--tps-subtle);
+        margin-bottom: 0.3rem;
     }
 
     .detail-field__value {
-        font-size: 0.95rem;
-        color: #2d3748;
+        font-size: 0.9375rem;
+        font-weight: 500;
+        color: var(--tps-heading);
         line-height: 1.5;
         min-width: 0;
         word-break: break-word;
     }
 
-    .detail-field__value--empty {
-        color: #a0aec0;
-        font-style: italic;
-    }
+    .detail-field__value--empty { color: var(--tps-subtle); font-weight: 400; font-style: italic; }
 
     .detail-field__value--notes {
-        background: #f8fafc;
-        border: 1px solid #edf2f7;
-        border-radius: 8px;
+        --notes-fade-bg: var(--tps-surface-2);
+        background: var(--tps-surface-2);
+        border: 1px solid var(--tps-border);
+        border-radius: 10px;
         padding: 0.75rem;
+        font-weight: 400;
+        color: var(--tps-text);
     }
 
     .detail-summary-card {
-        background: #fff;
-        border: 1px solid #e9ecef;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(72, 111, 199, 0.08);
-        margin-bottom: 1.5rem;
+        background: var(--tps-surface);
+        border: 1px solid var(--tps-border);
+        border-radius: var(--tps-radius-lg);
+        box-shadow: var(--tps-shadow-sm);
+        margin-bottom: 1.25rem;
         overflow: hidden;
     }
 
     .detail-summary-card__header {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 1rem 1.25rem;
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-        color: #fff;
+        gap: 0.7rem;
+        padding: 0.9rem 1.1rem;
+        border-bottom: 1px solid var(--tps-border);
+        color: var(--tps-heading);
     }
 
-    .detail-summary-card__header h5 {
-        margin: 0;
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: #fff;
-    }
+    .detail-summary-card__header h5 { margin: 0; font-size: 1rem; font-weight: 700; color: var(--tps-heading); }
+    .detail-summary-card__header i { color: var(--tps-primary); }
 
-    .detail-summary-card__body {
-        padding: 1.25rem;
-    }
+    .detail-summary-card__body { padding: 1.1rem; }
 
     .detail-summary-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 1.25rem 2rem;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1.1rem 1.75rem;
     }
 
     .detail-download-btn {
         display: inline-flex;
         align-items: center;
         gap: 0.4rem;
-        padding: 0.45rem 0.9rem;
+        padding: 0.4rem 0.8rem;
         border-radius: 8px;
-        border: 1px solid #486fc7;
-        background: #fff;
-        color: #486fc7;
-        font-size: 0.85rem;
+        border: 1px solid rgba(var(--tps-primary-rgb), 0.4);
+        background: transparent;
+        color: var(--tps-primary);
+        font-size: var(--tps-fs-sm);
         font-weight: 600;
         text-decoration: none;
-        transition: all 0.2s ease;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
     }
 
-    .detail-download-btn:hover {
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-        color: #fff;
-        border-color: transparent;
-    }
+    .detail-download-btn:hover { background: var(--tps-primary-soft); border-color: var(--tps-primary); color: var(--tps-primary-strong); }
 
     .interview-details-page__footer {
         display: flex;
-        justify-content: center;
-        margin-top: 0.5rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid #e9ecef;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-top: 0.25rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--tps-border);
     }
 
     .btn-detail-back {
         display: inline-flex;
         align-items: center;
         gap: 0.4rem;
-        padding: 0.55rem 1.25rem;
+        padding: 0.5rem 1rem;
         border-radius: 8px;
-        background: #718096;
-        border: none;
-        color: #fff;
+        background: var(--tps-surface);
+        border: 1px solid var(--tps-border-strong);
+        color: var(--tps-text);
         font-weight: 600;
+        font-size: var(--tps-fs-sm);
         text-decoration: none;
-        transition: background 0.2s ease;
+        transition: background-color 0.15s ease;
     }
 
-    .btn-detail-back:hover {
-        background: #4a5568;
-        color: #fff;
-    }
+    .btn-detail-back:hover { background: var(--tps-surface-3); color: var(--tps-heading); }
 
-    .detail-empty-state {
-        color: #a0aec0;
-        font-style: italic;
-        font-size: 0.9rem;
-        margin: 0;
-    }
+    .detail-empty-state { color: var(--tps-subtle); font-style: italic; font-size: var(--tps-fs-sm); margin: 0; }
 
-    .interview-card-col-wide .notes-content figure.table {
-        overflow-x: auto;
-    }
+    .interview-card-col-wide .notes-content figure.table { overflow-x: auto; }
 
     dl.row dd .notes-content-wrapper,
     dl dd .notes-content-wrapper,
-    .detail-field__value .notes-content-wrapper {
-        min-width: 0;
-    }
+    .detail-field__value .notes-content-wrapper { min-width: 0; }
 </style>
 }

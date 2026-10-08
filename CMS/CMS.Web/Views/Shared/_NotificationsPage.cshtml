@@ -1,0 +1,79 @@
+@model IEnumerable<CMS.Application.DTOs.NotificationsDTO>
+@*
+    Shared layout for the role notification pages (HR, GM, Interviewer, Architect).
+    The parent view sets:
+      ViewData["MarkAllId"]     id of the "Mark all as read" button its script binds to
+      ViewData["ServerUnread"]  true to render unread rows here instead of loading them by AJAX
+      ViewData["ServerRead"]    true to render read rows here
+    Element ids used by the page scripts: unread-tab, read-tab, unread-notifications-content,
+    read-notifications-content, unread-count.
+*@
+@{
+    string markAllId = ViewData["MarkAllId"] as string ?? "markAllAsReadButton";
+    bool serverUnread = ViewData["ServerUnread"] as bool? ?? false;
+    bool serverRead = ViewData["ServerRead"] as bool? ?? false;
+    var items = Model ?? Enumerable.Empty<CMS.Application.DTOs.NotificationsDTO>();
+    var unread = items.Where(n => !n.IsRead).Reverse().ToList();
+    var read = items.Where(n => n.IsRead).Reverse().ToList();
+}
+
+<div class="tps-ihead">
+    <div class="tps-ihead__who">
+        <span class="tps-ihead__avatar tps-ihead__avatar--icon" aria-hidden="true"><i class="ri-notification-3-line"></i></span>
+        <div>
+            <p class="tps-ihead__eyebrow">Inbox</p>
+            <h2 class="tps-ihead__name">Notifications</h2>
+            <div class="tps-ihead__meta">
+                <span class="tps-chip">Updates about interviews, results and delegations</span>
+            </div>
+        </div>
+    </div>
+    <div class="tps-ihead__actions">
+        <button type="button" id="@markAllId" class="btn btn-secondary">
+            <i class="ri-check-double-line me-1"></i> Mark all as read
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <ul class="tps-tabs" id="myTab" role="tablist" aria-label="Notifications">
+            <li role="presentation">
+                <button class="tps-tab active" id="unread-tab" data-bs-toggle="tab" data-bs-target="#unread" type="button" role="tab" aria-controls="unread" aria-selected="true">
+                    <i class="ri-mail-unread-line"></i> Unread
+                    <span class="tps-tab__count" id="unread-count">@(serverUnread && unread.Count > 0 ? unread.Count.ToString() : "")</span>
+                </button>
+            </li>
+            <li role="presentation">
+                <button class="tps-tab" id="read-tab" data-bs-toggle="tab" data-bs-target="#read" type="button" role="tab" aria-controls="read" aria-selected="false">
+                    <i class="ri-mail-open-line"></i> Read
+                </button>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="unread" role="tabpanel" aria-labelledby="unread-tab" tabindex="0">
+                <div id="unread-notifications-content" class="tps-notices" aria-live="polite">
+                    @if (serverUnread)
+                    {
+                        ViewData["NoticesRead"] = false;
+                        @await Html.PartialAsync("_NotificationRows", unread)
+                    }
+                </div>
+            </div>
+            <div class="tab-pane fade" id="read" role="tabpanel" aria-labelledby="read-tab" tabindex="0">
+                <div id="read-notifications-content" class="tps-notices" aria-live="polite">
+                    @if (serverRead)
+                    {
+                        ViewData["NoticesRead"] = true;
+                        @await Html.PartialAsync("_NotificationRows", read)
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/tps-notifications.js" asp-append-version="true"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

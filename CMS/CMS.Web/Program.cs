@@ -184,12 +184,14 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseHangfireDashboard("/hangfire");
 
-string interviewReminderCron = HangfireCronHelper.GetJordanTimeCronExpression(builder.Configuration);
+// Sunday to Thursday at the configured Jordan hour; never queued on Friday or Saturday
+string interviewReminderCron = HangfireCronHelper.GetJordanWorkdayCronExpression(builder.Configuration);
 
 RecurringJob.AddOrUpdate<IInterviewReminderJob>(
     "SendInterviewReminder",
     job => job.SendReminderEmails(null),
-    interviewReminderCron
+    interviewReminderCron,
+    new RecurringJobOptions { TimeZone = HangfireCronHelper.JordanTimeZone }
 );
 
 app.UseSession();

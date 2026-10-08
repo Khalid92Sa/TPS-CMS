@@ -1,3 +1,4 @@
+using CMS.Domain.Entities;
 using System;
 using System.Collections.Generic;
 
@@ -35,9 +36,14 @@ public class InterviewDelegationDTO
 
     public DateTime ExpirationDate { get; set; }
 
+    public bool IsUnlimited => InterviewDelegation.IsNoExpiration(ExpirationDate);
+
     public int? WorkflowStageId { get; set; }
 
     public string InterviewerSlot { get; set; }
+
+    /// <summary>InterviewDelegation.Status* value (Active, Completed, ...).</summary>
+    public string Status { get; set; }
 }
 
 public class InterviewDelegationHistoryItemDTO
@@ -54,6 +60,8 @@ public class InterviewDelegationHistoryItemDTO
 
     public DateTime ExpirationDate { get; set; }
 
+    public bool IsUnlimited => InterviewDelegation.IsNoExpiration(ExpirationDate);
+
     public DateTime CreatedOn { get; set; }
 
     public string Duration { get; set; }
@@ -67,6 +75,16 @@ public class InterviewDelegationHistoryItemDTO
     public string RemovedByName { get; set; }
 
     public DateTime? RemovedOn { get; set; }
+
+    public string DelegatedUserId { get; set; }
+
+    public int InterviewId { get; set; }
+
+    /// <summary>When the delegation reached its final state (removed, completed or closed).</summary>
+    public DateTime? EndedOn { get; set; }
+
+    /// <summary>True while the delegation still controls who may submit the score.</summary>
+    public bool IsOpen => Status == "Active" || Status == "Not started";
 }
 
 public class DelegateInterviewPageDTO
@@ -100,11 +118,21 @@ public class DelegateInterviewPageDTO
     public List<UsersDTO> DelegateCandidates { get; set; } = [];
 
     public List<InterviewDelegationHistoryItemDTO> History { get; set; } = [];
+
+    /// <summary>False once the interview is scored: the page is then read-only history.</summary>
+    public bool IsPending { get; set; }
+
+    public InterviewDelegationHistoryItemDTO ActivePrimary { get; set; }
+
+    public InterviewDelegationHistoryItemDTO ActiveSecond { get; set; }
 }
 
 public class BulkDelegationPageDTO
 {
     public List<InterviewsDTO> Interviews { get; set; } = [];
+
+    /// <summary>Open delegations keyed by interview id.</summary>
+    public Dictionary<int, List<InterviewDelegationHistoryItemDTO>> OpenDelegations { get; set; } = [];
 
     public List<UsersDTO> DelegateCandidates { get; set; } = [];
 

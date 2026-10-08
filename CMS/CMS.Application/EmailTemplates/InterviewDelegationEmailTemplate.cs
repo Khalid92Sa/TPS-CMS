@@ -1,3 +1,4 @@
+﻿using CMS.Domain.Entities;
 using System;
 
 namespace CMS.Application.EmailTemplates;
@@ -15,93 +16,41 @@ public static class InterviewDelegationEmailTemplate
         string systemName = "CMS")
     {
         string starts = startDate.ToString("dddd, MMMM dd, yyyy hh:mm tt");
-        string expires = expirationDate.ToString("dddd, MMMM dd, yyyy hh:mm tt");
+        bool unlimited = InterviewDelegation.IsNoExpiration(expirationDate);
+        string expires = unlimited
+            ? "No end date"
+            : expirationDate.ToString("dddd, MMMM dd, yyyy hh:mm tt");
 
-        return $@"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='UTF-8'>
-            <title>Temporary interview delegation - {candidateName}</title>
-            <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    background-color: #f4f7fc;
-                    margin: 0;
-                    padding: 20px;
-                }}
-                .email-container {{
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: #ffffff;
-                    padding: 25px;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                }}
-                .header {{
-                    background-color: #2A5C83;
-                    color: #ffffff;
-                    text-align: center;
-                    padding: 15px;
-                    font-size: 20px;
-                    font-weight: bold;
-                    border-top-left-radius: 10px;
-                    border-top-right-radius: 10px;
-                }}
-                .content {{
-                    padding: 20px;
-                    font-size: 16px;
-                    color: #333;
-                    line-height: 1.6;
-                }}
-                .highlight {{
-                    font-weight: bold;
-                    color: #2A5C83;
-                }}
-                .button {{
-                    display: inline-block;
-                    background-color: #2A5C83;
-                    color: white;
-                    padding: 15px 30px;
-                    font-size: 16px;
-                    font-weight: bold;
-                    border-radius: 8px;
-                    text-decoration: none;
-                }}
-                .footer {{
-                    text-align: center;
-                    font-size: 14px;
-                    color: #777;
-                    padding-top: 15px;
-                    border-top: 1px solid #e0e0e0;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class='email-container'>
-                <div class='header'>{systemName} - Temporary Interview Delegation</div>
-                <div class='content'>
-                    <p>Dear <span class='highlight'>{recipientName}</span>,</p>
-                    <p>You have been given temporary access to enter the score for a pending interview. The original interviewer remains assigned.</p>
-                    <p>
-                        Candidate: <span class='highlight'>{candidateName}</span><br/>
-                        Position: <span class='highlight'>{positionName}</span><br/>
-                        Original interviewer: <span class='highlight'>{originalInterviewerName}</span><br/>
-                        Delegated user: <span class='highlight'>{recipientName}</span><br/>
-                        Delegation starts: <span class='highlight'>{starts}</span><br/>
-                        Delegation expires: <span class='highlight'>{expires}</span>
-                    </p>
-                    <p>This access is only for this interview and ends at the expiration time. Your account role is not changed.</p>
-                    <p><a href='{interviewLink}' class='button'>Open Pending Interview</a></p>
-                    <p>Thank you.</p>
-                </div>
-                <div class='footer'>
-                    <p>Regards,</p>
-                    <p>Sent by: <span class='highlight'>{systemName}</span></p>
-                </div>
-            </div>
-        </body>
-        </html>";
+        var email = new EmailContent
+        {
+            Title = $"Temporary interview delegation - {candidateName}",
+            Preheader = unlimited
+                ? $"You can score {candidateName}'s interview until the delegation is removed"
+                : $"You can score {candidateName}'s interview until {expires}",
+            Tone = EmailTone.Info,
+            Eyebrow = "Interview delegation",
+            Badge = "Temporary access",
+            Heading = $"You can now score {candidateName}'s interview",
+            RecipientName = recipientName,
+            IntroHtml =
+                "<p style=\"margin:0;\">You have been given temporary access to enter the score for a pending interview. " +
+                "The original interviewer remains assigned.</p>",
+            DetailsTitle = "Delegation details",
+            ButtonText = "Open pending interview",
+            ButtonUrl = interviewLink,
+            NoteHtml = unlimited
+                ? "This access is only for this interview and has no end date; it ends when the interview is scored or the delegation is removed. Your account role is not changed."
+                : "This access is only for this interview and ends at the expiration time. Your account role is not changed.",
+            SystemName = systemName
+        };
+        email.Details.Add(new EmailDetail("Candidate", candidateName));
+        email.Details.Add(new EmailDetail("Position", positionName));
+        email.Details.Add(new EmailDetail("Original interviewer", originalInterviewerName));
+        email.Details.Add(new EmailDetail("Delegated user", recipientName));
+        email.Details.Add(new EmailDetail("Delegation starts", starts));
+        email.Details.Add(new EmailDetail("Delegation expires", expires));
+
+        return EmailLayout.Render(email);
     }
 
     public static string GetRemovalEmail(
@@ -110,18 +59,24 @@ public static class InterviewDelegationEmailTemplate
         string positionName,
         string systemName = "CMS")
     {
-        return $@"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='UTF-8'>
-            <title>Interview delegation removed - {candidateName}</title>
-        </head>
-        <body>
-            <p>Dear {recipientName},</p>
-            <p>Your temporary access to score {candidateName} ({positionName}) has been removed. The previous interview link no longer opens this interview for you.</p>
-            <p>Regards,<br/>{systemName}</p>
-        </body>
-        </html>";
+        var email = new EmailContent
+        {
+            Title = $"Interview delegation removed - {candidateName}",
+            Preheader = $"Your temporary access to score {candidateName} has been removed",
+            Tone = EmailTone.Neutral,
+            Eyebrow = "Interview delegation",
+            Badge = "Removed",
+            Heading = "Your temporary interview access was removed",
+            RecipientName = recipientName,
+            IntroHtml =
+                $"<p style=\"margin:0;\">Your temporary access to score {EmailLayout.Strong(candidateName)} " +
+                $"({EmailLayout.Encode(positionName)}) has been removed. The previous interview link no longer opens this interview for you.</p>",
+            DetailsTitle = "Removed access",
+            SystemName = systemName
+        };
+        email.Details.Add(new EmailDetail("Candidate", candidateName));
+        email.Details.Add(new EmailDetail("Position", positionName));
+
+        return EmailLayout.Render(email);
     }
 }

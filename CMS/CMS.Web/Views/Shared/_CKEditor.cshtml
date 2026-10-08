@@ -96,14 +96,14 @@ if (string.IsNullOrEmpty(placeholder)) placeholder = label;
 	.ck-content.ck-editor__editable table {
 		width: 100%;
 		border-collapse: collapse;
-		border: 1px solid #dee2e6;
+		border: 1px solid var(--tps-border);
 		margin: 1rem 0;
 	}
 
 	.ck-content.ck-editor__editable td,
 	.ck-content.ck-editor__editable th {
 		padding: 0.75rem;
-		border: 1px solid #dee2e6;
+		border: 1px solid var(--tps-border);
 		min-width: 2em;
 	}
 
@@ -129,8 +129,8 @@ if (string.IsNullOrEmpty(placeholder)) placeholder = label;
 
 	/* Readonly State */
 	.ckeditor-component-wrapper.is-readonly .ck-editor__editable {
-		background-color: #f8f9fa !important;
-		color: #6c757d !important;
+		background-color: var(--tps-surface-2) !important;
+		color: var(--tps-muted) !important;
 	}
 
 	.ckeditor-component-wrapper.is-readonly .ck-toolbar {
@@ -301,7 +301,7 @@ if (string.IsNullOrEmpty(placeholder)) placeholder = label;
 	<textarea id="@id" name="@id" class="form-control" placeholder="@placeholder" @(required ? "required" : ""
 		)>@Html.Raw(value)</textarea>
 
-	<div class="ckeditor-error-message" id="@id-error">@label مطلوب</div>
+	<div class="ckeditor-error-message" id="@id-error">@label required</div>
 
 	<script>
 		(function () {

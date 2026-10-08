@@ -19,6 +19,18 @@ public class HomeController : Controller
         else
             return RedirectToAction("login", "users");
     }
+    // Public landing page. Signed-in users go to /users/login, which forwards them to their workspace.
+    [AllowAnonymous]
+    [HttpGet("/")]
+    [HttpGet("/welcome")]
+    public IActionResult Landing()
+    {
+        if (_signInManager.IsSignedIn(User))
+            return Redirect("/users/login");
+
+        return View();
+    }
+
     public IActionResult Privacy()
     {
         return View();

@@ -1,107 +1,65 @@
-﻿@model CMS.Application.DTOs.NotificationsDTO
+@model CMS.Application.DTOs.NotificationsDTO
+@{
+    ViewData["Title"] = "Notification";
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Notification Details</title>
+    // Back to the inbox that matches the user's role (same targets as before)
+    string backAction =
+        User.IsInRole("HR Manager") ? "IndexHRnotification" :
+        User.IsInRole("Interviewer") ? "IndexInterviewernotification" :
+        User.IsInRole("General Manager") ? "IndexGMnotification" :
+        User.IsInRole("Solution Architecture") ? "IndexArchinotification" :
+        "Index";
+    bool canOpenCandidate = User.IsInRole("Admin") || User.IsInRole("HR Manager");
+}
 
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f8f9fa;
-            color: #495057;
-        }
-
-        h1 {
-            color: #007bff;
-            text-align: center;
-            margin-top: 30px;
-        }
-
-        dl.row {
-            padding: 20px;
-            background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            margin: 20px auto;
-            max-width: 600px;
-        }
-
-        dt.col-sm-2 {
-            color: #007bff;
-            font-weight: bold;
-        }
-
-        dd.col-sm-10 {
-            margin-bottom: 15px;
-        }
-
-        .no-description {
-            color: #6c757d;
-            font-style: italic;
-        }
-
-        .form-group {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .btn-secondary {
-            background-color: #6c757d;
-            color: #ffffff;
-            border-color: #6c757d;
-        }
-
-    </style>
-</head>
-<body>
-
-    <h1>Notification Details</h1>
-
-    <dl class="row">
-        <dt class="col-sm-2">Sent Date:</dt>
-        <dd class="col-sm-10">@Model.SendDate</dd>
-
-        <dt class="col-sm-2">Title:</dt>
-        <dd class="col-sm-10">@Html.Raw(Model.Title)</dd>
-
-        <dt class="col-sm-2">Description:</dt>
-        @if (Model.BodyDesc != null)
-        {
-            <dd class="col-sm-10">@Html.Raw(Model.BodyDesc)</dd>
-        }
-        else
-        {
-            <dd class="col-sm-10 no-description">No description/notes added</dd>
-        }
-    </dl>
-
-    <div class="form-group">
-        @if (User.IsInRole("HR Manager"))
-        {
-            <div class=string.Empty>
-                <a class="btn btn-secondary" asp-action="IndexHRnotification" style="margin-left: 12px;">Back to your Notifications</a>
+@if (Model == null)
+{
+    <div class="tps-state">
+        <div class="tps-state__icon"><i class="ri-notification-off-line"></i></div>
+        <div class="tps-state__code">Not found</div>
+        <h2>This notification is no longer available</h2>
+        <p>It may have been removed, for example when a delegation was withdrawn.</p>
+        <div class="tps-state__actions">
+            <a class="btn btn-primary" asp-action="@backAction"><i class="ri-arrow-left-line me-1"></i> Back to notifications</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="tps-ihead">
+        <div class="tps-ihead__who">
+            <span class="tps-ihead__avatar tps-ihead__avatar--icon" aria-hidden="true"><i class="ri-notification-3-line"></i></span>
+            <div>
+                <p class="tps-ihead__eyebrow">Notification</p>
+                <h2 class="tps-ihead__name" dir="auto">@Html.Raw(Model.Title)</h2>
+                <div class="tps-ihead__meta">
+                    <span class="tps-chip"><i class="ri-time-line"></i><time datetime="@Model.SendDate.ToString("o")">@Model.SendDate.ToString("dddd, dd MMM yyyy, h:mm tt")</time></span>                </div>
             </div>
-        }
-        else if (User.IsInRole("Interviewer"))
-        {
-            <a class="btn btn-secondary" asp-action="IndexInterviewernotification">Back to your Notifications</a>
-        }
-        else if (User.IsInRole("General Manager"))
-        {
-            <a class="btn btn-secondary" asp-action="IndexGMnotification">Back to your Notifications</a>
-        }
-        else if (User.IsInRole("Solution Architecture"))
-        {
-            <a class="btn btn-secondary" asp-action="IndexArchinotification">Back to your Notifications</a>
-        }
-        else
-        {
-            <a class="btn btn-secondary" asp-action="Index">Back to Notifications</a>
-        }
+        </div>
+        <div class="tps-ihead__actions">
+            @if (canOpenCandidate && Model.CandidateId.HasValue)
+            {
+                <a class="btn btn-outline-primary" asp-controller="Candidates" asp-action="Details" asp-route-id="@Model.CandidateId">
+                    <i class="ri-user-star-line me-1"></i> Open candidate
+                </a>
+            }
+            <a class="btn btn-secondary" asp-action="@backAction"><i class="ri-arrow-left-line me-1"></i> Back to notifications</a>
+        </div>
     </div>
 
-</body>
-</html>
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title">Message</h4>
+        </div>
+        <div class="card-body">
+            @if (!string.IsNullOrWhiteSpace(Model.BodyDesc))
+            {
+                <div class="tps-notice-body" dir="auto">@Html.Raw(Model.BodyDesc)</div>
+            }
+            else
+            {
+                <p class="text-muted fst-italic mb-0">This notification has no further details.</p>
+            }
+        </div>
+    </div>
+}

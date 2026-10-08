@@ -1,338 +1,246 @@
-﻿@using CMS.Domain.Enums;
+@using CMS.Domain.Enums;
 @model CMS.Application.DTOs.InterviewsDTO
 
 @{
-    var test = Model;
+    ViewData["Title"] = "Add Interview Result";
+
+    bool scoresInterview = User.IsInRole("Interviewer")
+        || (User.IsInRole("Solution Architecture") && Model.ParentId == null)
+        || (User.IsInRole("Solution Architecture") && Model.ParentId != null && Model.WorkflowStageId == (int)EnumWorkflowStage.InterviewersReview);
+    bool recordsExperience = !User.IsInRole("HR Manager");
+
+    string Initials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(new[] { ' ', '.', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 1 ? parts[0].Substring(0, Math.Min(2, parts[0].Length)) : $"{parts[0][0]}{parts[1][0]}";
+    }
 }
-<style>
-    .card-header {
-        color: white;
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-    }
 
-    .btn-success {
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-        border: none;
-        color: white;
-    }
+<form asp-action="UpdateAfterInterview" id="updateForm" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" asp-for="InterviewsId" />
+    <input type="hidden" asp-for="InterviewerId" />
+    <input type="hidden" asp-for="SecondInterviewerId" />
+    <input type="hidden" asp-for="ArchitectureInterviewerId" />
+    <input type="hidden" asp-for="EvalutaionFormId" />
+    <input type="hidden" asp-for="CandidateId" />
+    <input type="hidden" asp-for="PositionId" />
+    <input type="hidden" asp-for="isUpdated" />
 
-        .btn-success:hover {
-            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
-            color: white;
-            transition: background 0.3s ease;
-        }
-
-    .btn-secondary {
-        background-color: gray;
-        border-color: gray;
-    }
-
-        .btn-secondary:hover {
-            background-color: darkgray !important;
-            border-color: darkgray !important;
-        }
-
-    .btn-link {
-        font-size: 11px;
-        color: white;
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-    }
-
-        .btn-link:hover {
-            color: white;
-            text-decoration: underline;
-        }
-
-    /* File Upload Area Styles */
-    .file-upload-container {
-        margin-top: 1.5rem;
-    }
-
-    .file-upload-area {
-        border: 2px dashed #cbd5e0;
-        border-radius: 8px;
-        padding: 2rem;
-        text-align: center;
-        background-color: #f8f9fa;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        position: relative;
-    }
-
-        .file-upload-area:hover {
-            border-color: #486fc7;
-            background-color: #f0f4ff;
-        }
-
-        .file-upload-area.dragover {
-            border-color: #319ca7;
-            background-color: #e6f7ff;
-            transform: scale(1.02);
-        }
-
-    .file-upload-icon {
-        font-size: 3rem;
-        color: #486fc7;
-        margin-bottom: 1rem;
-    }
-
-    .file-upload-text {
-        color: #4a5568;
-        font-size: 1rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .file-upload-hint {
-        color: #718096;
-        font-size: 0.875rem;
-    }
-
-    .file-input-hidden {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        top: 0;
-        left: 0;
-        opacity: 0;
-        cursor: pointer;
-    }
-
-    .file-preview-container {
-        margin-top: 1rem;
-        padding: 1rem;
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-    }
-
-    .file-preview-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.75rem;
-        background-color: white;
-        border-radius: 6px;
-        margin-bottom: 0.5rem;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-        .file-preview-item:last-child {
-            margin-bottom: 0;
-        }
-
-    .file-preview-info {
-        display: flex;
-        align-items: center;
-        flex: 1;
-    }
-
-    .file-preview-icon {
-        font-size: 1.5rem;
-        color: #486fc7;
-        margin-right: 0.75rem;
-    }
-
-    .file-preview-details {
-        flex: 1;
-    }
-
-    .file-preview-name {
-        font-weight: 500;
-        color: #2d3748;
-        margin-bottom: 0.25rem;
-    }
-
-    .file-preview-size {
-        font-size: 0.875rem;
-        color: #718096;
-    }
-
-    .file-remove-btn {
-        background: none;
-        border: none;
-        color: #e53e3e;
-        font-size: 1.25rem;
-        cursor: pointer;
-        padding: 0.25rem 0.5rem;
-        transition: color 0.2s;
-    }
-
-        .file-remove-btn:hover {
-            color: #c53030;
-        }
-
-    .evaluation-form-card {
-        background: linear-gradient(135deg, #e6f7ff 0%, #f0f4ff 100%);
-        border: 1px solid #b3d9ff;
-        border-radius: 8px;
-        padding: 1.25rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .evaluation-form-title {
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 0.75rem;
-        display: flex;
-        align-items: center;
-    }
-
-        .evaluation-form-title i {
-            margin-right: 0.5rem;
-            color: #486fc7;
-        }
-
-    .evaluation-form-text {
-        color: #4a5568;
-        margin-bottom: 1rem;
-        line-height: 1.6;
-    }
-</style>
-
-<div class="container mt-5">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h2 style="color:white !important">Adding Interview Result: <span style="color:#c50000;">@Model.FullName</span></h2>
+    @* ---------- Header ---------- *@
+    <div class="tps-ihead">
+        <div class="tps-ihead__who">
+            <span class="tps-ihead__avatar" aria-hidden="true">@Initials(Model.FullName)</span>
+            <div>
+                <p class="tps-ihead__eyebrow">Adding result for</p>
+                <h2 class="tps-ihead__name" dir="auto">@Model.FullName</h2>
+                <div class="tps-ihead__meta">
+                    @if (!string.IsNullOrEmpty(Model.Name))
+                    {
+                        <span class="tps-chip"><i class="ri-briefcase-4-line"></i>@Model.Name</span>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.TrackName))
+                    {
+                        <span class="tps-chip"><i class="ri-git-branch-line"></i>@Model.TrackName</span>
+                    }
+                    @if (Model.Date != default)
+                    {
+                        <span class="tps-chip"><i class="ri-calendar-event-line"></i>@Model.Date.ToString("dd MMM yyyy, h:mm tt")</span>
+                    }
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <form asp-action="UpdateAfterInterview" id="updateForm" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <input type="hidden" asp-for="InterviewsId" />
-                <input type="hidden" asp-for="InterviewerId" />
-                <input type="hidden" asp-for="SecondInterviewerId" />
-                <input type="hidden" asp-for="ArchitectureInterviewerId" />
-                <input type="hidden" asp-for="EvalutaionFormId" />
-                <input type="hidden" asp-for="CandidateId" />
-                <input type="hidden" asp-for="PositionId" />
-                <input type="hidden" asp-for="isUpdated" />
-
-                <div class="row">
-                    @if (User.IsInRole("Interviewer") || (User.IsInRole("Solution Architecture") && Model.ParentId == null) || (User.IsInRole("Solution Architecture") && Model.ParentId != null && Model.WorkflowStageId == (int)EnumWorkflowStage.InterviewersReview))
-                    {
-                        <!-- Score -->
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="Score"><span class="text-danger">*</span> Score out of 5:</label>
-                            <input asp-for="Score" class="form-control score" />
-                            <span asp-validation-for="Score" class="text-danger"></span>
-                        </div>
-                    }
-
-                    @if (!User.IsInRole("HR Manager"))
-                    {
-                        <!-- Actual Experience -->
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="ActualExperience"><span class="text-danger">*</span> Actual Experience:</label>
-                            <input asp-for="ActualExperience" class="form-control actualexperience" pattern="^(?:0(\.\d+)?|[1-9]\d*(\.\d+)?)$" title="Experience must be a non-negative numeric value." />
-                            <span asp-validation-for="ActualExperience" class="text-danger"></span>
-                        </div>
-                    }
-
-                    <!-- Status -->
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="StatusId" class="control-label"><span class="text-danger">*</span> Status</label>
-                        @if (ViewBag.StatusDTOs != null)
-                        {
-                            <select asp-for="StatusId" class="form-control">
-                                <option value="">Select a Status</option>
-                                @foreach (var sta in ViewBag.StatusDTOs)
-                                {
-                                    if (sta.Text != StatusCode.GetName("PND"))
-                                    {
-                                        <option value="@sta.Value">@sta.Text</option>
-                                    }
-                                }
-                            </select>
-                        }
-                        else
-                        {
-                            <p>No statuses available.</p>
-                        }
-                        <span asp-validation-for="StatusId" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-12 mb-3">
-                        @await Html.PartialAsync("_CKEditor", new { id = "Notes", label = "Notes:", value = Model.Notes ?? "" })
-                        <span asp-validation-for="Notes" class="text-danger d-block" id="notes-client-validation"></span>
-                    </div>
-                </div>
-
-                @if (User.IsInRole("Interviewer") || (User.IsInRole("Solution Architecture") && Model.ParentId == null) || (User.IsInRole("Solution Architecture") && Model.ParentId != null && Model.WorkflowStageId == (int)EnumWorkflowStage.InterviewersReview))
-                {
-                    <div class="file-upload-container">
-                        @if (Model.EvalutaionFormId != null)
-                        {
-                            <div class="evaluation-form-card">
-                                <div class="evaluation-form-title">
-                                    <i class="bx bx-file-blank"></i>
-                                    Evaluation Form Available
-                                </div>
-                                <p class="evaluation-form-text">
-                                    Please download the evaluation form by clicking the button below. After making the necessary modifications, upload the modified form using the upload area.
-                                </p>
-                                <a class="btn btn-link" asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.EvalutaionFormId">
-                                    <i class="bx bx-download"></i> Download Evaluation Form
-                                </a>
-                            </div>
-                        }
-
-                        <!-- Upload Evaluation -->
-                        <div class="mb-3">
-                            <label class="form-label"><span class="text-danger">*</span> Upload Evaluation Form</label>
-                            <div class="file-upload-area" id="fileUploadArea">
-                                <input type="file" id="file" name="file" class="file-input-hidden" accept=".pdf,.doc,.docx,.xls,.xlsx" />
-                                <div class="file-upload-icon">
-                                    <i class="bx bx-cloud-upload"></i>
-                                </div>
-                                <div class="file-upload-text">
-                                    <strong>Click to upload</strong> or drag and drop
-                                </div>
-                                <div class="file-upload-hint">
-                                    PDF, DOC, DOCX, XLS, XLSX (Max size: 10MB)
-                                </div>
-                            </div>
-                            <div id="filePreviewContainer" class="file-preview-container" style="display: none;">
-                                <div class="file-preview-item" id="filePreviewItem">
-                                    <div class="file-preview-info">
-                                        <div class="file-preview-icon">
-                                            <i class="bx bx-file"></i>
-                                        </div>
-                                        <div class="file-preview-details">
-                                            <div class="file-preview-name" id="fileName"></div>
-                                            <div class="file-preview-size" id="fileSize"></div>
-                                        </div>
-                                    </div>
-                                    <button type="button" class="file-remove-btn" id="removeFileBtn" title="Remove file">
-                                        <i class="bx bx-x"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <span asp-validation-for="AttachmentId" class="text-danger d-block mt-2"></span>
-                            <span id="fileError" class="text-danger d-block mt-2"></span>
-                        </div>
-                    </div>
-                }
-
-                <div class="d-flex justify-content-between mt-4">
-                    <button type="button" class="btn btn-success" id="submitButton">Submit</button>
-                    <a class="btn btn-secondary" 
-                       asp-action="MyInterviews"
-                       asp-route-statusFilter="@ViewBag.statusFilter"
-                       asp-route-companyFilter="@ViewBag.companyFilter"
-                       asp-route-trackFilter="@ViewBag.trackFilter">
-                        Back to List
-                    </a>
-                </div>
-            </form>
+        <div class="tps-ihead__actions">
+            @if (Model.StartFromHR)
+            {
+                <a class="btn btn-secondary" asp-action="ShowHistoryForHRFirstFlow" asp-route-id="@Model.InterviewsId"><i class="ri-history-line me-1"></i> History</a>
+            }
+            else
+            {
+                <a class="btn btn-secondary" asp-action="ShowHistory" asp-route-id="@Model.InterviewsId"><i class="ri-history-line me-1"></i> History</a>
+            }
+            @if (Model.CandidateCVAttachmentId != null)
+            {
+                <a class="btn btn-outline-primary" asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.CandidateCVAttachmentId"><i class="ri-file-user-line me-1"></i> Candidate CV</a>
+            }
         </div>
     </div>
-</div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
-<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <div class="row">
+        <div class="col-xl-8">
+
+            @* ---------- Outcome ---------- *@
+            <section class="card tps-fsection" aria-labelledby="sec-outcome">
+                <div class="card-header">
+                    <span class="tps-fsection__icon"><i class="ri-scales-3-line"></i></span>
+                    <div>
+                        <h4 class="tps-fsection__title" id="sec-outcome">Outcome</h4>
+                        <p class="tps-fsection__desc">Your decision for this interview and how the candidate scored.</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tps-fgrid">
+                        <div class="tps-field @(scoresInterview || recordsExperience ? "" : "tps-span-all")">
+                            <label asp-for="StatusId" class="form-label">Decision <span class="tps-req">*</span></label>
+                            @if (ViewBag.StatusDTOs != null)
+                            {
+                                <select asp-for="StatusId" class="form-select" data-status-select>
+                                    <option value="">Select a decision…</option>
+                                    @foreach (var sta in ViewBag.StatusDTOs)
+                                    {
+                                        if (sta.Text != StatusCode.GetName("PND"))
+                                        {
+                                            <option value="@sta.Value">@sta.Text</option>
+                                        }
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <p class="text-muted mb-0">No statuses are available.</p>
+                            }
+                            <span asp-validation-for="StatusId" class="text-danger"></span>
+                        </div>
+
+                        @if (scoresInterview)
+                        {
+                            <div class="tps-field">
+                                <label asp-for="Score" class="form-label">Score <span class="tps-req">*</span></label>
+                                <div class="tps-input-unit">
+                                    <span class="tps-input-unit__suffix">out of 5</span>
+                                    <input asp-for="Score" class="form-control score" inputmode="decimal" placeholder="e.g. 3.5" />
+                                    <span asp-validation-for="Score" class="text-danger"></span>
+                                </div>
+                                <div class="tps-scale" id="scoreScale" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+                                <div class="tps-hint">0 to 5. An accepted candidate needs at least 3.</div>
+                            </div>
+                        }
+
+                        @if (recordsExperience)
+                        {
+                            <div class="tps-field">
+                                <label asp-for="ActualExperience" class="form-label">Actual experience <span class="tps-req">*</span></label>
+                                <div class="tps-input-unit">
+                                    <span class="tps-input-unit__suffix">years</span>
+                                    <input asp-for="ActualExperience" class="form-control actualexperience" inputmode="decimal" placeholder="e.g. 4" pattern="^(?:0(\.\d+)?|[1-9]\d*(\.\d+)?)$" title="Experience must be a non-negative numeric value." />
+                                    <span asp-validation-for="ActualExperience" class="text-danger"></span>
+                                </div>
+                                <div class="tps-hint">Experience you assessed during the interview.</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </section>
+
+            @* ---------- Notes ---------- *@
+            <section class="card tps-fsection" aria-labelledby="sec-notes">
+                <div class="card-header">
+                    <span class="tps-fsection__icon"><i class="ri-file-text-line"></i></span>
+                    <div>
+                        <h4 class="tps-fsection__title" id="sec-notes">Notes</h4>
+                        <p class="tps-fsection__desc">Strengths, concerns and anything the next reviewer should know. Required when you reject.</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @await Html.PartialAsync("_CKEditor", new { id = "Notes", label = "Interview notes", value = Model.Notes ?? "" })
+                    <span asp-validation-for="Notes" class="text-danger d-block" id="notes-client-validation"></span>
+                </div>
+            </section>
+
+            @* ---------- Evaluation ---------- *@
+            @if (scoresInterview)
+            {
+                <section class="card tps-fsection" aria-labelledby="sec-eval">
+                    <div class="card-header">
+                        <span class="tps-fsection__icon"><i class="ri-file-upload-line"></i></span>
+                        <div>
+                            <h4 class="tps-fsection__title" id="sec-eval">Evaluation form</h4>
+                            <p class="tps-fsection__desc">Upload the completed evaluation for this interview.</p>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.EvalutaionFormId != null)
+                        {
+                            <div class="tps-callout">
+                                <i class="ri-file-download-line"></i>
+                                <div>
+                                    <div class="tps-callout__title">Step 1 · Download the evaluation template</div>
+                                    <p class="tps-callout__text">Fill it in, save it, then upload the completed file below.</p>
+                                    <a class="btn btn-outline-primary btn-sm" asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.EvalutaionFormId">
+                                        <i class="ri-download-2-line me-1"></i> Download template
+                                    </a>
+                                </div>
+                            </div>
+                        }
+
+                        <label class="form-label" for="file">@(Model.EvalutaionFormId != null ? "Step 2 · " : "")Upload completed evaluation <span class="tps-req">*</span></label>
+                        <div class="tps-upload" id="fileUploadArea">
+                            <input type="file" id="file" name="file" class="file-input-hidden" accept=".pdf,.doc,.docx,.xls,.xlsx" aria-describedby="fileHint" />
+                            <span class="tps-upload__icon"><i class="ri-upload-cloud-2-line"></i></span>
+                            <div class="tps-upload__text"><strong>Click to choose a file</strong> or drag it here</div>
+                            <div class="tps-upload__hint" id="fileHint">PDF, Word or Excel · up to 10 MB</div>
+                        </div>
+                        <div id="filePreviewContainer" style="display: none;">
+                            <div class="tps-file" id="filePreviewItem">
+                                <span class="tps-file__icon"><i class="ri-file-3-line"></i></span>
+                                <div>
+                                    <div class="tps-file__name" id="fileName"></div>
+                                    <div class="tps-file__meta" id="fileSize"></div>
+                                </div>
+                                <button type="button" class="btn btn-secondary btn-sm tps-file__remove" id="removeFileBtn" title="Remove file">
+                                    <i class="ri-close-line"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                        <span asp-validation-for="AttachmentId" class="text-danger d-block mt-2"></span>
+                        <span id="fileError" class="text-danger d-block mt-2"></span>
+                    </div>
+                </section>
+            }
+        </div>
+
+        @* ---------- Checklist ---------- *@
+        <div class="col-xl-4">
+            <aside class="card tps-aside" aria-label="Before you submit">
+                <div class="card-header">
+                    <h4 class="card-title">Before you submit</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="tps-rule-list">
+                        <li><i class="ri-checkbox-circle-line"></i><span>Choose a decision. You can't submit a result as Pending.</span></li>
+                        @if (scoresInterview)
+                        {
+                            <li><i class="ri-checkbox-circle-line"></i><span>Give a score from 0 to 5. To accept the candidate, the score must be 3 or higher.</span></li>
+                            <li><i class="ri-checkbox-circle-line"></i><span>Upload the completed evaluation form (up to 10 MB).</span></li>
+                        }
+                        @if (recordsExperience)
+                        {
+                            <li><i class="ri-checkbox-circle-line"></i><span>Enter the candidate's actual experience in years.</span></li>
+                        }
+                        <li><i class="ri-checkbox-circle-line"></i><span>If you reject, explain why in the notes.</span></li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <div class="tps-factions">
+        <span class="tps-factions__note"><i class="ri-information-line"></i> You'll be asked to confirm before the result is saved.</span>
+        <div class="tps-factions__buttons">
+            <a class="btn btn-secondary"
+               asp-action="MyInterviews"
+               asp-route-statusFilter="@ViewBag.statusFilter"
+               asp-route-companyFilter="@ViewBag.companyFilter"
+               asp-route-trackFilter="@ViewBag.trackFilter">
+                Cancel
+            </a>
+            <button type="button" class="btn btn-primary px-4" id="submitButton"><i class="ri-send-plane-line me-1"></i> Submit result</button>
+        </div>
+    </div>
+</form>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     $(document).ready(function () {
@@ -341,7 +249,18 @@
             this.value = this.value.replace(/[^0-9.]/g, '');
         });
 
-        // File Upload Area Functionality
+        // Score scale indicator
+        function renderScale() {
+            var value = parseFloat($('[name="Score"]').val());
+            $('#scoreScale span').each(function (i) {
+                $(this).toggleClass('is-on', !isNaN(value) && value >= i + 1);
+            });
+            $('#scoreScale').attr('data-value', isNaN(value) ? null : value);
+        }
+        $('[name="Score"]').on('input', renderScale);
+        renderScale();
+
+        // ---------- Evaluation upload ----------
         const fileInput = $('#file');
         const fileUploadArea = $('#fileUploadArea');
         const filePreviewContainer = $('#filePreviewContainer');
@@ -350,7 +269,6 @@
         const removeFileBtn = $('#removeFileBtn');
         const fileError = $('#fileError');
 
-        // Format file size
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -359,32 +277,27 @@
             return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
         }
 
-        // Show file preview
         function showFilePreview(file) {
             fileName.text(file.name);
             fileSize.text(formatFileSize(file.size));
             filePreviewContainer.show();
-            fileUploadArea.css('border-color', '#48bb78');
-            fileUploadArea.css('background-color', '#f0fff4');
+            fileUploadArea.removeClass('has-error').addClass('has-file');
         }
 
-        // Hide file preview
         function hideFilePreview() {
             filePreviewContainer.hide();
             fileInput.val('');
-            fileUploadArea.css('border-color', '#cbd5e0');
-            fileUploadArea.css('background-color', '#f8f9fa');
+            fileUploadArea.removeClass('has-file has-error');
             fileError.text('');
         }
 
-        // File input change
         fileInput.on('change', function (e) {
             const file = e.target.files[0];
             if (file) {
-                // Validate file size (10MB)
                 if (file.size > 10 * 1024 * 1024) {
-                    fileError.text('File size exceeds 10MB limit.');
+                    fileError.text('This file is larger than 10 MB. Choose a smaller file.');
                     hideFilePreview();
+                    fileUploadArea.addClass('has-error');
                     return;
                 }
                 showFilePreview(file);
@@ -392,13 +305,11 @@
             }
         });
 
-        // Remove file button
         removeFileBtn.on('click', function (e) {
             e.stopPropagation();
             hideFilePreview();
         });
 
-        // Drag and drop functionality
         fileUploadArea.on('dragover', function (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -419,12 +330,11 @@
             const files = e.originalEvent.dataTransfer.files;
             if (files.length > 0) {
                 const file = files[0];
-                // Validate file size
                 if (file.size > 10 * 1024 * 1024) {
-                    fileError.text('File size exceeds 10MB limit.');
+                    fileError.text('This file is larger than 10 MB. Choose a smaller file.');
+                    fileUploadArea.addClass('has-error');
                     return;
                 }
-                // Create a FileList-like object
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(file);
                 fileInput[0].files = dataTransfer.files;
@@ -433,13 +343,7 @@
             }
         });
 
-        // Click on upload area to trigger file input
-        fileUploadArea.on('click', function (e) {
-            if (!$(e.target).closest('.file-preview-container').length && !$(e.target).is('.file-remove-btn')) {
-                fileInput.click();
-            }
-        });
-
+        // ---------- Submit ----------
         $('#submitButton').click(function () {
             var isValid = true;
             var scoreValue = $('[name="Score"]').val();
@@ -448,7 +352,7 @@
 
             if ($('[name="Score"]').is(":visible")) {
                 if (!scoreValue || scoreValue < 0 || scoreValue > 5 || (statusValue === "2" && scoreValue < 3)) {
-                    $('[name="Score"]').next(".text-danger").text("Score must be between 0 and 5. If status is Accepted, score should be at least 3.");
+                    $('[name="Score"]').next(".text-danger").text("Enter a score from 0 to 5. To accept, the score must be at least 3.");
                     isValid = false;
                 } else {
                     $('[name="Score"]').next(".text-danger").text("");
@@ -458,7 +362,7 @@
             if ($('[name="ActualExperience"]').is(":visible")) {
                 var actualExperience = $('[name="ActualExperience"]').val();
                 if (!actualExperience || isNaN(actualExperience) || actualExperience < 0) {
-                    $('[name="ActualExperience"]').next(".text-danger").text("Actual Experience must be a positive number or zero.");
+                    $('[name="ActualExperience"]').next(".text-danger").text("Enter the experience in years (0 or more).");
                     isValid = false;
                 } else {
                     $('[name="ActualExperience"]').next(".text-danger").text("");
@@ -466,15 +370,17 @@
             }
 
             if (!statusValue) {
-                $('[name="StatusId"]').next(".text-danger").text("Status is required.");
+                $('[name="StatusId"]').next(".text-danger").text("Choose a decision.");
                 isValid = false;
+            } else {
+                $('[name="StatusId"]').next(".text-danger").text("");
             }
 
             if (statusValue === "3" && !window.CKEditorManager.getPlainText('Notes')) {
                 const notesTextarea = document.getElementById('Notes');
                 const wrapper = notesTextarea?.closest('.ckeditor-component-wrapper');
                 if (wrapper) wrapper.classList.add('is-invalid');
-                $('#notes-client-validation').text("Please provide a reason for rejection.");
+                $('#notes-client-validation').text("Explain the reason for rejecting the candidate.");
                 isValid = false;
             } else {
                 const notesTextarea = document.getElementById('Notes');
@@ -484,22 +390,29 @@
             }
 
             if (fileInput.is(":visible") && !fileSelected) {
-                fileError.text("Please choose a file to upload.");
-                fileUploadArea.css('border-color', '#e53e3e');
+                fileError.text("Upload the completed evaluation form.");
+                fileUploadArea.addClass('has-error');
                 isValid = false;
             } else {
-                fileUploadArea.css('border-color', '#cbd5e0');
+                fileUploadArea.removeClass('has-error');
             }
 
-            if (!isValid) return;
+            if (!isValid) {
+                var first = $('#updateForm .text-danger').filter(function () { return $(this).text().trim().length > 0; }).first();
+                if (first.length) first[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
 
+            var decision = $('[name="StatusId"] option:selected').text();
             Swal.fire({
-                title: 'Are you sure?',
-                text: 'You are about to submit the form.',
-                icon: 'warning',
+                title: 'Submit this result?',
+                html: 'Decision: <strong>' + $('<div>').text(decision).html() + '</strong>'
+                    + (scoreValue ? ' · Score <strong>' + $('<div>').text(scoreValue).html() + ' / 5</strong>' : ''),
+                icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Yes, submit it!',
-                cancelButtonText: 'No, cancel!',
+                confirmButtonText: 'Submit result',
+                cancelButtonText: 'Back',
+                reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
                     $('#updateForm').submit();

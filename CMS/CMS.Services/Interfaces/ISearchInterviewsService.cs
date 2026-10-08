@@ -1,5 +1,6 @@
 ﻿using CMS.Application.DTOs;
 using CMS.Application.Extensions;
+using CMS.Application.Helpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,6 +12,7 @@ public interface ISearchInterviewsService
 {
     Task<Result<InterviewsDTO>> Insert(InterviewsDTO data);
     Task<Result<List<InterviewsDTO>>> GetAll();
+    Task<Result<PaginatedList<InterviewsDTO>>> GetLatestInterviewPerCandidatePageAsync(InterviewListFilter filter, int pageNumber, int pageSize);
     Task<Result<InterviewsDTO>> Delete(int id);
     Task<Result<InterviewsDTO>> GetById(int id);
     Task<Result<InterviewsDTO>> Update(InterviewsDTO data);

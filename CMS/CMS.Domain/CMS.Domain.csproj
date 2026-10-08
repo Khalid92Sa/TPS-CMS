@@ -61,6 +61,8 @@
     <None Include="SQL_SCRIPTS\05_Create_InterviewDelegations_Table.sql" />
     <None Include="SQL_SCRIPTS\06_Create_DelegationDurations_Table.sql" />
     <None Include="SQL_SCRIPTS\07_Add_InterviewDelegation_Removal_Audit.sql" />
+    <None Include="SQL_SCRIPTS\08_Add_DelegationDuration_Unlimited.sql" />
+    <None Include="SQL_SCRIPTS\09_Add_Interview_LastReminderSentOn.sql" />
   </ItemGroup>
 
 	<ItemGroup>

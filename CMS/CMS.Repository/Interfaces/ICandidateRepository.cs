@@ -1,4 +1,5 @@
-﻿using CMS.Domain.Entities;
+﻿using CMS.Application.DTOs;
+using CMS.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ namespace CMS.Repository.Interfaces;
 public interface ICandidateRepository
 {
     Task<IEnumerable<Candidate>> GetAllCandidatesAsync();
+    Task<(List<CandidateDTO> Items, int TotalCount)> GetCandidatesPageAsync(string fullName, string phone, int? trackId, int pageNumber, int pageSize);
     Task<Candidate> GetCandidateByIdAsync(int id);
     Task CreateCandidateAsync(Candidate candidate);
     Task UpdateCandidateAsync(Candidate candidate);

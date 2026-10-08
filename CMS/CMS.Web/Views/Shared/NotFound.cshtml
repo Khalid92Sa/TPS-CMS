@@ -1,10 +1,14 @@
-﻿@{
-    ViewData["Title"] = "Page Not Found";
+@{
+    ViewData["Title"] = "Page not found";
 }
 
-<div style="text-align: center; margin-top: 50px;">
-    <h1>404 - Page Not Found</h1>
-    <img src="~/Content/images/404-page-not-found.svg" alt="Not Found" style="max-width: 600px; width: 100%; margin-top: 20px;" />
-    <p>The page you're looking for doesn't exist or has been moved.</p>
-    <a href="/" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;">Go to Home</a>
+<div class="tps-state">
+    <div class="tps-state__icon"><i class="ri-compass-3-line"></i></div>
+    <div class="tps-state__code">Error 404</div>
+    <h2>We couldn't find that page</h2>
+    <p>The link may be out of date, or the record may have been moved or deleted.</p>
+    <div class="tps-state__actions">
+        <a href="javascript:history.back()" class="btn btn-secondary"><i class="ri-arrow-left-line me-1"></i> Go back</a>
+        <a href="/users/login" class="btn btn-primary">Go to my workspace</a>
+    </div>
 </div>

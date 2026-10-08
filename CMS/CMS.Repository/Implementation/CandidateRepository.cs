@@ -1,4 +1,5 @@
 ﻿
+using CMS.Application.DTOs;
 using CMS.Domain;
 using CMS.Domain.Entities;
 using CMS.Domain.Enums;
@@ -48,6 +49,56 @@ public class CandidateRepository : ICandidateRepository
         {
             throw;
         }
+    }
+
+    /// <summary>
+    /// One page of the Candidates list, newest first. Filtering, counting and paging run in SQL,
+    /// and only the columns the list shows are read.
+    /// </summary>
+    public async Task<(List<CandidateDTO> Items, int TotalCount)> GetCandidatesPageAsync(
+        string fullName,
+        string phone,
+        int? trackId,
+        int pageNumber,
+        int pageSize)
+    {
+        IQueryable<Candidate> query = _dbContext.Candidates.AsNoTracking();
+
+        if (!string.IsNullOrEmpty(phone))
+            query = query.Where(c => c.Phone.Contains(phone));
+
+        if (!string.IsNullOrEmpty(fullName))
+            query = query.Where(c => c.FullName.Contains(fullName));
+
+        if (trackId.HasValue && trackId.Value > 0)
+            query = query.Where(c => c.TrackId == trackId.Value);
+
+        int totalCount = await query.CountAsync();
+
+        List<CandidateDTO> items = await query
+            .OrderByDescending(c => c.CreatedOn)
+            .ThenBy(c => c.Id)
+            .Skip(Math.Max(0, (pageNumber - 1) * pageSize))
+            .Take(Math.Max(0, pageSize))
+            .Select(c => new CandidateDTO
+            {
+                Id = c.Id,
+                FullName = c.FullName,
+                Phone = c.Phone,
+                PositionId = c.PositionId,
+                PositionName = c.Position.Name,
+                Name = c.Position.Name,
+                TrackId = c.TrackId,
+                TrackName = c.Track.Name,
+                CompanyId = c.CompanyId,
+                CompanyName = c.Company.Name,
+                Experience = c.Experience,
+                CVAttachmentId = c.CVAttachmentId,
+                CreatedOn = c.CreatedOn,
+            })
+            .ToListAsync();
+
+        return (items, totalCount);
     }
 
     public async Task<Candidate> GetCandidateByIdAsync(int id)

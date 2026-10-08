@@ -1,41 +1,14 @@
-﻿
-<div class="container text-center">
-    <div class="row">
-        <div class="col-md-12">
-            <h2>Access Denied</h2>
-            <p class="text-danger">Sorry, you do not have permission to access this page.</p>
-            <p>Please contact your administrator for assistance.</p>
-        </div>
+@{
+    ViewData["Title"] = "Access denied";
+}
+
+<div class="tps-state">
+    <div class="tps-state__icon tps-state__icon--danger"><i class="ri-lock-2-line"></i></div>
+    <div class="tps-state__code">Error 403</div>
+    <h2>You don't have access to this page</h2>
+    <p>Your role doesn't include permission for this page. If you need it, ask your administrator to update your access.</p>
+    <div class="tps-state__actions">
+        <a href="javascript:history.back()" class="btn btn-secondary"><i class="ri-arrow-left-line me-1"></i> Go back</a>
+        <a href="/users/login" class="btn btn-primary">Go to my workspace</a>
     </div>
 </div>
-
-<style>
-    .container {
-        margin-top: 50px;
-    }
-
-    h2 {
-        color: #e74c3c;
-    }
-
-    p.text-danger {
-        font-weight: bold;
-    }
-
-    .access-denied-btn {
-        padding: 9px 25px;
-        background-color: #3498db;
-        color: #fff;
-        text-transform: uppercase;
-        border-radius: 50px;
-        font-weight: bold;
-        letter-spacing: 1px;
-        text-decoration: none;
-        display: inline-block;
-        transition: background-color 0.3s ease;
-    }
-
-        .access-denied-btn:hover {
-            background-color: #2980b9;
-        }
-</style>

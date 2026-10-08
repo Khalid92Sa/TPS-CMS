@@ -6,6 +6,26 @@ namespace CMS.Application.Helpers;
 
 public static class HangfireCronHelper
 {
+    public static TimeZoneInfo JordanTimeZone => TZConvert.GetTimeZoneInfo("Asia/Amman");
+
+    /// <summary>
+    /// Cron expression for the interview reminder: the configured hour, Sunday to Thursday only
+    /// (never Friday or Saturday). Register it with RecurringJobOptions.TimeZone = JordanTimeZone so
+    /// the hour and the day are both Jordan local time, including across daylight-saving changes.
+    /// </summary>
+    public static string GetJordanWorkdayCronExpression(IConfiguration configuration)
+    {
+        int jordanHour = configuration.GetValue<int>("HangfireSettings:InterviewReminderHourJordan");
+        return $"0 {jordanHour} * * 0-4";
+    }
+
+    /// <summary>True on Friday and Saturday in Jordan, when no reminders are sent.</summary>
+    public static bool IsJordanWeekend(DateTime utcNow)
+    {
+        DayOfWeek day = TimeZoneInfo.ConvertTimeFromUtc(utcNow, JordanTimeZone).DayOfWeek;
+        return day == DayOfWeek.Friday || day == DayOfWeek.Saturday;
+    }
+
     /// <summary>
     /// Generates a UTC-based cron expression for Hangfire to run a job at a specific hour in Jordan time.
     /// </summary>

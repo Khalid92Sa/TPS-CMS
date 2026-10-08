@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace CMS.Application.EmailTemplates;
 
@@ -12,113 +12,19 @@ public static class InterviewInvitationEmailTemplate
         DateTime interviewDate,
         int interviewId,
         bool isSecondInterview = false,
-        bool includeScheduleDate = true)
+        bool includeScheduleDate = true,
+        ApprovalSummary approval = null)
     {
-        string formattedDate = interviewDate.ToString("dddd, MMMM dd, yyyy hh:mm tt");
-        string interviewPhase = isSecondInterview ? "second interview" : "first interview";
-        string scheduleSection = includeScheduleDate
-            ? $@"for the <span class='highlight'>{positionName}</span> position, scheduled on 
-                        <span class='highlight'>{formattedDate}</span>."
-            : $@"for the <span class='highlight'>{positionName}</span> position.";
-
-        return $@"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='UTF-8'>
-            <title>Interview Invitation - {candidateName}</title>
-            <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    background-color: #f4f7fc;
-                    margin: 0;
-                    padding: 20px;
-                }}
-                .email-container {{
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: #ffffff;
-                    padding: 25px;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                }}
-                .header {{
-                    background-color: #2A5C83;
-                    color: #ffffff;
-                    text-align: center;
-                    padding: 15px;
-                    font-size: 20px;
-                    font-weight: bold;
-                    border-top-left-radius: 10px;
-                    border-top-right-radius: 10px;
-                }}
-                .content {{
-                    padding: 20px;
-                    font-size: 16px;
-                    color: #333;
-                    line-height: 1.6;
-                }}
-                .highlight {{
-                    font-weight: bold;
-                    color: #2A5C83;
-                }}
-                .button {{
-                    display: inline-block;
-                    background-color: #2A5C83;
-                    color: white;
-                    padding: 15px 30px;
-                    font-size: 16px;
-                    font-weight: bold;
-                    border-radius: 8px;
-                    text-decoration: none;
-                    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
-                    transition: background 0.3s, transform 0.2s;
-                }}
-                .button:hover {{
-                    background-color: #1E4A6E;
-                    transform: translateY(-2px);
-                }}
-                .footer {{
-                    text-align: center;
-                    font-size: 14px;
-                    color: #777;
-                    padding-top: 15px;
-                    border-top: 1px solid #e0e0e0;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class='email-container'>
-                <div class='header'>Candidate Management System</div>
-
-                <div class='content'>
-                    <p>Dear <span class='highlight'>{recipientName.Replace("_", " ")}</span>,</p>
-
-                    <p>
-                        {(string.IsNullOrEmpty(coInterviewerName)
-                        ? "You are"
-                        : $"You and <span class='highlight'>{coInterviewerName}</span> are")} assigned to conduct a 
-                        <span class='highlight'>{interviewPhase}</span> 
-                        with <span class='highlight'>{candidateName}</span> 
-                        {scheduleSection}
-                    </p>
-
-                    <p>Please click the button below to view the invitation details:</p>
-
-                    <a href='https://apps.sssprocess.com:6134/interviews/{interviewId}/addingresult' class='button'>
-                        📩 View Invitation
-                    </a>
-
-                    <p>If you have any questions, please reach out to the HR team.</p>
-                </div>
-
-                <div class='footer'>
-                    <p>Regards,</p>
-                    <p>Sent by: <span class='highlight'>CMS</span></p>
-                </div>
-            </div>
-        </body>
-        </html>";
+        return Build(
+            recipientName, coInterviewerName, candidateName, positionName, interviewDate,
+            interviewId.ToString(), isSecondInterview, includeScheduleDate, approval,
+            title: $"Interview Invitation - {candidateName}",
+            eyebrow: "Interview invitation",
+            badge: null,
+            tone: EmailTone.Primary,
+            heading: $"You're invited to interview {candidateName}",
+            buttonText: "View invitation",
+            closing: "Please click the button below to view the invitation details.");
     }
 
     public static string UpdatedInvitationEmail(
@@ -131,110 +37,75 @@ public static class InterviewInvitationEmailTemplate
         bool isSecondInterview = false,
         bool includeScheduleDate = true)
     {
+        return Build(
+            recipientName, coInterviewerName, candidateName, positionName, interviewDate,
+            interviewId, isSecondInterview, includeScheduleDate, approval: null,
+            title: $"Interview Update - {candidateName}",
+            eyebrow: "Interview update",
+            badge: "Updated",
+            tone: EmailTone.Info,
+            heading: $"Interview details changed for {candidateName}",
+            buttonText: "View updated invitation",
+            closing: "Please click the button below to review the updated interview details.");
+    }
+
+    private static string Build(
+        string recipientName,
+        string coInterviewerName,
+        string candidateName,
+        string positionName,
+        DateTime interviewDate,
+        string interviewId,
+        bool isSecondInterview,
+        bool includeScheduleDate,
+        ApprovalSummary approval,
+        string title,
+        string eyebrow,
+        string badge,
+        EmailTone tone,
+        string heading,
+        string buttonText,
+        string closing)
+    {
         string formattedDate = interviewDate.ToString("dddd, MMMM dd, yyyy hh:mm tt");
         string interviewPhase = isSecondInterview ? "second interview" : "first interview";
-        string scheduleSection = includeScheduleDate
-            ? $@"for the <span class='highlight'>{positionName}</span> position, scheduled on 
-                        <span class='highlight'>{formattedDate}</span>."
-            : $@"for the <span class='highlight'>{positionName}</span> position.";
+        string who = string.IsNullOrEmpty(coInterviewerName)
+            ? "You are"
+            : $"You and {EmailLayout.Strong(coInterviewerName)} are";
+        string schedule = includeScheduleDate
+            ? $", scheduled on {EmailLayout.Strong(formattedDate)}."
+            : ".";
 
-        return $@"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='UTF-8'>
-            <title>Interview Update - {candidateName}</title>
-            <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    background-color: #f4f7fc;
-                    margin: 0;
-                    padding: 20px;
-                }}
-                .email-container {{
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: #ffffff;
-                    padding: 25px;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                }}
-                .header {{
-                    background-color: #2A5C83;
-                    color: #ffffff;
-                    text-align: center;
-                    padding: 15px;
-                    font-size: 20px;
-                    font-weight: bold;
-                    border-top-left-radius: 10px;
-                    border-top-right-radius: 10px;
-                }}
-                .content {{
-                    padding: 20px;
-                    font-size: 16px;
-                    color: #333;
-                    line-height: 1.6;
-                }}
-                .highlight {{
-                    font-weight: bold;
-                    color: #2A5C83;
-                }}
-                .button {{
-                    display: inline-block;
-                    background-color: #2A5C83;
-                    color: white;
-                    padding: 15px 30px;
-                    font-size: 16px;
-                    font-weight: bold;
-                    border-radius: 8px;
-                    text-decoration: none;
-                    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
-                    transition: background 0.3s, transform 0.2s;
-                }}
-                .button:hover {{
-                    background-color: #1E4A6E;
-                    transform: translateY(-2px);
-                }}
-                .footer {{
-                    text-align: center;
-                    font-size: 14px;
-                    color: #777;
-                    padding-top: 15px;
-                    border-top: 1px solid #e0e0e0;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class='email-container'>
-                <div class='header'>Candidate Management System</div>
+        var email = new EmailContent
+        {
+            Title = title,
+            Preheader = $"{(isSecondInterview ? "Second" : "First")} interview with {candidateName} for {positionName}",
+            Tone = tone,
+            Eyebrow = eyebrow,
+            Badge = badge,
+            Heading = heading,
+            RecipientName = recipientName.Replace("_", " "),
+            IntroHtml =
+                $"<p style=\"margin:0 0 14px;\">{who} assigned to conduct a {EmailLayout.Strong(interviewPhase)} " +
+                $"with {EmailLayout.Strong(candidateName)} for the {EmailLayout.Strong(positionName)} position{schedule}</p>" +
+                $"<p style=\"margin:0;\">{closing}</p>",
+            DetailsTitle = "Interview details",
+            ButtonText = buttonText,
+            ButtonUrl = $"https://apps.sssprocess.com:6134/interviews/{interviewId}/addingresult",
+            NoteHtml = "If you have any questions, please reach out to the HR team."
+        };
 
-                <div class='content'>
-                    <p>Dear <span class='highlight'>{recipientName.Replace("_", " ")}</span>,</p>
+        email.Details.Add(new EmailDetail("Candidate", candidateName));
+        email.Details.Add(new EmailDetail("Position", positionName));
+        email.Details.Add(new EmailDetail("Interview", isSecondInterview ? "Second interview" : "First interview"));
+        if (includeScheduleDate)
+            email.Details.Add(new EmailDetail("Scheduled", formattedDate));
+        if (!string.IsNullOrEmpty(coInterviewerName))
+            email.Details.Add(new EmailDetail("Co-interviewer", coInterviewerName));
+        ApprovalSummary.ApplyYourTurn(email, approval, candidateName, positionName,
+            withHtml: string.IsNullOrEmpty(coInterviewerName) ? null : $", together with {EmailLayout.Strong(coInterviewerName)},");
+        ApprovalSummary.AddTo(email, approval);
 
-                    <p>
-                        {(string.IsNullOrEmpty(coInterviewerName)
-                        ? "You are"
-                        : $"You and <span class='highlight'>{coInterviewerName}</span> are")} assigned to conduct a 
-                        <span class='highlight'>{interviewPhase}</span> 
-                        with <span class='highlight'>{candidateName}</span> 
-                        {scheduleSection}
-                    </p>
-
-                    <p>Please click the button below to review the updated interview details:</p>
-
-                    <a href='https://apps.sssprocess.com:6134/interviews/{interviewId}/addingresult' class='button'>
-                        📩 View Updated Invitation
-                    </a>
-
-                    <p>If you have any questions, please reach out to the HR team.</p>
-                </div>
-
-                <div class='footer'>
-                    <p>Regards,</p>
-                    <p>Sent by: <span class='highlight'>CMS</span></p>
-                </div>
-            </div>
-        </body>
-        </html>";
+        return EmailLayout.Render(email);
     }
 }

@@ -1,145 +1,146 @@
-﻿@model CMS.Application.DTOs.CompanyDTO
+@model CMS.Application.DTOs.CompanyDTO
 
 @{
     ViewData["Title"] = "Edit Company";
 }
 
-<style>
-    .card-header {
-        color: white;
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-    }
+<form asp-action="UpdateCompany" class="needs-validation" novalidate id="editCompanyForm">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-    .btn-success {
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-        border: none;
-        color: white;
-    }
-
-        .btn-success:hover {
-            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
-            color: white;
-            transition: background 0.3s ease;
-        }
-
-    .btn-secondary {
-        background-color: gray;
-        border-color: gray;
-    }
-
-        .btn-secondary:hover {
-            background-color: darkgray !important;
-            border-color: darkgray !important;
-        }
-</style>
-
-<div class="container mt-5">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h2 style="color:white !important;">Edit Company</h2>
+    <div class="tps-ihead">
+        <div class="tps-ihead__who">
+            <span class="tps-ihead__avatar tps-ihead__avatar--entity" aria-hidden="true"><i class="ri-building-2-line"></i></span>
+            <div>
+                <p class="tps-ihead__eyebrow">Editing company</p>
+                <h2 class="tps-ihead__name" dir="auto">@Model.Name</h2>
+            </div>
         </div>
-        <div class="card-body">
-            <form asp-action="UpdateCompany" class="needs-validation" novalidate>
-                <div class="row">
-                    <!-- Company Name -->
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Name" class="form-label">
-                            <span class="text-danger">*</span> Company Name
-                            <i class="fas fa-info-circle" data-toggle="tooltip" title="Enter the full company name."></i>
-                        </label>
-                        <input asp-for="Name" class="form-control" placeholder="Enter company name" />
-                        <div class="invalid-feedback">Company name is required.</div>
-                        <span asp-validation-for="Name" class="text-danger"></span>
-                        <span id="NameError" class="text-danger"></span>
-                    </div>
-                    <!-- Country -->
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="CountryId" class="form-label">
-                            <span class="text-danger">*</span> Country
-                        </label>
-                        @if (ViewBag.CountriesDTOs != null)
-                        {
-                            <select asp-for="CountryId" class="form-control">
-                                <option value="">-- Select a country --</option>
-                                @foreach (var country in ViewBag.CountriesDTOs)
-                                {
-                                    <option value="@country.Value" selected="@(country.Value == Model.CountryId.ToString())">@country.Text</option>
-                                }
-                            </select>
-                        }
-                        else
-                        {
-                            <p>No countries available.</p>
-                        }
-                        <div class="invalid-feedback">Please select a country.</div>
-                        <span asp-validation-for="CountryId" class="text-danger"></span>
-                        <span id="CountryError" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <!-- Contact Person Details -->
-                <h3 class="mt-4">Contact Person</h3>
-                <div class="row">
-                    <!-- Person Name -->
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="PersonName" class="form-label">Person Name</label>
-                        <input asp-for="PersonName" class="form-control" placeholder="Enter person's name">
-                        <span asp-validation-for="PersonName" class="text-danger"></span>
-                    </div>
-                    <!-- Email -->
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Email" class="form-label">Email</label>
-                        <input asp-for="Email" type="email" class="form-control" placeholder="Enter email">
-                        <span asp-validation-for="Email" class="text-danger"></span>
-                    </div>
-                    <!-- Phone Number -->
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="PhoneNumber" class="form-label">Phone Number</label>
-                        <input asp-for="PhoneNumber" class="form-control" placeholder="Enter phone number">
-                        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <!-- Buttons -->
-                <div class="d-flex justify-content-between mt-4">
-                    <button type="submit" class="btn btn-success px-4">Submit</button>
-                    <a class="btn btn-secondary" asp-action="GetCompanies">Back to list</a>
-                </div>
-            </form>
+        <div class="tps-ihead__actions">
+            <a class="btn btn-secondary" asp-action="Details" asp-route-id="@Model.Id"><i class="ri-file-list-3-line me-1"></i> View details</a>
         </div>
     </div>
-</div>
 
-<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <div class="row">
+        <div class="col-lg-6">
+            <section class="card tps-fsection" aria-labelledby="sec-company">
+                <div class="card-header">
+                    <span class="tps-fsection__icon"><i class="ri-building-2-line"></i></span>
+                    <div>
+                        <h4 class="tps-fsection__title" id="sec-company">Company</h4>
+                        <p class="tps-fsection__desc">The company name and the country it operates in.</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tps-fgrid" style="grid-template-columns: 1fr;">
+                        <div class="tps-field">
+                            <label asp-for="Name" class="form-label">Company name <span class="tps-req">*</span></label>
+                            <input asp-for="Name" class="form-control" placeholder="Full company name" dir="auto" autocomplete="off" />
+                            <div class="invalid-feedback">Enter the company name.</div>
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                            <span id="NameError" class="text-danger"></span>
+                        </div>
+
+                        <div class="tps-field">
+                            <label asp-for="CountryId" class="form-label">Country <span class="tps-req">*</span></label>
+                            @if (ViewBag.CountriesDTOs != null)
+                            {
+                                <select asp-for="CountryId" class="form-select" data-searchable>
+                                    <option value="">Select a country…</option>
+                                    @foreach (var country in ViewBag.CountriesDTOs)
+                                    {
+                                        <option value="@country.Value" selected="@(country.Value == Model.CountryId.ToString())">@country.Text</option>
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <p class="text-muted mb-0">No countries are available. Add a country first.</p>
+                            }
+                            <div class="tps-field-error" id="CountryInvalid" style="display:none;">Select the country.</div>
+                            <span asp-validation-for="CountryId" class="text-danger"></span>
+                            <span id="CountryError" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-lg-6">
+            <section class="card tps-fsection" aria-labelledby="sec-contact">
+                <div class="card-header">
+                    <span class="tps-fsection__icon"><i class="ri-contacts-book-2-line"></i></span>
+                    <div>
+                        <h4 class="tps-fsection__title" id="sec-contact">Contact person <span class="text-muted fw-normal fs-13">(optional)</span></h4>
+                        <p class="tps-fsection__desc">Who HR can reach at this company.</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tps-fgrid" style="grid-template-columns: 1fr;">
+                        <div class="tps-field">
+                            <label asp-for="PersonName" class="form-label">Name</label>
+                            <input asp-for="PersonName" class="form-control" placeholder="Contact person's name" dir="auto" autocomplete="off">
+                            <span asp-validation-for="PersonName" class="text-danger"></span>
+                        </div>
+                        <div class="tps-field">
+                            <label asp-for="Email" class="form-label">Email</label>
+                            <input asp-for="Email" type="email" class="form-control" placeholder="name@company.com" dir="ltr" autocomplete="off">
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                        <div class="tps-field">
+                            <label asp-for="PhoneNumber" class="form-label">Phone</label>
+                            <input asp-for="PhoneNumber" class="form-control" placeholder="Phone number" dir="ltr" inputmode="tel" autocomplete="off">
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="tps-factions">
+        <span class="tps-factions__note"><i class="ri-information-line"></i> Fields marked <span class="tps-req">*</span> are required.</span>
+        <div class="tps-factions__buttons">
+            <a class="btn btn-secondary" asp-action="GetCompanies">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4"><i class="ri-save-line me-1"></i> Save changes</button>
+        </div>
+    </div>
+</form>
 
 <script>
     $(function () {
-        $('[data-toggle="tooltip"]').tooltip();
+        function setCountryInvalid(invalid) {
+            var select = document.getElementById('CountryId');
+            if (!select) return;
+            select.classList.toggle('is-invalid', invalid);
+            if (select.tomselect) select.tomselect.wrapper.classList.toggle('is-invalid', invalid);
+            $('#CountryInvalid').toggle(invalid);
+        }
 
-        $('form').submit(function (e) {
+        $('#editCompanyForm').submit(function (e) {
             var isValid = true;
             var name = $('#Name').val().trim();
             var countryId = $('#CountryId').val();
 
-            // Validate Company Name
             if (!name) {
                 $('#Name').addClass('is-invalid');
                 isValid = false;
             } else {
-                $('#Name').removeClass('is-invalid').addClass('is-valid');
+                $('#Name').removeClass('is-invalid');
             }
 
-            // Validate Country
             if (!countryId) {
-                $('#CountryId').addClass('is-invalid');
+                setCountryInvalid(true);
                 isValid = false;
             } else {
-                $('#CountryId').removeClass('is-invalid').addClass('is-valid');
+                setCountryInvalid(false);
             }
 
             if (!isValid) {
                 e.preventDefault();
             }
         });
+
+        $('#Name').on('input', function () { if (this.value.trim()) $(this).removeClass('is-invalid'); });
+        $('#CountryId').on('change', function () { if (this.value) setCountryInvalid(false); });
     });
 </script>

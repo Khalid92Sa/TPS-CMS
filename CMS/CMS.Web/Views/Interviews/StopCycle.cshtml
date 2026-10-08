@@ -1,106 +1,112 @@
-﻿@model CMS.Application.DTOs.InterviewsDTO
+@model CMS.Application.DTOs.InterviewsDTO
 
 @{
     ViewData["Title"] = "Stop Cycle";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<style>
-    .was-validated .form-control:valid,
-    .form-control.is-valid {
-        background-image: none !important;
-    }
+<form asp-action="StopCycle" method="post" class="needs-validation" novalidate id="stopCycleForm">
+    <input type="hidden" asp-for="InterviewsId" />
+    <input type="hidden" asp-for="InterviewerId" />
+    <input type="hidden" asp-for="EvalutaionFormId" />
+    <input type="hidden" asp-for="CandidateId" />
+    <input type="hidden" asp-for="PositionId" />
+    <input type="hidden" asp-for="isUpdated" />
 
-    .was-validated .form-control:invalid,
-    .form-control.is-invalid {
-        background-image: none !important;
-    }
-
-    .form-control {
-        padding-right: 0.75rem !important;
-    }
-</style>
-
-
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-lg border-0">
-                <div class="card-header text-white text-center" style="background: linear-gradient(45deg, #4e73df, #1cc88a);">
-                    <h3 class="card-title" style="color:white;">@ViewData["Title"]</h3>
-                </div>
-                <div class="card-body p-5" style="background: #f8f9fc;">
-                    <form asp-action="StopCycle" method="post" class="needs-validation" novalidate>
-                        <input type="hidden" asp-for="InterviewsId" />
-                        <input type="hidden" asp-for="InterviewerId" />
-                        <input type="hidden" asp-for="EvalutaionFormId" />
-                        <input type="hidden" asp-for="CandidateId" />
-                        <input type="hidden" asp-for="PositionId" />
-                        <input type="hidden" asp-for="isUpdated" />
-
-                        <div class="mb-4">
-                            <label asp-for="StopCycleNote" class="form-label"><span style="color: red;">*</span> Reason for Stopping</label>
-                            <textarea placeholder="Please provide a detailed explanation..." id="Note" asp-for="StopCycleNote" class="form-control rounded-pill shadow-sm" rows="4" style="resize: none; border: 2px solid #d1d3e2; padding: 23px;" required></textarea>
-                            <div class="invalid-feedback">
-                                Please provide a reason for stopping the cycle.
-                            </div>
-                        </div>
-
-                        <div class="text-center mt-4">
-                            <button type="submit" class="btn btn-danger btn-lg rounded-pill px-4 shadow-sm" style="background: linear-gradient(45deg, #e74a3b, #ff6b6b); border: none;">Stop</button>
-                            <a class="btn btn-secondary btn-lg rounded-pill px-4 shadow-sm" asp-action="Index"
-                               asp-route-statusFilter="@ViewBag.statusFilter"
-                               asp-route-candidateFilter="@ViewBag.candidateFilter"
-                               asp-route-trackFilter="@ViewBag.trackFilter"
-                               asp-route-pageNumber="@ViewBag.PageNumber"
-                               asp-route-pageSize="@ViewBag.PageSize">Back</a>
-                        </div>
-                    </form>
+    <div class="tps-ihead">
+        <div class="tps-ihead__who">
+            <span class="tps-ihead__avatar tps-ihead__avatar--icon" aria-hidden="true" style="background:var(--tps-danger-soft);color:var(--tps-danger)"><i class="ri-stop-circle-line"></i></span>
+            <div>
+                <p class="tps-ihead__eyebrow">Stop interview cycle</p>
+                <h2 class="tps-ihead__name" dir="auto">@(string.IsNullOrEmpty(Model?.FullName) ? "Candidate" : Model.FullName)</h2>
+                <div class="tps-ihead__meta">
+                    @if (!string.IsNullOrEmpty(Model?.StatusName))
+                    {
+                        @InterviewStatusUi.Badge(Model.StatusName)
+                    }
+                    @if (!string.IsNullOrEmpty(Model?.Name))
+                    {
+                        <span class="tps-chip"><i class="ri-briefcase-4-line"></i>@Model.Name</span>
+                    }
                 </div>
             </div>
         </div>
     </div>
-</div>
 
+    <div class="row justify-content-center">
+        <div class="col-xl-8">
+            <section class="card tps-fsection" aria-labelledby="sec-stop">
+                <div class="card-header">
+                    <span class="tps-fsection__icon" style="background:var(--tps-danger-soft);color:var(--tps-danger)"><i class="ri-file-text-line"></i></span>
+                    <div>
+                        <h4 class="tps-fsection__title" id="sec-stop">Reason for stopping</h4>
+                        <p class="tps-fsection__desc">HR and administrators see this note on the interview details.</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tps-danger-note" role="note">
+                        <i class="ri-error-warning-line"></i>
+                        <div>Stopping ends this candidate's interview cycle. It can't be undone from here.</div>
+                    </div>
 
+                    <div class="tps-field">
+                        <label asp-for="StopCycleNote" class="form-label" for="Note">Reason <span class="tps-req">*</span></label>
+                        <textarea id="Note" asp-for="StopCycleNote" class="form-control" rows="5" dir="auto"
+                                  placeholder="Explain why the cycle is being stopped, e.g. the candidate withdrew or the position was closed." required></textarea>
+                        <div class="invalid-feedback">Explain why the cycle is being stopped.</div>
+                        <span asp-validation-for="StopCycleNote" class="text-danger"></span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
 
-<!-- Bootstrap and SweetAlert2 -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <div class="tps-factions">
+        <span class="tps-factions__note"><i class="ri-information-line"></i> You'll be asked to confirm.</span>
+        <div class="tps-factions__buttons">
+            <a class="btn btn-secondary" asp-action="Index"
+               asp-route-statusFilter="@ViewBag.statusFilter"
+               asp-route-candidateFilter="@ViewBag.candidateFilter"
+               asp-route-trackFilter="@ViewBag.trackFilter"
+               asp-route-pageNumber="@ViewBag.PageNumber"
+               asp-route-pageSize="@ViewBag.PageSize">Cancel</a>
+            <button type="submit" class="btn btn-danger px-4"><i class="ri-stop-circle-line me-1"></i> Stop cycle</button>
+        </div>
+    </div>
+</form>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     (function () {
         'use strict';
+        var form = document.getElementById('stopCycleForm');
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            form.classList.add('was-validated');
 
-        var forms = document.querySelectorAll('.needs-validation');
+            var note = document.getElementById('Note');
+            note.value = note.value.trim() ? note.value : '';
+            if (!form.checkValidity()) {
+                note.focus();
+                return;
+            }
 
-        Array.prototype.slice.call(forms)
-            .forEach(function (form) {
-                form.addEventListener('submit', function (event) {
-                    if (!form.checkValidity()) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    } else {
-                        event.preventDefault();
-                        Swal.fire({
-                            title: 'Are you sure?',
-                            text: 'You are about to stop the cycle. This action cannot be undone.',
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonColor: '#e74a3b',
-                            cancelButtonColor: '#858796',
-                            confirmButtonText: 'Yes, stop it!'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                form.submit();
-                            }
-                        });
-                    }
-
-                    form.classList.add('was-validated');
-                }, false);
+            Swal.fire({
+                title: 'Stop this interview cycle?',
+                text: 'The candidate\'s interview cycle ends with the reason you entered. This can\'t be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Stop cycle',
+                cancelButtonText: 'Keep going',
+                reverseButtons: true,
+                focusCancel: true,
+                customClass: { confirmButton: 'tps-swal-danger' }
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
             });
+        }, false);
     })();
 </script>

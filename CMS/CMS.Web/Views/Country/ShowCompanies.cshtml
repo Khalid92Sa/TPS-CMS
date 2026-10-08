@@ -1,109 +1,57 @@
-﻿@model CMS.Application.DTOs.CountryDTO
+@model CMS.Application.DTOs.CountryDTO
 
 @{
     ViewData["Title"] = "Country Details";
+    var companies = Model.companyDTOs ?? new List<CMS.Application.DTOs.CompanyDTO>();
 }
 
-<style>
-    .text-muted-custom {
-        color: #6c757d;
-        font-style: italic;
-    }
-
-    .details-card {
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .card-header-custom {
-        background-color: #405189;
-        color: white;
-        padding: 20px;
-        border-bottom: 3px solid #ffffff;
-    }
-
-    .card-body-custom {
-        padding: 20px;
-    }
-
-    dt {
-        font-weight: bold;
-        color: #333;
-    }
-
-    dd {
-        margin-bottom: 1rem;
-    }
-
-    .text-muted {
-        color: #6c757d;
-    }
-
-    .card-header {
-        color: white;
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-    }
-
-    .btn-success {
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-        border: none;
-        color: white;
-    }
-
-        .btn-success:hover {
-            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
-            color: white;
-            transition: background 0.3s ease;
-        }
-
-    .btn-secondary {
-        background-color: gray;
-        border-color: gray;
-    }
-
-        .btn-secondary:hover {
-            background-color: darkgray !important;
-            border-color: darkgray !important;
-        }
-</style>
-
-<div class="card details-card">
-    <div class="card-header card-header-custom">
-        <h2 style="color:white;">Country Details</h2>
+<div class="tps-ihead">
+    <div class="tps-ihead__who">
+        <span class="tps-ihead__avatar tps-ihead__avatar--entity" aria-hidden="true"><i class="ri-earth-line"></i></span>
+        <div>
+            <p class="tps-ihead__eyebrow">Country</p>
+            <h2 class="tps-ihead__name" dir="auto">@Model.Name</h2>
+            <div class="tps-ihead__meta">
+                <span class="tps-chip"><i class="ri-building-2-line"></i>@companies.Count @(companies.Count == 1 ? "company" : "companies")</span>
+            </div>
+        </div>
     </div>
-
-    <div class="card-body card-body-custom">
-        <dl class="row">
-            <dt class="col-sm-2">Country Name:</dt>
-            <dd class="col-sm-10">@Model.Name</dd>
-        </dl>
-
-        <dl class="row">
-            <dt class="col-sm-2">Companies Name:</dt>
-            <dd class="col-sm-10">
-                @if (Model.companyDTOs.Any())
-                {
-                    @foreach (var com in Model.companyDTOs)
-                    {
-                        @com.Name
-
-                        @if (com != Model.companyDTOs.Last())
-                        {
-                            @(",  ")
-                        }
-                    }
-                }
-                else
-                {
-                    <p class="text-muted-custom">There are no companies connected to this country.</p>
-                }
-            </dd>
-        </dl>
+    <div class="tps-ihead__actions">
+        <a class="btn btn-secondary" asp-action="GetCountries"><i class="ri-arrow-left-line me-1"></i> Back to list</a>
+        <a class="btn btn-primary" asp-action="UpdateCountry" asp-route-id="@Model.Id"><i class="ri-edit-line me-1"></i> Edit</a>
     </div>
 </div>
 
-<div class="form-group text-center mt-3">
-    <a asp-action="UpdateCountry" asp-route-id="@Model.Id" class="btn btn-success">Edit</a>
-    <a class="btn btn-secondary" asp-action="GetCountries">Back to List</a>
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title">Details</h4>
+    </div>
+    <div class="card-body">
+        <dl class="tps-dl">
+            <div>
+                <dt>Country name</dt>
+                <dd dir="auto">@Model.Name</dd>
+            </div>
+            <div>
+                <dt>Companies</dt>
+                @if (companies.Any())
+                {
+                    <dd>
+                        <div class="tps-related">
+                            @foreach (var company in companies)
+                            {
+                                <a class="tps-chip text-decoration-none" asp-controller="Company" asp-action="Details" asp-route-id="@company.Id" dir="auto">
+                                    <i class="ri-building-2-line"></i>@company.Name
+                                </a>
+                            }
+                        </div>
+                    </dd>
+                }
+                else
+                {
+                    <dd class="is-empty">No companies are linked to this country yet.</dd>
+                }
+            </div>
+        </dl>
+    </div>
 </div>

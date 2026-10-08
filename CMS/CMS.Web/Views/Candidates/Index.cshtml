@@ -1,5 +1,4 @@
 ﻿
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet" />
 <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
 
@@ -13,41 +12,41 @@
 
     /* File Upload Modal Styles */
     .file-upload-area {
-        border: 2px dashed #cbd5e0;
+        border: 2px dashed var(--tps-border-strong);
         border-radius: 8px;
         padding: 2rem;
         text-align: center;
-        background-color: #f8f9fa;
+        background-color: var(--tps-surface-2);
         transition: all 0.3s ease;
         cursor: pointer;
         position: relative;
     }
 
         .file-upload-area:hover {
-            border-color: #486fc7;
-            background-color: #f0f4ff;
+            border-color: var(--tps-primary);
+            background-color: var(--tps-primary-soft);
         }
 
         .file-upload-area.dragover {
-            border-color: #319ca7;
-            background-color: #e6f7ff;
+            border-color: var(--tps-accent);
+            background-color: var(--tps-primary-soft);
             transform: scale(1.02);
         }
 
     .file-upload-icon {
         font-size: 3rem;
-        color: #486fc7;
+        color: var(--tps-primary);
         margin-bottom: 1rem;
     }
 
     .file-upload-text {
-        color: #4a5568;
+        color: var(--tps-muted);
         font-size: 1rem;
         margin-bottom: 0.5rem;
     }
 
     .file-upload-hint {
-        color: #718096;
+        color: var(--tps-muted);
         font-size: 0.875rem;
     }
 
@@ -64,9 +63,9 @@
     .file-preview-container {
         margin-top: 1rem;
         padding: 1rem;
-        background-color: #f8f9fa;
+        background-color: var(--tps-surface-2);
         border-radius: 8px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--tps-border);
     }
 
     .file-preview-item {
@@ -74,7 +73,7 @@
         align-items: center;
         justify-content: space-between;
         padding: 0.75rem;
-        background-color: white;
+        background-color: var(--tps-surface);
         border-radius: 6px;
         margin-bottom: 0.5rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -88,7 +87,7 @@
 
     .file-preview-icon {
         font-size: 1.5rem;
-        color: #486fc7;
+        color: var(--tps-primary);
         margin-right: 0.75rem;
     }
 
@@ -98,19 +97,19 @@
 
     .file-preview-name {
         font-weight: 500;
-        color: #2d3748;
+        color: var(--tps-text);
         margin-bottom: 0.25rem;
     }
 
     .file-preview-size {
         font-size: 0.875rem;
-        color: #718096;
+        color: var(--tps-muted);
     }
 
     .file-remove-btn {
         background: none;
         border: none;
-        color: #e53e3e;
+        color: var(--tps-danger);
         font-size: 1.25rem;
         cursor: pointer;
         padding: 0.25rem 0.5rem;
@@ -118,11 +117,11 @@
     }
 
         .file-remove-btn:hover {
-            color: #c53030;
+            color: var(--tps-danger);
         }
 
     .upload-cv-btn {
-        background: linear-gradient(135deg, #486fc7, #319ca7);
+        background: var(--tps-brand-gradient);
         border: none;
         color: white;
         padding: 0.5rem 1rem;
@@ -133,14 +132,14 @@
     }
 
         .upload-cv-btn:hover {
-            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
+            background: var(--tps-brand-gradient-hover);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(72, 111, 199, 0.3);
             color: white;
         }
 
     .modal-header {
-        background: linear-gradient(135deg, #486fc7, #319ca7);
+        background: var(--tps-brand-gradient);
         color: white;
         border-bottom: none;
     }
@@ -155,7 +154,7 @@
     }
 
     .progress-bar {
-        background: linear-gradient(135deg, #486fc7, #319ca7);
+        background: var(--tps-brand-gradient);
     }
 </style>
 @model IEnumerable<CMS.Application.DTOs.CandidateDTO>

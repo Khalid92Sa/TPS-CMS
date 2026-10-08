@@ -1,20 +1,41 @@
 ﻿@using Microsoft.AspNetCore.Identity;
 @inject SignInManager<IdentityUser> SignInManager
 @inject UserManager<IdentityUser> UserManager
+@{
+    // Role shown under the user's name in the topbar
+    string roleLabel =
+        User.IsInRole("Admin") ? "Administrator" :
+        User.IsInRole("HR Manager") ? "HR Manager" :
+        User.IsInRole("General Manager") ? "General Manager" :
+        User.IsInRole("Solution Architecture") ? "Solution Architect" :
+        User.IsInRole("Interviewer") ? "Interviewer" :
+        User.IsInRole("Viewer") ? "Viewer" : "Member";
+
+    string homeUrl = (User.IsInRole("HR Manager") || User.IsInRole("Admin") || User.IsInRole("General Manager") || User.IsInRole("Viewer"))
+        ? "/dashboard/index"
+        : "/interviews/myInterviews";
+}
 <!doctype html>
 <html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable">
-
 
 <head>
 
     <meta charset="utf-8" />
-    <title>@ViewData["Title"] - CMS </title>
+    <title>@ViewData["Title"] · TPS Candidate Management</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="Themesbrand" name="author" />
+    <meta content="TechProcess Solutions" name="author" />
     <!-- App favicon -->
     <link rel="shortcut icon" href="~/theme/images/favicon.ico">
+    <!-- Saved Light/Dark theme: must run before layout.js -->
+    <script src="~/js/tps-theme-init.js" asp-append-version="true"></script>
     <!-- Layout config Js -->
     <script src="~/theme/js/layout.js"></script>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Searchable selects -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css" rel="stylesheet">
     <!-- Bootstrap Css -->
     <link href="~/theme/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
     <!-- Icons Css -->
@@ -24,122 +45,15 @@
     <!-- custom Css-->
     <link href="~/theme/css/custom.min.css" rel="stylesheet" type="text/css" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.18.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- TPS design system (must load after the theme) -->
+    <link href="~/css/tps-design.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+    <link href="~/css/tps-components.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 
-
-    <!-- LoadingOverlay CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-loading-overlay@2.1.7/dist/loadingoverlay.min.css">
-
-    <!-- jQuery (required for LoadingOverlay) -->
+    <!-- jQuery (the single copy for the whole page; views must not load another) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-    <!-- LoadingOverlay JS -->
-    <script src="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-loading-overlay@2.1.7/dist/loadingoverlay.min.js"></script>
-
-    <style>
-        /* Style for notification container */
-        #notification-container {
-        position: relative;
-        }
-
-        /* Style for notification button */
-        #notification-dropdown {
-        background-color: #007bff;
-        color: #fff;
-        }
-
-
-        #notification-dropdownGM {
-        background-color: #007bff;
-        color: #fff;
-        }
-
-        #notification-dropdownHR {
-        background-color: #007bff;
-        color: #fff;
-        }
-
-        #notification-dropdownInterviewer {
-        background-color: #007bff;
-        color: #fff;
-        }
-
-        /* Style for the dropdown content */
-        .dropdown-menu {
-        max-height: 300px;
-        overflow-y: auto;
-        }
-
-        /* Style for notification list item */
-        .notification-item {
-        padding: 10px;
-        border-bottom: 1px solid #ddd;
-        }
-
-        /* Style for notification title */
-        .notification-title {
-        font-weight: bold;
-        color: #333;
-        }
-
-        /* Style for notification body description */
-        .notification-body {
-        color: #777;
-        }
-
-        /* Style for notification date */
-        .notification-date {
-        color: #999;
-        }
-
-        /* Style for no notifications message */
-        .no-notifications {
-        padding: 10px;
-        text-align: center;
-        color: #777;
-        }
-
-        /* Default label and icon color in the sidebar */
-        .app-menu .navbar-nav .nav-link span,
-        .app-menu .navbar-nav .nav-link i {
-        color: white !important; /* Default white color */
-        transition: color 0.3s ease; /* Smooth transition */
-        }
-
-        /* Hover state for labels and icons in the sidebar */
-        .app-menu .navbar-nav .nav-link:hover span,
-        .app-menu .navbar-nav .nav-link:hover i {
-        color: lightgray !important; /* Light gray on hover */
-        }
-
-        /* Default primary button styling */
-        .btn.btn-primary {
-        background: linear-gradient(135deg, #486fc7, #319ca7) !important;
-        border: none !important; /* Remove border if any */
-        color: white !important; /* Ensure the text is white */
-        transition: background 0.3s ease; /* Smooth hover transition */
-        }
-
-        /* Hover state for primary buttons */
-        .btn.btn-primary:hover {
-        background: linear-gradient(135deg, #5a9bc5, #3bc6c7) !important; /* Slightly lighter gradient on hover */
-        color: white !important;
-        }
-
-        /* Default secondary button styling */
-        .btn.btn-secondary {
-        background-color: gray !important;
-        border-color: gray !important;
-        color: white !important; /* Ensure the text is white for better contrast */
-        transition: background-color 0.3s ease, border-color 0.3s ease; /* Smooth transition */
-        }
-
-        /* Hover state for secondary buttons */
-        .btn.btn-secondary:hover {
-        background-color: darkgray !important;
-        border-color: darkgray !important;
-        color: white !important;
-        }
-    </style>
+    <!-- Request loader (top progress bar); replaces jquery-loading-overlay -->
+    <script src="~/js/tps-loader.js" asp-append-version="true"></script>
 
 </head>
 
@@ -151,49 +65,31 @@
         <header id="page-topbar">
             <div class="layout-width">
                 <div class="navbar-header">
-                    <div class="d-flex">
-                        <!-- LOGO -->
-                        <div class="navbar-brand-box horizontal-logo">
-                            <a href="/" class="logo logo-dark">
-                                <span class="logo-sm">
-                                    <img src="~/theme/images/logo-sm.png" alt="" height="22">
-                                </span>
-                                <span class="logo-lg">
-                                    <img src="~/theme/images/logo-dark.png" alt="" height="17">
-                                </span>
-                            </a>
-
-                            <a href="/" class="logo logo-light">
-                                <span class="logo-lg">
-                                    <img style="width: 200px;height: 38px;" src="~/theme/images/logo-light.png" alt="" height="17">
-
-                                </span>
-                                <span class="logo-lg">
-                                    <img src="~/theme/images/candidate-logo.png" alt="" height="17">
-                                </span>
-                            </a>
-                        </div>
-
-                        <button type="button" class="btn btn-sm px-3 fs-16 header-item vertical-menu-btn topnav-hamburger" id="topnav-hamburger-icon">
+                    <div class="d-flex align-items-center">
+                        <button type="button" class="btn btn-sm px-3 fs-16 header-item vertical-menu-btn topnav-hamburger" id="topnav-hamburger-icon" aria-label="Toggle navigation">
                             <span class="hamburger-icon">
                                 <span></span>
                                 <span></span>
                                 <span></span>
                             </span>
                         </button>
-
+                        <span class="tps-role-chip d-none d-md-inline-flex ms-2">
+                            <i class="ri-shield-user-line"></i> @roleLabel workspace
+                        </span>
                     </div>
 
                     <div class="d-flex align-items-center">
                         <div class="ms-1 header-item d-none d-sm-flex">
-                            <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle" data-toggle="fullscreen">
-                                <i class='bx bx-fullscreen fs-22' data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="Full Screen"></i>
+                            <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle" data-toggle="fullscreen" aria-label="Full screen">
+                                <i class='bx bx-fullscreen fs-20' data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Full screen"></i>
                             </button>
                         </div>
 
-                        <div class="ms-1 header-item d-none d-sm-flex">
-                            <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle light-dark-mode">
-                                <i class='bx bx-moon fs-22' data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Dark Mode"></i>
+                        <!-- Theme toggle: one click switches Light <-> Dark -->
+                        <div class="ms-1 header-item">
+                            <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle" id="tps-theme-button"
+                                    data-tps-theme-toggle aria-label="Switch to dark mode" title="Switch to dark mode">
+                                <i class="ri-moon-clear-line fs-20" data-tps-theme-icon></i>
                             </button>
                         </div>
 
@@ -206,18 +102,14 @@
                                 });
                             </script>
                             <div class="dropdown topbar-head-dropdown ms-1 header-item" id="notificationDropdownGM">
-                                <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle" id="page-header-notifications-dropdownGM" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false">
-                                    <i class='bx bx-bell fs-22' data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Notifications"></i>
+                                <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle" id="page-header-notifications-dropdownGM" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
+                                    <i class='bx bx-bell fs-20'></i>
                                     <span class="position-absolute topbar-badge fs-10 translate-middle badge rounded-pill bg-danger" id="notification-badgeGM"><span class="visually-hidden">unread messages</span></span>
                                 </button>
                                 <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0" aria-labelledby="page-header-notifications-dropdownGM">
-                                    <div class="dropdown-head bg-primary bg-pattern rounded-top">
+                                    <div class="dropdown-head rounded-top">
                                         <div class="p-3">
-                                            <div class="row align-items-center">
-                                                <div class="col">
-                                                    <h6 class="m-0 fs-16 fw-semibold text-white">Notifications</h6>
-                                                </div>
-                                            </div>
+                                            <h6 class="m-0 fs-15 fw-bold">Notifications</h6>
                                         </div>
                                         <div class="px-2 pt-2">
                                             <ul class="nav nav-tabs dropdown-tabs nav-tabs-custom" data-dropdown-tabs="true" id="notificationItemsTabGM" role="tablist">
@@ -236,7 +128,7 @@
 
                                     <div class="my-3 text-center view-all">
                                         <a asp-action="gm" asp-controller="notifications" class="btn btn-soft-success waves-effect waves-light" id="see-all-linkGM">
-                                            View All Notifications <i class="ri-arrow-right-line align-middle"></i>
+                                            View all notifications <i class="ri-arrow-right-line align-middle"></i>
                                         </a>
                                     </div>
                                 </div>
@@ -252,18 +144,14 @@
                                 });
                             </script>
                             <div class="dropdown topbar-head-dropdown ms-1 header-item" id="notificationDropdownHR">
-                                <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle" id="page-header-notifications-dropdownHR" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false">
-                                    <i class='bx bx-bell fs-22' data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Notifications"></i>
+                                <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle" id="page-header-notifications-dropdownHR" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
+                                    <i class='bx bx-bell fs-20'></i>
                                     <span class="position-absolute topbar-badge fs-10 translate-middle badge rounded-pill bg-danger" id="notification-badgeHR"><span class="visually-hidden">unread messages</span></span>
                                 </button>
                                 <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0" aria-labelledby="page-header-notifications-dropdownHR">
-                                    <div class="dropdown-head bg-primary bg-pattern rounded-top">
+                                    <div class="dropdown-head rounded-top">
                                         <div class="p-3">
-                                            <div class="row align-items-center">
-                                                <div class="col">
-                                                    <h6 class="m-0 fs-16 fw-semibold text-white">Notifications</h6>
-                                                </div>
-                                            </div>
+                                            <h6 class="m-0 fs-15 fw-bold">Notifications</h6>
                                         </div>
                                         <div class="px-2 pt-2">
                                             <ul class="nav nav-tabs dropdown-tabs nav-tabs-custom" data-dropdown-tabs="true" id="notificationItemsTabHR" role="tablist">
@@ -282,7 +170,7 @@
 
                                     <div class="my-3 text-center view-all">
                                         <a asp-action="hr" asp-controller="notifications" class="btn btn-soft-success waves-effect waves-light" id="see-all-linkHR">
-                                            View All Notifications <i class="ri-arrow-right-line align-middle"></i>
+                                            View all notifications <i class="ri-arrow-right-line align-middle"></i>
                                         </a>
                                     </div>
                                 </div>
@@ -298,18 +186,14 @@
                                 });
                             </script>
                             <div class="dropdown topbar-head-dropdown ms-1 header-item" id="notificationDropdownInterviewer">
-                                <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle" id="page-header-notifications-dropdownInterviewer" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false">
-                                    <i class='bx bx-bell fs-22' data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Notifications"></i>
+                                <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle" id="page-header-notifications-dropdownInterviewer" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
+                                    <i class='bx bx-bell fs-20'></i>
                                     <span class="position-absolute topbar-badge fs-10 translate-middle badge rounded-pill bg-danger" id="notification-badgeInterviewer"><span class="visually-hidden">unread messages</span></span>
                                 </button>
                                 <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0" aria-labelledby="page-header-notifications-dropdownInterviewer">
-                                    <div class="dropdown-head bg-primary bg-pattern rounded-top">
+                                    <div class="dropdown-head rounded-top">
                                         <div class="p-3">
-                                            <div class="row align-items-center">
-                                                <div class="col">
-                                                    <h6 class="m-0 fs-16 fw-semibold text-white">Notifications</h6>
-                                                </div>
-                                            </div>
+                                            <h6 class="m-0 fs-15 fw-bold">Notifications</h6>
                                         </div>
                                         <div class="px-2 pt-2">
                                             <ul class="nav nav-tabs dropdown-tabs nav-tabs-custom" data-dropdown-tabs="true" id="notificationItemsTabInterviewer" role="tablist">
@@ -328,7 +212,7 @@
 
                                     <div class="my-3 text-center view-all">
                                         <a asp-action="interviewer" asp-controller="notifications" class="btn btn-soft-success waves-effect waves-light" id="see-all-linkInterviewer">
-                                            View All Notifications <i class="ri-arrow-right-line align-middle"></i>
+                                            View all notifications <i class="ri-arrow-right-line align-middle"></i>
                                         </a>
                                     </div>
                                 </div>
@@ -344,18 +228,14 @@
                                 });
                             </script>
                             <div class="dropdown topbar-head-dropdown ms-1 header-item" id="notificationDropdownArchitecture">
-                                <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle" id="page-header-notifications-dropdownArchitecture" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false">
-                                    <i class='bx bx-bell fs-22' data-bs-toggle="tooltip" data-bs-placement="right" data-bs-original-title="Notifications"></i>
+                                <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle" id="page-header-notifications-dropdownArchitecture" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
+                                    <i class='bx bx-bell fs-20'></i>
                                     <span class="position-absolute topbar-badge fs-10 translate-middle badge rounded-pill bg-danger" id="notification-badgeArchitecture"><span class="visually-hidden">unread messages</span></span>
                                 </button>
                                 <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0" aria-labelledby="page-header-notifications-dropdownArchitecture">
-                                    <div class="dropdown-head bg-primary bg-pattern rounded-top">
+                                    <div class="dropdown-head rounded-top">
                                         <div class="p-3">
-                                            <div class="row align-items-center">
-                                                <div class="col">
-                                                    <h6 class="m-0 fs-16 fw-semibold text-white">Notifications</h6>
-                                                </div>
-                                            </div>
+                                            <h6 class="m-0 fs-15 fw-bold">Notifications</h6>
                                         </div>
                                         <div class="px-2 pt-2">
                                             <ul class="nav nav-tabs dropdown-tabs nav-tabs-custom" data-dropdown-tabs="true" id="notificationItemsTabArchitecture" role="tablist">
@@ -374,7 +254,7 @@
 
                                     <div class="my-3 text-center view-all">
                                         <a asp-action="archi" asp-controller="notifications" class="btn btn-soft-success waves-effect waves-light" id="see-all-linkArchitecture">
-                                            View All Notifications <i class="ri-arrow-right-line align-middle"></i>
+                                            View all notifications <i class="ri-arrow-right-line align-middle"></i>
                                         </a>
                                     </div>
                                 </div>
@@ -389,47 +269,48 @@
                                 <span class="d-flex align-items-center">
                                     @if (User.IsInRole("HR Manager"))
                                     {
-                                        <img class="rounded-circle header-profile-user" src="~/theme/images/users/HR.png" alt="Header Avatar">
+                                        <img class="rounded-circle header-profile-user" src="~/theme/images/users/HR.png" alt="">
                                     }
                                     else if (User.IsInRole("Admin"))
                                     {
-                                        <img class="rounded-circle header-profile-user" src="~/theme/images/users/user-dummy-img.jpg" alt="Header Avatar">
+                                        <img class="rounded-circle header-profile-user" src="~/theme/images/users/user-dummy-img.jpg" alt="">
                                     }
                                     else if (User.IsInRole("Interviewer"))
                                     {
-                                        <img class="rounded-circle header-profile-user" src="~/theme/images/users/interviewers.jpeg" alt="Header Avatar">
+                                        <img class="rounded-circle header-profile-user" src="~/theme/images/users/interviewers.jpeg" alt="">
                                     }
                                     else if (User.IsInRole("General Manager") || User.IsInRole("Viewer"))
                                     {
-                                        <img class="rounded-circle header-profile-user" src="~/theme/images/users/General_Manager.png" alt="Header Avatar">
+                                        <img class="rounded-circle header-profile-user" src="~/theme/images/users/General_Manager.png" alt="">
                                     }
                                     else if (User.IsInRole("Solution Architecture"))
                                     {
-                                        <img class="rounded-circle header-profile-user" src="~/theme/images/users/avatar-3.jpg" alt="Header Avatar">
+                                        <img class="rounded-circle header-profile-user" src="~/theme/images/users/avatar-3.jpg" alt="">
                                     }
                                     else
                                     {
-                                        <img class="rounded-circle header-profile-user" src="~/theme/images/users/Anonymous.jpg" alt="Header Avatar">
+                                        <img class="rounded-circle header-profile-user" src="~/theme/images/users/Anonymous.jpg" alt="">
                                     }
-                                    <span class="text-start ms-xl-2">
-                                        <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">@User.Identity.Name</span>
-                                        <span class="d-none d-xl-block ms-1 fs-12 user-name-sub-text"></span>
+                                    <span class="text-start ms-2 d-none d-xl-block">
+                                        <span class="d-block user-name-text">@User.Identity.Name</span>
+                                        <span class="d-block user-name-sub-text">@roleLabel</span>
                                     </span>
+                                    <i class="ri-arrow-down-s-line ms-1 text-muted d-none d-xl-inline"></i>
                                 </span>
                             </button>
                             <div class="dropdown-menu dropdown-menu-end">
                                 <!-- item-->
-                                <h6 class="dropdown-header">Welcome @User.Identity.Name !</h6>
+                                <h6 class="dropdown-header">Signed in as<br /><span class="fw-semibold text-body">@User.Identity.Name</span></h6>
                                 <div class="dropdown-divider"></div>
                                 @if (!User.IsInRole("Admin") && (User.IsInRole("Interviewer") || User.IsInRole("General Manager") || User.IsInRole("Solution Architecture") || User.IsInRole("HR Manager")))
                                 {
                                     <a class="dropdown-item" asp-controller="users" asp-action="changePassword">
-                                        <i class="mdi mdi-lock-reset text-muted fs-16 align-middle me-1"></i>
-                                        <span class="align-middle" data-key="t-change-password">Change Password</span>
+                                        <i class="ri-lock-password-line text-muted fs-16 align-middle me-2"></i>
+                                        <span class="align-middle">Change password</span>
                                     </a>
                                 }
 
-                                <a class="dropdown-item" asp-controller="users" asp-action="logout"><i class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span class="align-middle" data-key="t-logout">Logout</span></a>
+                                <a class="dropdown-item" asp-controller="users" asp-action="logout"><i class="ri-logout-box-r-line text-muted fs-16 align-middle me-2"></i> <span class="align-middle">Sign out</span></a>
 
                             </div>
                         </div>
@@ -449,13 +330,13 @@
                         <div class="mt-2 text-center">
                             <lord-icon src="https://cdn.lordicon.com/gsqxdxog.json" trigger="loop" colors="primary:#f7b84b,secondary:#f06548" style="width:100px;height:100px"></lord-icon>
                             <div class="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
-                                <h4>Are you sure ?</h4>
-                                <p class="text-muted mx-4 mb-0">Are you sure you want to remove this Notification ?</p>
+                                <h4>Remove this notification?</h4>
+                                <p class="text-muted mx-4 mb-0">It will be removed from your notification list.</p>
                             </div>
                         </div>
                         <div class="d-flex gap-2 justify-content-center mt-4 mb-2">
-                            <button type="button" class="btn w-sm btn-light" data-bs-dismiss="modal">Close</button>
-                            <button type="button" class="btn w-sm btn-danger" id="delete-notification">Yes, Delete It!</button>
+                            <button type="button" class="btn w-sm btn-light" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn w-sm btn-danger" id="delete-notification">Remove</button>
                         </div>
                     </div>
 
@@ -464,41 +345,16 @@
         </div>
         <!-- /.modal -->
         <!-- ========== App Menu ========== -->
-        <div style="background: linear-gradient(135deg, #486fc7, #319ca7);" class="app-menu navbar-menu">
-            <!-- LOGO -->
-            <div class="navbar-brand-box" style="background: linear-gradient(135deg, #486fc7, #319ca7);">
-                <!-- Dark Logo-->
-                <a href="/" class="logo logo-dark">
-                    <span class="logo-sm">
-                        <img src="~/theme/images/logo-sm.png" alt="" height="22">
-                    </span>
-                    <span class="logo-lg">
-                        <img src="~/theme/images/logo-dark.png" alt="" height="17">
-                    </span>
-                </a>
-
-                @if (User.IsInRole("HR Manager") || User.IsInRole("Admin") || User.IsInRole("General Manager"))
-                {
-                    <!-- Light Logo-->
-                    <a href="/dashboard/index" class="logo logo-light" style="margin-left:-15px;">
-                        <span class="logo-lg">
-                            @*  <img style="width: 200px;height: 45px;" src="~/theme/images/TechProcessSolutions-logo_grey.svg" alt="" height="17"> *@
-                            <img style="width: 200px;height: 45px;" src="~/theme/images/TechProcessSolutions-logo_White.svg" alt="" height="17">
-                        </span>
-                    </a>
-                }
-                else{
-                    <!-- Light Logo-->
-                    <a href="/interviews/myInterviews" class="logo logo-light" style="margin-left:-15px;">
-                        <span class="logo-lg">
-                            <img style="width: 200px;height: 45px;" src="~/theme/images/TechProcessSolutions-logo_White.svg" alt="" height="17">
-                        </span>
-                    </a>
-                }
-                <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover">
-                    <i class="ri-record-circle-line"></i>
-                </button>
-            </div>
+        <div class="app-menu navbar-menu">
+   <!-- LOGO -->
+<div class="navbar-brand-box">
+    <a href="@homeUrl" class="tps-brand" aria-label="Candidate Management System home">
+        <img style="width: 200px;height: 45px;" src="/theme/images/TechProcessSolutions-logo_White.svg" alt="" height="17">
+    </a>
+    <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover" aria-label="Pin sidebar">
+        <i class="ri-record-circle-line"></i>
+    </button>
+</div>
 
             <div id="scrollbar">
                 <div class="container-fluid">
@@ -506,129 +362,69 @@
                     </div>
                     @{
                         var NavLinks = new[] {
-                    new
-                    {
-                    Controller =  "Dashboard",
-                    Action = "Index",
-                    Icon = "ri-dashboard-fill",
-                    Label = "Dashboard",
-                    Roles = new[] {"Admin","General Manager","HR Manager","Viewer"}
-                    },
-                    new
-                    {
-                    Controller =  "Interviews",
-                    Action = "Index",
-                    Icon = "ri-team-fill",
-                    Label = "Interviews",
-                    Roles = new[] {"Admin","HR Manager"}
-                    },
-                    new
-                    {
-                    Controller =  "Interviews",
-                    Action = "MyInterviews",
-                    Icon = "ri-team-fill",
-                    Label = "My Interviews",
-                    Roles = new[] {"Interviewer","HR Manager", "General Manager","Solution Architecture"}
-                    },
-                    new
-                    {
-                    Controller =  "Position",
-                    Action = "GetPositions",
-                    Icon = "ri-briefcase-fill",
-                    Label = "Positions",
-                    Roles = new[] {"Admin","HR Manager"}
-                    },
-                    new
-                    {
-                    Controller =  "Interviews",
-                    Action = "Delegation",
-                    Icon = "ri-user-shared-line",
-                    Label = "Delegation",
-                    Roles = new[] {"Admin","HR Manager"}
-                    },
-                    new
-                    {
-                    Controller =  "DelegationDurations",
-                    Action = "Index",
-                    Icon = "ri-time-line",
-                    Label = "Delegation Durations",
-                    Roles = new[] {"Admin","HR Manager"}
-                    },
-                    new
-                    {
-                    Controller =  "Track",
-                    Action = "Index",
-                    Icon = "ri-briefcase-fill",
-                    Label = "Tracks",
-                    Roles = new[] {"Admin","HR Manager"}
-                    },
-                    new
-                    {
-                    Controller =  "Candidates",
-                    Action = "Index",
-                    Icon = "ri-user-star-fill",
-                    Label = "Candidates",
-                    Roles = new[] {"Admin","HR Manager"}
-                    },
-                    new
-                    {
-                    Controller =  "Account",
-                    Action = "Index",
-                    Icon = "ri-map-pin-user-fill",
-                    Label = "Users",
-                    Roles = new[] {"Admin","HR Manager"}
-                    },
-                    new
-                    {
-                    Controller =  "Country",
-                    Action = "GetCountries",
-                    Icon = "ri-earth-line",
-                    Label = "Countries",
-                    Roles = new[] {"Admin","HR Manager"}
-                    },
-                    new
-                    {
-                    Controller =  "Company",
-                    Action = "GetCompanies",
-                    Icon = "ri-building-line",
-                    Label = "Companies",
-                    Roles = new[] {"Admin","HR Manager"}
-                    },
-                    new
-                    {
-                    Controller =  "SearchInterviews",
-                    Action = "Index",
-                    Icon = "bx bx-search-alt-2",
-                    Label = "Interviews Filter",
-                    Roles = new[] {"Admin","HR Manager","General Manager","Viewer"}
-                    }
+                            new { Section = "Overview", Controller = "Dashboard", Action = "Index", Icon = "ri-dashboard-2-line", Label = "Dashboard",
+                                  Roles = new[] {"Admin","General Manager","HR Manager","Viewer"} },
+                            new { Section = "Overview", Controller = "SearchInterviews", Action = "Index", Icon = "ri-search-eye-line", Label = "Interview Search",
+                                  Roles = new[] {"Admin","HR Manager","General Manager","Viewer"} },
 
-                    };
+                            new { Section = "Recruitment", Controller = "Candidates", Action = "Index", Icon = "ri-user-star-line", Label = "Candidates",
+                                  Roles = new[] {"Admin","HR Manager"} },
+                            new { Section = "Recruitment", Controller = "Interviews", Action = "Index", Icon = "ri-calendar-check-line", Label = "Interviews",
+                                  Roles = new[] {"Admin","HR Manager"} },
+                            new { Section = "Recruitment", Controller = "Interviews", Action = "MyInterviews", Icon = "ri-user-voice-line", Label = "My Interviews",
+                                  Roles = new[] {"Interviewer","HR Manager", "General Manager","Solution Architecture"} },
+                            new { Section = "Recruitment", Controller = "Interviews", Action = "Delegation", Icon = "ri-user-shared-line", Label = "Delegation",
+                                  Roles = new[] {"Admin","HR Manager"} },
+
+                            new { Section = "Organization", Controller = "Position", Action = "GetPositions", Icon = "ri-briefcase-4-line", Label = "Positions",
+                                  Roles = new[] {"Admin","HR Manager"} },
+                            new { Section = "Organization", Controller = "Track", Action = "Index", Icon = "ri-git-branch-line", Label = "Tracks",
+                                  Roles = new[] {"Admin","HR Manager"} },
+                            new { Section = "Organization", Controller = "Company", Action = "GetCompanies", Icon = "ri-building-2-line", Label = "Companies",
+                                  Roles = new[] {"Admin","HR Manager"} },
+                            new { Section = "Organization", Controller = "Country", Action = "GetCountries", Icon = "ri-earth-line", Label = "Countries",
+                                  Roles = new[] {"Admin","HR Manager"} },
+
+                            new { Section = "Administration", Controller = "Account", Action = "Index", Icon = "ri-shield-user-line", Label = "Users",
+                                  Roles = new[] {"Admin","HR Manager"} },
+                            new { Section = "Administration", Controller = "DelegationDurations", Action = "Index", Icon = "ri-timer-line", Label = "Delegation Durations",
+                                  Roles = new[] {"Admin","HR Manager"} }
+                        };
+
+                        var visibleLinks = NavLinks.Where(item => item.Roles.Any(role => User.IsInRole(role))).ToList();
+
+                        // Highlight the exact controller/action match, otherwise the first link for the same controller
+                        string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+                        string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+                        var activeLink =
+                            visibleLinks.FirstOrDefault(l => l.Controller.Equals(currentController, StringComparison.OrdinalIgnoreCase)
+                                                          && l.Action.Equals(currentAction, StringComparison.OrdinalIgnoreCase))
+                            ?? visibleLinks.FirstOrDefault(l => l.Controller.Equals(currentController, StringComparison.OrdinalIgnoreCase));
+                        string previousSection = null;
                     }
                     <ul class="navbar-nav" id="navbar-nav">
-                        @foreach (var item in NavLinks)
+                        @foreach (var item in visibleLinks)
                         {
-                            bool canShowItem = false;
-                            foreach (var role in item.Roles)
+                            if (item.Section != previousSection)
                             {
-                                if (User.IsInRole(role))
-                                {
-                                    canShowItem = true;
-                                    break;
-                                }
+                                previousSection = item.Section;
+                                <li class="menu-title"><span>@item.Section</span></li>
                             }
-                            @if (canShowItem)
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link menu-link" asp-controller="@item.Controller" asp-action="@item.Action">
-                                        <i class="@item.Icon"></i> <span data-key="t-dashboards">@item.Label</span>
-                                    </a>
-                                </li>
-                            }
+                            <li class="nav-item">
+                                <a class="nav-link menu-link @(item == activeLink ? "active" : "")" asp-controller="@item.Controller" asp-action="@item.Action"
+                                   aria-current="@(item == activeLink ? "page" : null)">
+                                    <i class="@item.Icon"></i> <span>@item.Label</span>
+                                </a>
+                            </li>
                         }
                     </ul>
                 </div>
                 <!-- Sidebar -->
+            </div>
+
+            <div class="tps-sidebar-footer">
+                <strong>TPS Candidate Management</strong>
+                Recruitment &amp; interview workflow
             </div>
 
             <div class="sidebar-background"></div>
@@ -648,8 +444,19 @@
                     <!-- start page title -->
                     <div class="row">
                         <div class="col-12">
-                            <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                                <h4 class="mb-sm-0">@ViewData["Title"]</h4>
+                            <div class="page-title-box tps-page-head">
+                                <div>
+                                    <ol class="tps-crumbs">
+                                        <li><a href="@homeUrl">Workspace</a></li>
+                                        @if (activeLink != null && activeLink.Label != (ViewData["Title"] as string))
+                                        {
+                                            <li><a asp-controller="@activeLink.Controller" asp-action="@activeLink.Action">@activeLink.Label</a></li>
+                                        }
+                                        <li aria-current="page">@ViewData["Title"]</li>
+                                    </ol>
+                                    <h4 class="mb-0">@ViewData["Title"]</h4>
+                                </div>
+                                <span class="tps-page-date d-none d-md-inline">@DateTime.Now.ToString("dddd, d MMMM yyyy")</span>
                             </div>
                         </div>
                     </div>
@@ -662,10 +469,9 @@
 
             <footer class="footer">
                 <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-sm-6">
-                            <span id="year"></span> © TPS.
-                        </div>
+                    <div class="d-flex flex-wrap justify-content-between gap-2">
+                        <span>&copy; <span id="year"></span> TechProcess Solutions</span>
+                        <span class="d-none d-sm-inline">Candidate &amp; Interview Management System</span>
                     </div>
                 </div>
             </footer>
@@ -695,6 +501,10 @@
 
     <!-- App js -->
     <script src="~/theme/js/app.js"></script>
+
+    <!-- Searchable selects + theme switcher + shared UI -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+    <script src="~/js/tps-ui.js" asp-append-version="true"></script>
 
 
 
@@ -918,33 +728,14 @@
         setInterval(updateYear, 1000); // Update every second (adjust as needed)
     </script>
 
-    <script>
-            window.addEventListener('beforeunload', function () {
-            showLoading();
-
-            // Hide the loading overlay automatically after 3 seconds
-            setTimeout(hideLoading, 3000);
-        });
-
-        window.addEventListener('load', function () {
-            hideLoading();
-        });
-
-        function showLoading() {
-            $.LoadingOverlay("show");
-        }
-
-        function hideLoading() {
-            $.LoadingOverlay("hide");
-        }
-    </script>
+    @* Request loading is handled by ~/js/tps-loader.js (loaded in <head>). *@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const menuToggle = document.getElementById('topnav-hamburger-icon');
             const menuBar = document.querySelector('.navbar-brand-box');
 
             function adjustDataTables() {
-                jQuery.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+                if (window.jQuery && jQuery.fn.dataTable) jQuery.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
             }
 
             if (menuBar && menuToggle) {
@@ -957,4 +748,4 @@
     </script>
 
 </body>
-</html>
+</html>

@@ -95,9 +95,6 @@ public class SearchInterviewsController : Controller
                 List<StatusDTO> statuses = statusesResult.Value;
                 ViewBag.StatusList = new SelectList(statuses, "Id", "Name");
 
-                IEnumerable<CandidateDTO> candidatesDTO = await _candidateService.GetAllCandidatesAsync();
-                ViewBag.CandidateList = new SelectList(candidatesDTO, "Id", "FullName");
-
                 List<UsersDTO> interviewersDTO = await _searchInterviewsService.GetAllInterviewers();
                 ViewBag.InterviewerList = new SelectList(interviewersDTO, "Id", "Name");
 
@@ -164,70 +161,35 @@ public class SearchInterviewsController : Controller
     {
         try
         {
-            Result<List<InterviewsDTO>> interviewsResult = await _searchInterviewsService.GetAll();
-
-            if (!interviewsResult.IsSuccess)
+            // Same filters as before, applied in the database; one row per candidate (their latest
+            // matching interview), newest first, and only the requested page is loaded.
+            InterviewListFilter filter = new()
             {
-                ModelState.AddModelError(string.Empty, interviewsResult.Error);
-                return new PaginatedList<InterviewsDTO>([], 0, pageNumber, pageSize);
-            }
-
-            List<InterviewsDTO> interviews = interviewsResult.Value;
+                StatusId = statusFilter.HasValue && statusFilter.Value > 0 ? statusFilter : null,
+                TrackId = trackFilter.HasValue && trackFilter.Value > 0 ? trackFilter : null,
+                Score = scoreFilter,
+                CandidateName = string.IsNullOrEmpty(candidateFilter) ? null : candidateFilter,
+                InterviewerId = !string.IsNullOrEmpty(interviewerFilter) && interviewerFilter != "All Interviewers" ? interviewerFilter : null,
+                FromDay = fromDate
+            };
 
             if (!string.IsNullOrEmpty(positionFilter) && positionFilter != "All Positions")
-            {
-                int positionId = Convert.ToInt32(positionFilter);
-                interviews = interviews.Where(i => i.PositionId == positionId).ToList();
-            }
-
-            if (scoreFilter.HasValue)
-                interviews = interviews.Where(i => i.Score == scoreFilter.Value).ToList();
-
-            if (statusFilter.HasValue && statusFilter.Value > 0)
-                interviews = interviews.Where(i => i.StatusId == statusFilter.Value).ToList();
-
-            if (!string.IsNullOrEmpty(candidateFilter))
-                interviews = interviews.Where(i => i.FullName.Contains(candidateFilter, StringComparison.OrdinalIgnoreCase)).ToList();
-
-            if (!string.IsNullOrEmpty(interviewerFilter) && interviewerFilter != "All Interviewers")
-            {
-                interviews = interviews.Where(i =>
-                    i.InterviewerId == interviewerFilter ||
-                    i.SecondInterviewerId == interviewerFilter).ToList();
-            }
-
-            if (fromDate.HasValue)
-                interviews = interviews.Where(i => i.Date.Date >= fromDate.Value.Date).ToList();
+                filter.PositionId = Convert.ToInt32(positionFilter);
 
             if (fromDate.HasValue && toDate.HasValue)
             {
-                toDate = toDate.Value.AddDays(1);
-                interviews = interviews.Where(i => i.Date >= fromDate.Value && i.Date <= toDate.Value).ToList();
+                filter.From = fromDate.Value;
+                filter.To = toDate.Value.AddDays(1);
             }
 
-            if (trackFilter.HasValue && trackFilter.Value > 0)
-                interviews = interviews.Where(i => i.TrackId == trackFilter.Value).ToList();
-
-            List<InterviewsDTO> orderedInterviews = interviews
-                .OrderByDescending(i => i.InterviewsId)
-                .GroupBy(i => i.CandidateId)
-                .Select(group => group.First())
-                .ToList();
-
-            int totalCount = orderedInterviews.Count;
-
-            List<InterviewsDTO> paginatedInterviews = orderedInterviews
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-            foreach (var interview in paginatedInterviews)
+            Result<PaginatedList<InterviewsDTO>> pageResult = await _searchInterviewsService.GetLatestInterviewPerCandidatePageAsync(filter, pageNumber, pageSize);
+            if (!pageResult.IsSuccess)
             {
-                int? candidateCVAttachmentId = await _candidateService.GetCVAttachmentIdByCandidateId(interview.CandidateId);
-                interview.CandidateCVAttachmentId = candidateCVAttachmentId;
+                ModelState.AddModelError(string.Empty, pageResult.Error);
+                return new PaginatedList<InterviewsDTO>([], 0, pageNumber, pageSize);
             }
 
-            return new PaginatedList<InterviewsDTO>(paginatedInterviews, totalCount, pageNumber, pageSize);
+            return pageResult.Value;
         }
         catch (Exception)
         {

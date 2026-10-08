@@ -1,86 +1,70 @@
-﻿@model CMS.Application.DTOs.CountryDTO
+@model CMS.Application.DTOs.CountryDTO
 
 @{
     ViewData["Title"] = "Edit Country";
 }
 
-<style>
-    .card-header {
-        color: white;
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-    }
+<form asp-action="UpdateCountry" class="needs-validation" novalidate id="editCountryForm">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" asp-for="Id" />
 
-    .btn-success {
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-        border: none;
-        color: white;
-    }
-
-        .btn-success:hover {
-            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
-            color: white;
-            transition: background 0.3s ease;
-        }
-
-    .btn-secondary {
-        background-color: gray;
-        border-color: gray;
-    }
-
-        .btn-secondary:hover {
-            background-color: darkgray !important;
-            border-color: darkgray !important;
-        }
-</style>
-
-<div class="container mt-5">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h2 style="color:white !important;">Edit Country</h2>
+    <div class="tps-ihead">
+        <div class="tps-ihead__who">
+            <span class="tps-ihead__avatar tps-ihead__avatar--entity" aria-hidden="true"><i class="ri-earth-line"></i></span>
+            <div>
+                <p class="tps-ihead__eyebrow">Editing country</p>
+                <h2 class="tps-ihead__name" dir="auto">@Model.Name</h2>
+            </div>
         </div>
-        <div class="card-body">
-            <form asp-action="UpdateCountry" class="needs-validation" novalidate id="editCountryForm">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <input type="hidden" asp-for="Id" />
-
-                <!-- Country Name -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label asp-for="Name" class="form-label">
-                            <span class="text-danger">*</span> Country Name
-                        </label>
-                        <input asp-for="Name" class="form-control" id="Name" style="width: 50%;" />
-                        <div class="invalid-feedback">Country Name is required.</div>
-                        <span asp-validation-for="Name" class="text-danger"></span>
-                        <span id="errorMessage" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <!-- Submit and Back to List Buttons -->
-                <div class="d-flex justify-content-between mt-4">
-                    <button type="submit" class="btn btn-success px-4">Submit</button>
-                    <a class="btn btn-secondary" asp-action="GetCountries">Back to List</a>
-                </div>
-            </form>
+        <div class="tps-ihead__actions">
+            <a class="btn btn-secondary" asp-action="ShowCompanies" asp-route-id="@Model.Id"><i class="ri-file-list-3-line me-1"></i> View details</a>
         </div>
     </div>
-</div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <section class="card tps-fsection" aria-labelledby="sec-country">
+        <div class="card-header">
+            <span class="tps-fsection__icon"><i class="ri-earth-line"></i></span>
+            <div>
+                <h4 class="tps-fsection__title" id="sec-country">Country</h4>
+                <p class="tps-fsection__desc">The country companies and positions are linked to.</p>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="tps-fgrid">
+                <div class="tps-field">
+                    <label asp-for="Name" class="form-label">Country name <span class="tps-req">*</span></label>
+                    <input asp-for="Name" class="form-control" id="Name" dir="auto" autocomplete="off" />
+                    <div class="invalid-feedback">Enter the country name.</div>
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                    <span id="errorMessage" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="tps-factions">
+        <span class="tps-factions__note"><i class="ri-information-line"></i> Fields marked <span class="tps-req">*</span> are required.</span>
+        <div class="tps-factions__buttons">
+            <a class="btn btn-secondary" asp-action="GetCountries">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4"><i class="ri-save-line me-1"></i> Save changes</button>
+        </div>
+    </div>
+</form>
 
 <script>
     $(document).ready(function () {
         $('#editCountryForm').on('submit', function (e) {
             var name = $('#Name').val().trim();
-
-            // Validate Country Name
             if (!name) {
-                $('#Name').addClass('is-invalid'); 
-                e.preventDefault(); 
+                $('#Name').addClass('is-invalid');
+                e.preventDefault();
             } else {
-                $('#Name').removeClass('is-invalid').addClass('is-valid');
+                $('#Name').removeClass('is-invalid');
                 $('#errorMessage').text('');
             }
+        });
+        $('#Name').on('input', function () {
+            if (this.value.trim()) $(this).removeClass('is-invalid');
         });
     });
 </script>

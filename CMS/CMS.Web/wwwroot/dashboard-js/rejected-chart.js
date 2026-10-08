@@ -3,12 +3,13 @@ const rejectedPercantage = rejectedChartContainer.dataset.percent;
 
 var rejectedChartOptions = {
   series: [rejectedPercantage],
-  chart: { type: "radialBar", width: 105, sparkline: { enabled: true } },
+  colors: [getComputedStyle(document.documentElement).getPropertyValue("--tps-status-rejected").trim() || "#c23434"],
+  chart: { type: "radialBar", width: 90, sparkline: { enabled: true } },
   dataLabels: { enabled: false },
   plotOptions: {
     radialBar: {
       hollow: { margin: 0, size: "70%" },
-      track: { margin: 1 },
+      track: { margin: 1, background: getComputedStyle(document.documentElement).getPropertyValue("--tps-surface-3").trim() || "#eef2f7" },
       dataLabels: {
         show: true,
         name: { show: false },

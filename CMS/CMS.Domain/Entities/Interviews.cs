@@ -67,4 +67,10 @@ public class Interviews : BaseEntity
     /// If false, normal workflow: Interviewers → GM → HR
     /// </summary>
     public bool StartFromHR { get; set; } = false;
+
+    /// <summary>
+    /// When the overdue-result reminder was last emailed for this interview (InterviewReminderJob).
+    /// Used so the job sends at most one reminder per interview per day, however often it runs.
+    /// </summary>
+    public DateTime? LastReminderSentOn { get; set; }
 }

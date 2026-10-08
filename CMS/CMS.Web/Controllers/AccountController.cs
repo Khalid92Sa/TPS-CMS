@@ -151,18 +151,8 @@ public class AccountController : Controller
         {
                 ViewBag.userNameFilter = userName;
 
-                List<Register> usersWithRoles = await _accountService.GetAllUsersWithRolesAsync();
-
-                if (!string.IsNullOrEmpty(userName))
-                    usersWithRoles = usersWithRoles.Where(u => u.UserName.Contains(userName, StringComparison.OrdinalIgnoreCase))
-                                                   .ToList();
-
-                List<Register> paginatedUsers = usersWithRoles
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
-
-                PaginatedList<Register> paginatedList = new(paginatedUsers, usersWithRoles.Count, pageNumber, pageSize);
+                // Filtered and paged in the database, with each user's role read in the same query
+                PaginatedList<Register> paginatedList = await _accountService.GetUsersPageAsync(userName, pageNumber, pageSize);
 
                 return View(paginatedList);
         }

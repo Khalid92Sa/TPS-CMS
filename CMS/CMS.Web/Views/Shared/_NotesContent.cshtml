@@ -75,7 +75,8 @@
         right: 0;
         bottom: 0;
         height: 2rem;
-        background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #fff);
+        /* fades into whatever surface the notes sit on; containers set --notes-fade-bg */
+        background: linear-gradient(to bottom, transparent, var(--notes-fade-bg, var(--tps-surface)));
         pointer-events: none;
     }
 
@@ -95,7 +96,7 @@
         width: auto;
         min-width: 100%;
         border-collapse: collapse;
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--tps-border);
         table-layout: auto;
     }
 
@@ -105,7 +106,7 @@
 
     .notes-content figure.table table th,
     .notes-content figure.table table td {
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--tps-border);
         padding: 0.75rem;
         vertical-align: top;
         white-space: normal;
@@ -117,14 +118,14 @@
         width: auto;
         min-width: 100%;
         border-collapse: collapse;
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--tps-border);
         margin: 1rem 0;
         table-layout: auto;
     }
 
     .notes-content table th,
     .notes-content table td {
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--tps-border);
         padding: 0.75rem;
         vertical-align: top;
         white-space: normal;
@@ -148,7 +149,7 @@
         display: inline-block;
         margin-top: 0.35rem;
         cursor: pointer;
-        color: #007bff;
+        color: var(--tps-primary);
         text-decoration: none;
         font-size: 0.875rem;
         background: none;
@@ -158,7 +159,7 @@
 
     .notes-toggle-link:hover {
         text-decoration: underline;
-        color: #0056b3;
+        color: var(--tps-primary);
     }
 
     dl.row dd .notes-content-wrapper,

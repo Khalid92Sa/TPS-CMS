@@ -1,5 +1,6 @@
 ﻿using CMS.Application.DTOs;
 using CMS.Application.Extensions;
+using CMS.Application.Helpers;
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,7 @@ public interface IAccountService
     Task<string> GetUserRoleAsync(IdentityUser user);
     Task<IdentityUser> GetUserByEmailAsync(string email);
     Task<List<Register>> GetAllUsersWithRolesAsync();
+    Task<PaginatedList<Register>> GetUsersPageAsync(string userNameFilter, int pageNumber, int pageSize);
     Task<Register> GetUsersById(string userId);
     Task SendRegistrationEmail(IdentityUser user, string password, EmailDTOs emailmodel);
     Task<bool> EmailExistsAsync(string email);

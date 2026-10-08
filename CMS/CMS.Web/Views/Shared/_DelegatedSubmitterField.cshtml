@@ -1,0 +1,14 @@
+@model CMS.Application.DTOs.InterviewsDTO
+@* "Result submitted by" field for an interview whose result a delegate submitted. Renders nothing otherwise. *@
+@if (Model != null && !string.IsNullOrEmpty(Model.ResultSubmittedForName))
+{
+    <div class="detail-field">
+        <div class="detail-field__label">Result submitted by</div>
+        <div class="detail-field__value">
+            @Model.ResultSubmittedByName
+            <div class="text-muted fs-12 fw-normal">
+                Delegate for @Model.ResultSubmittedForName@(Model.ResultSubmittedOn.HasValue ? $" · {Model.ResultSubmittedOn.Value:dd MMM yyyy, h:mm tt}" : "")
+            </div>
+        </div>
+    </div>
+}

@@ -20,6 +20,9 @@ public class DelegationDurationMapper : IEntityTypeConfiguration<DelegationDurat
             .IsRequired()
             .HasMaxLength(20);
 
+        builder.Property(d => d.IsUnlimited)
+            .IsRequired();
+
         builder.HasIndex(d => d.Name);
     }
 }

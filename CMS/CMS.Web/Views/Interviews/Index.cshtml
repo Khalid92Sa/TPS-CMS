@@ -1,6 +1,5 @@
 ﻿@using CMS.Domain.Enums;
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet" />
 <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
 @model IEnumerable<CMS.Application.DTOs.InterviewsDTO>
@@ -17,7 +16,7 @@
     }
 
     a.disabled {
-        color: #6c757d;
+        color: var(--tps-muted);
         pointer-events: none;
         opacity: 0.5;
         cursor: not-allowed;
@@ -148,7 +147,7 @@
                                         <div>@item.Date.ToString("dd-MM-yyyy")</div>
                                         <div>@item.Date.ToString("h:mm tt")</div>
                                     </td>
-                                    <td>@item.StatusName</td>
+                                    <td>@InterviewStatusUi.Badge(item.StatusName)</td>
                                     <td hidden>@item.ParentId</td>
                                     <td hidden>@item.Score</td>
                                     <td hidden>@item.ActualExperience</td>
@@ -266,7 +265,6 @@
     </div><!--end col-->
 </div><!--end row-->
 <script>
-     $.noConflict();
     jQuery(document).ready(function ($) {
         $('#add-rows').DataTable({
             paging: false,

@@ -1,0 +1,100 @@
+@model Dictionary<string, string>
+@*
+    Validation shared by Users Create and Edit (same rules both pages had before):
+    email, username, password and confirmation required; passwords must match; role required.
+    When "checkEmailUrl" is set (Create), the email must also be unused.
+    Model maps field keys to element ids: email, userName, password, confirm, role.
+*@
+<script>
+    (function () {
+        var ids = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
+        var form = document.getElementById('userForm');
+        var field = function (key) { return document.getElementById(ids[key]); };
+        var checkEmailUrl = ids.checkEmailUrl || null;
+        // Only a confirmed duplicate blocks submission; a slow or failed lookup doesn't
+        var emailTaken = false;
+        var emailCheck = null;
+
+        // Message element: the page's own error span right after the input (or after the Tom Select control)
+        function messageFor(input) {
+            var holder = input.closest('.tps-field');
+            return holder ? holder.querySelector('span.text-danger[id]') || holder.querySelector('span.text-danger') : null;
+        }
+
+        function setError(input, message) {
+            var invalid = !!message;
+            input.classList.toggle('is-invalid', invalid);
+            if (input.tomselect) input.tomselect.wrapper.classList.toggle('is-invalid', invalid);
+            var el = messageFor(input);
+            if (el) el.textContent = message || '';
+            return !invalid;
+        }
+
+        function required(key, message) {
+            var input = field(key);
+            return setError(input, input.value.trim() ? '' : message);
+        }
+
+        function checkPasswordsMatch() {
+            var pwd = field('password').value.trim();
+            var confirm = field('confirm').value.trim();
+            if (!confirm) return setError(field('confirm'), 'Confirm the password.');
+            return setError(field('confirm'), pwd === confirm ? '' : 'The passwords don\'t match.');
+        }
+
+        // Live email uniqueness check (Create only)
+        if (checkEmailUrl) {
+            var timer;
+            field('email').addEventListener('input', function () {
+                clearTimeout(timer);
+                emailTaken = false;
+                var email = this.value.trim();
+                if (!email) return;
+                timer = setTimeout(function () {
+                    if (emailCheck) emailCheck.abort();
+                    emailCheck = $.ajax({
+                        url: checkEmailUrl,
+                        type: 'GET',
+                        data: { email: email },
+                        tpsLoader: false,
+                        success: function (response) {
+                            emailTaken = !!response.exists;
+                            setError(field('email'), response.exists ? 'This email is already used by another user.' : '');
+                        }
+                        // If the lookup fails, submission isn't blocked
+                    });
+                }, 500);
+            });
+
+            // Returning with a filled-in email (e.g. after a server-side error): check it straight away
+            if (field('email').value.trim()) field('email').dispatchEvent(new Event('input'));
+        }
+
+        ['email', 'userName', 'password', 'confirm'].forEach(function (key) {
+            field(key).addEventListener('input', function () {
+                if (this.value.trim() && key !== 'email') setError(this, '');
+            });
+        });
+        field('role').addEventListener('change', function () { if (this.value) setError(this, ''); });
+
+        form.addEventListener('submit', function (e) {
+            var ok = true;
+            ok = required('email', 'Enter the email address.') && ok;
+            ok = required('userName', 'Enter a username.') && ok;
+            ok = required('password', 'Enter a password.') && ok;
+            ok = checkPasswordsMatch() && ok;
+            ok = required('role', 'Select a role.') && ok;
+
+            if (field('email').value.trim() && emailTaken) {
+                setError(field('email'), 'This email is already used by another user.');
+                ok = false;
+            }
+
+            if (!ok) {
+                e.preventDefault();
+                var first = form.querySelector('.is-invalid');
+                if (first) (first.tomselect ? first.tomselect.wrapper : first).scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    })();
+</script>

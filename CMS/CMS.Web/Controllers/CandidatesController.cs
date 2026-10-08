@@ -57,35 +57,11 @@ public class CandidatesController : Controller
         {
             ViewBag.candidateFilter = FullName;
 
-                IEnumerable<CandidateDTO> candidates = await _candidateService.GetAllCandidatesAsync();
-
                 Result<List<TrackDTO>> tracks = await _trackService.GetAll();
                 ViewBag.TrackList = new SelectList(tracks.Value.OrderBy(x => x.Name), "Id", "Name");
 
-                if (!string.IsNullOrEmpty(Phone))
-                    candidates = candidates.Where(i => i.Phone.ToString().Contains(Phone))
-                                           .ToList();
-
-                if (!string.IsNullOrEmpty(FullName))
-                    candidates = candidates.Where(i => i.FullName.Contains(FullName, StringComparison.OrdinalIgnoreCase))
-                                           .ToList();
-
-                if (trackFilter.HasValue && trackFilter.Value > 0)
-                    candidates = candidates.Where(i => i.TrackId == trackFilter.Value)
-                                           .ToList();
-
-                List<CandidateDTO> candidatesList = candidates.ToList();
-
-                IEnumerable<CandidateDTO> filteredcandidates = candidates.OrderByDescending(i => i.CreatedOn);
-                                               
-                int totalCount = filteredcandidates.Count();
-
-                List<CandidateDTO> paginatedCandidates = filteredcandidates
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-                PaginatedList<CandidateDTO> paginatedList = new(paginatedCandidates, totalCount, pageNumber, pageSize);
+                // Filtered, sorted (newest first) and paged in the database
+                PaginatedList<CandidateDTO> paginatedList = await _candidateService.GetCandidatesPageAsync(FullName, Phone, trackFilter, pageNumber, pageSize);
 
                 return View(paginatedList);
         }

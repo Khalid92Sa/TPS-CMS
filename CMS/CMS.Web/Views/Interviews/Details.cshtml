@@ -1,38 +1,82 @@
-﻿@using CMS.Domain.Enums
+@using CMS.Domain.Enums
 @model CMS.Application.DTOs.InterviewsDTO
+@{
+    ViewData["Title"] = "Interview Details";
+    bool canManage = User.IsInRole("Admin") || User.IsInRole("HR Manager");
+    bool isPending = InterviewStatusUi.Resolve(Model.StatusName) == InterviewStatusUi.Kind.Pending;
+
+    string Initials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(new[] { ' ', '.', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 1 ? parts[0].Substring(0, Math.Min(2, parts[0].Length)) : $"{parts[0][0]}{parts[1][0]}";
+    }
+}
 
 @await Html.PartialAsync("_InterviewDetailsStyles")
 
-<div class="container interview-details-page">
-    <div class="interview-details-page__header">
-        <div class="interview-details-page__title">
-            <h2>Interview Details</h2>
-            <p><i class="bx bx-user me-1"></i>@Model.FullName</p>
+<div class="interview-details-page">
+    @* ---------- Header: who, key facts, actions ---------- *@
+    <div class="tps-ihead">
+        <div class="tps-ihead__who">
+            <span class="tps-ihead__avatar" aria-hidden="true">@Initials(Model.FullName)</span>
+            <div>
+                <p class="tps-ihead__eyebrow">Interview for</p>
+                <h2 class="tps-ihead__name" dir="auto">@Model.FullName</h2>
+                <div class="tps-ihead__meta">
+                    @InterviewStatusUi.Badge(Model.StatusName)
+                    @if (!string.IsNullOrEmpty(Model.Name))
+                    {
+                        <span class="tps-chip"><i class="ri-briefcase-4-line"></i>@Model.Name</span>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.TrackName))
+                    {
+                        <span class="tps-chip"><i class="ri-git-branch-line"></i>@Model.TrackName</span>
+                    }
+                    <span class="tps-chip"><i class="ri-calendar-event-line"></i>@Model.Date.ToString("dd MMM yyyy, h:mm tt")</span>
+                    @if (Model.FirstInterviewScore.HasValue)
+                    {
+                        <span class="tps-chip"><i class="ri-star-line"></i>Score @Model.FirstInterviewScore / 5</span>
+                    }
+                </div>
+            </div>
         </div>
-        <div class="interview-details-page__badges">
-            @if (Model.FirstInterviewScore.HasValue)
+        <div class="tps-ihead__actions">
+            <a class="btn btn-secondary" asp-action="ShowHistory" asp-route-id="@Model.InterviewsId">
+                <i class="ri-history-line me-1"></i> History
+            </a>
+            @if (canManage && isPending)
             {
-                <span class="detail-badge detail-badge--score"><i class="bx bx-star"></i>Score @Model.FirstInterviewScore</span>
+                <a class="btn btn-secondary" asp-action="Edit" asp-route-id="@Model.InterviewsId">
+                    <i class="ri-edit-line me-1"></i> Edit interview
+                </a>
             }
-            @if (!string.IsNullOrEmpty(Model.TrackName))
+            @if (Model.CandidateCVAttachmentId != null)
             {
-                <span class="detail-badge detail-badge--muted"><i class="bx bx-git-branch"></i>@Model.TrackName</span>
+                <a class="btn btn-outline-primary" asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.CandidateCVAttachmentId">
+                    <i class="ri-file-download-line me-1"></i> Candidate CV
+                </a>
             }
         </div>
     </div>
+
+    @if (ViewBag.DelegationAccess is CMS.Application.DTOs.InterviewDelegationDTO delegationAccess)
+    {
+        @await Html.PartialAsync("_DelegationAccessNotice", delegationAccess)
+    }
 
     <div class="row interview-cards-row">
         <!-- Main Details -->
         <div class="col-md-3 col-sm-6 interview-card-col">
             <div class="interview-detail-card">
                 <div class="interview-detail-card__header">
-                    <span class="interview-detail-card__icon"><i class="bx bx-id-card"></i></span>
-                    <h5 class="interview-detail-card__title">Main Details</h5>
+                    <span class="interview-detail-card__icon"><i class="ri-profile-line"></i></span>
+                    <h5 class="interview-detail-card__title">Overview</h5>
                 </div>
                 <div class="interview-detail-card__body">
                     <div class="detail-field">
-                        <div class="detail-field__label">Candidate Name</div>
-                        <div class="detail-field__value">@Model.FullName</div>
+                        <div class="detail-field__label">Candidate</div>
+                        <div class="detail-field__value" dir="auto">@Model.FullName</div>
                     </div>
                     <div class="detail-field">
                         <div class="detail-field__label">Level</div>
@@ -44,16 +88,19 @@
                     </div>
                     <div class="detail-field">
                         <div class="detail-field__label">Score</div>
-                        <div class="detail-field__value">@(Model.FirstInterviewScore?.ToString() ?? "—")</div>
+                        <div class="detail-field__value@(Model.FirstInterviewScore.HasValue ? "" : " detail-field__value--empty")">
+                            @(Model.FirstInterviewScore.HasValue ? $"{Model.FirstInterviewScore} / 5" : "Not scored yet")
+                        </div>
                     </div>
                     <div class="detail-field">
                         <div class="detail-field__label">Status</div>
-                        <div class="detail-field__value">@Model.StatusName</div>
+                        <div class="detail-field__value">@InterviewStatusUi.Badge(Model.StatusName)</div>
                     </div>
-                    @if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
+                    @await Html.PartialAsync("_DelegatedSubmitterField", Model)
+                    @if (canManage)
                     {
                         <div class="detail-field">
-                            <div class="detail-field__label">Stop Cycle Note</div>
+                            <div class="detail-field__label">Stop cycle note</div>
                             <div class="detail-field__value@(Model.StopCycleNote == null ? " detail-field__value--empty" : "")">
                                 @if (Model.StopCycleNote != null)
                                 {
@@ -61,7 +108,7 @@
                                 }
                                 else
                                 {
-                                    <span class="detail-empty-state">No stop cycle happened yet</span>
+                                    <span class="detail-empty-state">No stop cycle</span>
                                 }
                             </div>
                         </div>
@@ -72,12 +119,12 @@
                             @if (Model.AttachmentId != null)
                             {
                                 <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.AttachmentId" class="detail-download-btn">
-                                    <i class="bx bx-download"></i> Download evaluation
+                                    <i class="ri-file-download-line"></i> Download evaluation
                                 </a>
                             }
                             else
                             {
-                                <span class="detail-empty-state">No evaluation for this interview</span>
+                                <span class="detail-empty-state">No evaluation uploaded</span>
                             }
                         </div>
                     </div>
@@ -89,31 +136,24 @@
         <div class="@NotesDisplayHelper.GetCardColumnClass(Model.Notes)">
             <div class="interview-detail-card">
                 <div class="interview-detail-card__header">
-                    <span class="interview-detail-card__icon"><i class="bx bx-microphone"></i></span>
-                    <h5 class="interview-detail-card__title">First Interview</h5>
+                    <span class="interview-detail-card__icon"><i class="ri-user-voice-line"></i></span>
+                    <h5 class="interview-detail-card__title">First interview</h5>
                 </div>
                 <div class="interview-detail-card__body">
                     <div class="detail-field">
-                        <div class="detail-field__label">First Interviewer</div>
+                        <div class="detail-field__label">Interviewer 1</div>
                         <div class="detail-field__value">@Model.InterviewerName</div>
                     </div>
                     <div class="detail-field">
-                        <div class="detail-field__label">Second Interviewer</div>
+                        <div class="detail-field__label">Interviewer 2</div>
                         <div class="detail-field__value@(Model.SecondInterviewerId == null ? " detail-field__value--empty" : "")">
                             @(Model.SecondInterviewerId == null ? "No second interviewer" : Model.SecondInterviewerName)
                         </div>
                     </div>
                     <div class="detail-field">
-                        <div class="detail-field__label">Actual Experience</div>
-                        <div class="detail-field__value">
-                            @if (Model.ActualExperience.HasValue)
-                            {
-                                @Model.ActualExperience
-                            }
-                            else
-                            {
-                                <span class="detail-empty-state">Not recorded</span>
-                            }
+                        <div class="detail-field__label">Actual experience</div>
+                        <div class="detail-field__value@(Model.ActualExperience.HasValue ? "" : " detail-field__value--empty")">
+                            @(Model.ActualExperience.HasValue ? $"{Model.ActualExperience} years" : "Not recorded")
                         </div>
                     </div>
                     <div class="detail-field">
@@ -139,33 +179,26 @@
             <div class="@NotesDisplayHelper.GetCardColumnClass(Model.SecondInterviewNotes)">
                 <div class="interview-detail-card">
                     <div class="interview-detail-card__header">
-                        <span class="interview-detail-card__icon"><i class="bx bx-group"></i></span>
-                        <h5 class="interview-detail-card__title">Second Interview</h5>
+                        <span class="interview-detail-card__icon"><i class="ri-team-line"></i></span>
+                        <h5 class="interview-detail-card__title">Second interview</h5>
                     </div>
                     <div class="interview-detail-card__body">
                         <div class="detail-field">
                             <div class="detail-field__label">Interviewer</div>
-                            <div class="detail-field__value">
+                            <div class="detail-field__value@(Model.SecondInterviewInterviewerName == null ? " detail-field__value--empty" : "")">
                                 @(Model.SecondInterviewInterviewerName ?? "No second interview yet")
                             </div>
                         </div>
                         <div class="detail-field">
-                            <div class="detail-field__label">Architecture Interviewer</div>
-                            <div class="detail-field__value">
+                            <div class="detail-field__label">Architecture interviewer</div>
+                            <div class="detail-field__value@(Model.ArchitectureInterviewerId == null ? " detail-field__value--empty" : "")">
                                 @(Model.ArchitectureInterviewerId != null ? Model.ArchitectureInterviewerName : "No architecture interview")
                             </div>
                         </div>
                         <div class="detail-field">
-                            <div class="detail-field__label">Actual Experience</div>
-                            <div class="detail-field__value">
-                                @if (Model.SecondInterviewActualExperience.HasValue)
-                                {
-                                    @Model.SecondInterviewActualExperience
-                                }
-                                else
-                                {
-                                    <span class="detail-empty-state">Not recorded</span>
-                                }
+                            <div class="detail-field__label">Actual experience</div>
+                            <div class="detail-field__value@(Model.SecondInterviewActualExperience.HasValue ? "" : " detail-field__value--empty")">
+                                @(Model.SecondInterviewActualExperience.HasValue ? $"{Model.SecondInterviewActualExperience} years" : "Not recorded")
                             </div>
                         </div>
                         <div class="detail-field">
@@ -187,17 +220,17 @@
         }
 
         <!-- HR Interview -->
-        @if (User.IsInRole("Admin") || User.IsInRole("HR Manager"))
+        @if (canManage)
         {
             <div class="@NotesDisplayHelper.GetCardColumnClass(Model.HRNotes)">
                 <div class="interview-detail-card">
                     <div class="interview-detail-card__header">
-                        <span class="interview-detail-card__icon"><i class="bx bx-briefcase"></i></span>
-                        <h5 class="interview-detail-card__title">HR Interview</h5>
+                        <span class="interview-detail-card__icon"><i class="ri-briefcase-4-line"></i></span>
+                        <h5 class="interview-detail-card__title">HR interview</h5>
                     </div>
                     <div class="interview-detail-card__body">
                         <div class="detail-field">
-                            <div class="detail-field__label">HR Note</div>
+                            <div class="detail-field__label">HR note</div>
                             <div class="detail-field__value detail-field__value--notes">
                                 @if (Model.HRNotes != null)
                                 {
@@ -223,7 +256,7 @@
            asp-route-trackFilter="@ViewBag.trackFilter"
            asp-route-pageNumber="@ViewBag.PageNumber"
            asp-route-pageSize="@ViewBag.PageSize">
-            <i class="bx bx-arrow-back"></i> Back to List
+            <i class="ri-arrow-left-line"></i> Back to list
         </a>
     </div>
 </div>

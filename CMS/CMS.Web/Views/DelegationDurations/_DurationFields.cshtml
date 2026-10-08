@@ -1,0 +1,69 @@
+@model CMS.Application.DTOs.DelegationDurationDTO
+@* Shared fields for Delegation Durations Create and Edit. ViewData["UnitPlaceholder"] (bool) adds an empty option. *@
+@{
+    bool unitPlaceholder = ViewData["UnitPlaceholder"] as bool? ?? false;
+}
+
+<section class="card tps-fsection" aria-labelledby="sec-duration">
+    <div class="card-header">
+        <span class="tps-fsection__icon"><i class="ri-timer-line"></i></span>
+        <div>
+            <h4 class="tps-fsection__title" id="sec-duration">Access period</h4>
+            <p class="tps-fsection__desc">An option HR can pick when delegating an interview. The delegate's access ends after this period, unless it is unlimited.</p>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="tps-fgrid tps-fgrid--3">
+            <div class="tps-field tps-span-all">
+                <label asp-for="Name" class="form-label">Display name <span class="tps-req">*</span></label>
+                <input asp-for="Name" class="form-control" maxlength="100" placeholder="e.g. 3 days" dir="auto" autocomplete="off" />
+                <span id="nameError" class="text-danger" style="display:none;"></span>
+                <span asp-validation-for="Name" class="text-danger"></span>
+                <div class="tps-hint">Shown in the Access period list on the delegation pages.</div>
+            </div>
+
+            <div class="tps-field tps-span-all">
+                <span class="form-label">Length</span>
+                <label class="tps-switch-card form-switch py-2" for="IsUnlimited">
+                    <input asp-for="IsUnlimited" class="form-check-input" role="switch" aria-controls="Amount Unit" />
+                    <span>
+                        <span class="tps-switch-card__title">Unlimited duration</span>
+                        <span class="tps-switch-card__desc d-block">No end date. Access lasts until the delegation is removed or the interview is scored.</span>
+                    </span>
+                </label>
+            </div>
+
+            <div class="tps-field">
+                <label asp-for="Amount" class="form-label">Amount <span class="tps-req" data-limited-only>*</span></label>
+                <input asp-for="Amount" class="form-control" type="number" min="1" max="10000" step="1" inputmode="numeric" disabled="@Model.IsUnlimited" />
+                <span id="amountError" class="text-danger" style="display:none;"></span>
+                <span asp-validation-for="Amount" class="text-danger"></span>
+            </div>
+
+            <div class="tps-field">
+                <label asp-for="Unit" class="form-label">Unit <span class="tps-req" data-limited-only>*</span></label>
+                <select asp-for="Unit" class="form-select" asp-items="ViewBag.Units" disabled="@Model.IsUnlimited">
+                    @if (unitPlaceholder)
+                    {
+                        <option value="">Select a unit…</option>
+                    }
+                </select>
+                <span id="unitError" class="text-danger" style="display:none;"></span>
+                <span asp-validation-for="Unit" class="text-danger"></span>
+            </div>
+
+            <div class="tps-field">
+                <span class="form-label">Status</span>
+                <label class="tps-switch-card form-switch py-2" for="IsActive">
+                    <input asp-for="IsActive" class="form-check-input" role="switch" />
+                    <span>
+                        <span class="tps-switch-card__title">Enabled</span>
+                        <span class="tps-switch-card__desc d-block">Available when delegating</span>
+                    </span>
+                </label>
+            </div>
+        </div>
+
+        <div class="tps-slot__window mt-3" id="durationPreview" aria-live="polite"></div>
+    </div>
+</section>

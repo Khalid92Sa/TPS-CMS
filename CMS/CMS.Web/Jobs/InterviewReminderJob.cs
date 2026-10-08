@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using CMS.Application.EmailTemplates;
+using CMS.Application.Helpers;
 
 namespace CMS.Web.Jobs;
 
@@ -43,6 +44,15 @@ public class InterviewReminderJob : IInterviewReminderJob
         {
             _logger.LogInformation("InterviewReminderJob started execution.");
             performContext?.WriteLine("- InterviewReminderJob started execution.");
+
+            // The schedule skips Friday and Saturday; this also covers manual triggers and the
+            // catch-up run Hangfire starts after downtime.
+            if (HangfireCronHelper.IsJordanWeekend(DateTime.UtcNow))
+            {
+                _logger.LogInformation("InterviewReminderJob skipped: no reminders are sent on Friday or Saturday.");
+                performContext?.WriteLine("- Skipped: no reminders are sent on Friday or Saturday.");
+                return;
+            }
 
             DateTime cutoffDate = DateTime.Parse("2025-01-01 00:00:00.000");
 
@@ -78,6 +88,13 @@ public class InterviewReminderJob : IInterviewReminderJob
 
                 if (DateTime.UtcNow >= interviewEndTime.ToUniversalTime())
                 {
+                    // The interview may have been scored or moved off Pending since the list was read
+                    if (!await _interviewsService.IsInterviewStillPendingForReminderAsync(interview.InterviewsId))
+                    {
+                        performContext?.WriteLine($"- Skipped interview {interview.InterviewsId}: no longer pending");
+                        continue;
+                    }
+
                     _logger.LogInformation("Sending reminder for interview {InterviewId}", interview.InterviewsId);
                     performContext?.WriteLine($"- Sending reminder for interview {interview.InterviewsId}");
 
@@ -94,6 +111,7 @@ public class InterviewReminderJob : IInterviewReminderJob
                     };
 
                     await _emailService.SendEmailToInterviewer(interviewerEmail, interview, reminderEmail);
+                    await _interviewsService.MarkReminderSentAsync(interview.InterviewsId);
                     _logger.LogInformation("Reminder email sent to {Email} for interview {InterviewId}", interviewerEmail, interview.InterviewsId);
                     performContext?.WriteLine($"- Reminder email sent to {interviewerEmail} for interview {interview.InterviewsId}");
                 }

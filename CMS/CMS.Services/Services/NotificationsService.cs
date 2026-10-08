@@ -1094,7 +1094,9 @@ public class NotificationsService : INotificationsService
                 ? "the assigned interviewer"
                 : originalInterviewerName;
             string starts = startDate.ToString("dd/MM/yyyy hh:mm tt");
-            string expires = expirationDate.ToString("dd/MM/yyyy hh:mm tt");
+            string window = InterviewDelegation.IsNoExpiration(expirationDate)
+                ? $"from {starts}, with no end date"
+                : $"from {starts} until {expirationDate:dd/MM/yyyy hh:mm tt}";
 
             Notifications notification = new Notifications
             {
@@ -1104,7 +1106,7 @@ public class NotificationsService : INotificationsService
                 IsRead = false,
                 CandidateId = candidateId,
                 Title = $"Temporary access to score {candidateName}",
-                BodyDesc = $"You can enter the score for {candidateName} ({positionName}) from {starts} until {expires}. {originalName} remains the assigned interviewer. This access is only for this interview.",
+                BodyDesc = $"You can enter the score for {candidateName} ({positionName}) {window}. {originalName} remains the assigned interviewer. This access is only for this interview.",
                 CreatedBy = currentUser?.Id,
                 CreatedOn = DateTime.Now
             };

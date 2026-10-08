@@ -7,6 +7,8 @@ const markers = locations.map(l=>{
 })
 
 
+const tpsToken = (name, fallback) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+
 const  worldemapmarkers = new jsVectorMap({
     map: "world_merc",
     selector: "#candidate-sources-map",
@@ -20,15 +22,15 @@ const  worldemapmarkers = new jsVectorMap({
     selectedMarkers: [],
     regionStyle: {
       initial: {
-        stroke: "#9599ad",
+        stroke: tpsToken("--tps-border-strong", "#cdd5e1"),
         strokeWidth: 0.25,
-        fill: "#f3f6f9",
+        fill: tpsToken("--tps-surface-3", "#eef2f7"),
         fillOpacity: 1,
       },
     },
     markersSelectable: false,
     markers: markers,
-    markerStyle: { initial: { fill: "#0ab39c" }, selected: { fill: "#405189" } },
+    markerStyle: { initial: { fill: tpsToken("--tps-primary", "#2856c8") }, selected: { fill: tpsToken("--tps-accent", "#128a88") } },
     labels: {
       markers: {
         render: function (e) {

@@ -1,4 +1,5 @@
 ﻿using CMS.Application.DTOs;
+using CMS.Application.Helpers;
 using CMS.Domain.Entities;
 using CMS.Repository.Interfaces;
 using CMS.Services.Interfaces;
@@ -59,6 +60,12 @@ public class CandidateService : ICandidateService
         {
             throw;
         }
+    }
+
+    public async Task<PaginatedList<CandidateDTO>> GetCandidatesPageAsync(string fullName, string phone, int? trackId, int pageNumber, int pageSize)
+    {
+        (List<CandidateDTO> items, int totalCount) = await _candidateRepository.GetCandidatesPageAsync(fullName, phone, trackId, pageNumber, pageSize);
+        return new PaginatedList<CandidateDTO>(items, totalCount, pageNumber, pageSize);
     }
 
     public async Task<CandidateDTO> GetCandidateByIdAsync(int id)

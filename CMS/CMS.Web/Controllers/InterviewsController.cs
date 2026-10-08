@@ -98,7 +98,7 @@ public class InterviewsController : Controller
                     || User.IsInRole("Interviewer")
                     || User.IsInRole("General Manager")
                     || User.IsInRole("Solution Architecture");
-                if (!canOpenMyInterviews && !await _interviewsService.HasActiveDelegationAsync())
+                if (!canOpenMyInterviews && !await _interviewsService.HasVisibleDelegationAsync())
                     return View("AccessDenied");
 
                 Result<List<StatusDTO>> statusesResult = await _StatusService.GetAll();
@@ -149,6 +149,8 @@ public class InterviewsController : Controller
 
                 List<InterviewsDTO> interviewsDTOs = result.Value;
 
+                await SetMyInterviewsOverviewAsync(interviewsDTOs, statuses);
+
                 if (statusFilter.HasValue && statusFilter.Value > 0)
                     interviewsDTOs = interviewsDTOs.Where(i => i.StatusId == statusFilter.Value).ToList();
 
@@ -165,6 +167,61 @@ public class InterviewsController : Controller
         {
             throw;
         }
+    }
+
+    /// <summary>
+    /// Summary counts and per-row delegation state for My Interviews, computed over all of the
+    /// user's interviews (before the status filter) so the overview stays stable while filtering.
+    /// ViewBag.Delegations maps interview id to (Kind, OtherUserName, Until), where Kind is
+    /// "ToMe" (I'm the delegate) or "Away" (my slot is delegated to someone else).
+    /// </summary>
+    private async Task SetMyInterviewsOverviewAsync(List<InterviewsDTO> interviews, List<StatusDTO> statuses)
+    {
+        DateTime now = DateTime.Now;
+        string currentUserId = _userManager.GetUserId(User);
+        int? pendingStatusId = statuses.FirstOrDefault(s => s.Code == Domain.Enums.StatusCode.Pending)?.Id;
+
+        bool IsPending(InterviewsDTO i) => pendingStatusId.HasValue && i.StatusId == pendingStatusId.Value;
+
+        Dictionary<int, (string Kind, string OtherName, DateTime Until)> delegations = [];
+        List<CMS.Domain.Entities.InterviewDelegation> open = await _interviewsRepository.GetOpenDelegationsForInterviewsAsync(
+            interviews.Where(IsPending).Select(i => i.InterviewsId), now);
+
+        foreach (CMS.Domain.Entities.InterviewDelegation d in open.Where(d => d.StartDate <= now))
+        {
+            if (d.DelegatedUserId == currentUserId)
+            {
+                IdentityUser original = await _userManager.FindByIdAsync(d.OriginalInterviewerId);
+                delegations[d.InterviewId] = ("ToMe", original?.UserName, d.ExpirationDate);
+            }
+            else if (d.OriginalInterviewerId == currentUserId && !delegations.ContainsKey(d.InterviewId))
+            {
+                IdentityUser delegate_ = await _userManager.FindByIdAsync(d.DelegatedUserId);
+                delegations[d.InterviewId] = ("Away", delegate_?.UserName, d.ExpirationDate);
+            }
+        }
+
+        // Interviews the user already submitted as a delegate stay listed until the delegation ends.
+        List<CMS.Domain.Entities.InterviewDelegation> submittedAsDelegate = await _interviewsRepository.GetVisibleDelegationsForUserAsync(
+            currentUserId,
+            interviews.Where(i => !IsPending(i)).Select(i => i.InterviewsId),
+            now);
+        foreach (CMS.Domain.Entities.InterviewDelegation d in submittedAsDelegate)
+        {
+            if (delegations.ContainsKey(d.InterviewId))
+                continue;
+
+            IdentityUser original = await _userManager.FindByIdAsync(d.OriginalInterviewerId);
+            delegations[d.InterviewId] = ("ToMe", original?.UserName, d.ExpirationDate);
+        }
+
+        ViewBag.Delegations = delegations;
+        ViewBag.PendingStatusId = pendingStatusId;
+        ViewBag.CountAwaiting = interviews.Count(IsPending);
+        ViewBag.CountUpcoming = interviews.Count(i => IsPending(i) && i.Date > now);
+        ViewBag.CountCompleted = interviews.Count(i => !IsPending(i));
+        ViewBag.CountDelegatedToMe = delegations.Values.Count(v => v.Kind == "ToMe");
+        ViewBag.CountDelegatedAway = delegations.Values.Count(v => v.Kind == "Away");
     }
 
     [Route("index")]
@@ -197,9 +254,6 @@ public class InterviewsController : Controller
              
                 List<StatusDTO> statuses = statusesResult.Value;
                 ViewBag.StatusList = new SelectList(statuses, "Id", "Name");
-
-                IEnumerable<CandidateDTO> candidatesDTO = await _candidateService.GetAllCandidatesAsync();
-                ViewBag.CandidateList = new SelectList(candidatesDTO, "Id", "FullName");
 
                 IEnumerable<InterviewsDTO> filteredInterviews = await ApplyFiltersAndRetrieveData(statusFilter, candidateFilter, trackFilter, pageNumber, pageSize);
                 var architectureRole = await _roleManager.FindByNameAsync("Solution Architecture");
@@ -234,37 +288,22 @@ public class InterviewsController : Controller
     {
         try
         {
-            Result<List<InterviewsDTO>> interviewsResult = await _interviewsService.GetAll();
-
-            if (!interviewsResult.IsSuccess)
+            // One row per candidate (their latest matching interview); filtered and paged in the database
+            InterviewListFilter filter = new()
             {
-                ModelState.AddModelError("", interviewsResult.Error);
+                StatusId = statusFilter.HasValue && statusFilter.Value > 0 ? statusFilter : null,
+                TrackId = trackFilter.HasValue && trackFilter.Value > 0 ? trackFilter : null,
+                CandidateName = string.IsNullOrEmpty(candidateFilter) ? null : candidateFilter
+            };
+
+            Result<PaginatedList<InterviewsDTO>> pageResult = await _interviewsService.GetLatestInterviewPerCandidatePageAsync(filter, pageNumber, pageSize);
+            if (!pageResult.IsSuccess)
+            {
+                ModelState.AddModelError("", pageResult.Error);
                 return new PaginatedList<InterviewsDTO>([], 0, pageNumber, pageSize);
             }
 
-            List<InterviewsDTO> interviews = interviewsResult.Value;
-
-            if (statusFilter.HasValue && statusFilter.Value > 0)
-                interviews = interviews.Where(i => i.StatusId == statusFilter.Value).ToList();
-
-            if (trackFilter.HasValue && trackFilter.Value > 0)
-                interviews = interviews.Where(i => i.TrackId == trackFilter.Value).ToList();
-
-            if (!string.IsNullOrEmpty(candidateFilter))
-                interviews = interviews.Where(i => i.FullName.Contains(candidateFilter, StringComparison.OrdinalIgnoreCase)).ToList();
-
-            IEnumerable<InterviewsDTO> filteredInterviews = interviews.OrderByDescending(i => i.InterviewsId)
-                                               .GroupBy(i => i.CandidateId)
-                                               .Select(group => group.First());
-
-            int totalCount = filteredInterviews.Count();
-
-            List<InterviewsDTO> paginatedInterviews = filteredInterviews
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-            return new PaginatedList<InterviewsDTO>(paginatedInterviews, totalCount, pageNumber, pageSize);
+            return pageResult.Value;
         }
         catch (Exception)
         {
@@ -378,6 +417,7 @@ public class InterviewsController : Controller
             }
 
             ViewBag.PreviousAction = previousAction ?? "Index";
+            ViewBag.DelegationAccess = await _interviewsService.GetCurrentUserDelegationAccessAsync(id);
 
             ViewBag.statusFilter = statusFilter;
             ViewBag.candidateFilter = candidateFilter;
@@ -425,6 +465,7 @@ public class InterviewsController : Controller
                 return closedResult;
 
             ViewBag.PreviousAction = previousAction ?? "Index";
+            ViewBag.DelegationAccess = await _interviewsService.GetCurrentUserDelegationAccessAsync(id);
 
             ViewBag.statusFilter = statusFilter;
             ViewBag.candidateFilter = candidateFilter;
@@ -1667,6 +1708,9 @@ public class InterviewsController : Controller
                     if (preserveDelegatedRoute)
                         await _interviewsService.EnsureDelegatedSuccessorAsync(interviewsDTO.InterviewsId);
 
+                    // Shown in the invitations this approval triggers (null unless the result is Approved)
+                    ApprovalSummary submittedApproval = await BuildApprovalSummaryAsync(interviewsDTO);
+
                     if (isFirstHrApproval && interviewsDTO.StatusId.HasValue)
                     {
                         Result<StatusDTO> statusResult = await _StatusService.GetById(interviewsDTO.StatusId.Value);
@@ -1706,7 +1750,8 @@ public class InterviewsController : Controller
                                         interviewDate,
                                         interviewsDTO.InterviewsId,
                                         isSecondInterview: true,
-                                        includeScheduleDate: false
+                                        includeScheduleDate: false,
+                                        approval: submittedApproval
                                     );
 
                                     EmailDTOs emailModel = new()
@@ -1739,7 +1784,8 @@ public class InterviewsController : Controller
                                         interviewDate,
                                         interviewsDTO.InterviewsId,
                                         isSecondInterview: true,
-                                        includeScheduleDate: false
+                                        includeScheduleDate: false,
+                                        approval: submittedApproval
                                     );
 
                                     EmailDTOs emailModel2 = new()
@@ -1783,7 +1829,8 @@ public class InterviewsController : Controller
                     string hrApprovalEmailBody = HRInvitationEmailTemplate.GetHRApprovalEmail(
                                                                                                  "Aseel",
                                                                                                  candidateNameresult,
-                                                                                                 userName
+                                                                                                 userName,
+                                                                                                 submittedApproval
                                                                                              );
                     string hrRejectionEmailBody = HRInvitationEmailTemplate.GetHRRejectionEmail(
                                                                                                    "Aseel",
@@ -1796,27 +1843,31 @@ public class InterviewsController : Controller
                                                                                                         "Aseel",
                                                                                                         candidateNameresult,
                                                                                                         lastPositionName,
-                                                                                                        "https://apps.sssprocess.com:6134/"
+                                                                                                        "https://apps.sssprocess.com:6134/",
+                                                                                                        submittedApproval
                                                                                                      );
 
                     string hrSecondInterviewApprovalEmailBody = HRInvitationEmailTemplate.GetHRSecondInterviewApprovalEmail(
                                                                                                         "Aseel",
                                                                                                         candidateNameresult,
-                                                                                                        userName
+                                                                                                        userName,
+                                                                                                        submittedApproval
                                                                                                      );
 
                     string gmInvitationEmailBody = GMInterviewInvitationEmailTemplate.GetGMInvitationEmail(
                                                                                                             userGM.UserName,
                                                                                                             candidateNameresult,
                                                                                                             lastPositionName,
-                                                                                                            "https://apps.sssprocess.com:6134/"
+                                                                                                            "https://apps.sssprocess.com:6134/",
+                                                                                                            submittedApproval
                                                                                                           );
 
                     string architectureEmailBody = ArchitectureInterviewEmailTemplate.GetArchiAndGmInvitationEmail(
                                                                                                                       userArchi.UserName,
                                                                                                                       candidateNameresult,
                                                                                                                       lastPositionName,
-                                                                                                                      "https://apps.sssprocess.com:6134/"
+                                                                                                                      "https://apps.sssprocess.com:6134/",
+                                                                                                                      submittedApproval
                                                                                                                   );
 
                     if (User.IsInRole("Interviewer"))
@@ -2667,7 +2718,7 @@ public class InterviewsController : Controller
         }
 
         InterviewDelegationDTO first = result.Value.Delegated[0];
-        TempData["SuccessMessage"] = $"{result.Value.Delegated.Count} interview(s) delegated to {first.DelegatedUserName} until {first.ExpirationDate:dd/MM/yyyy hh:mm tt}.";
+        TempData["SuccessMessage"] = $"{result.Value.Delegated.Count} interview(s) delegated to {first.DelegatedUserName} {DescribeDelegationEnd(first)}.";
         if (warnings.Count > 0)
             TempData["ErrorMessage"] = string.Join(" ", warnings);
 
@@ -2696,7 +2747,8 @@ public class InterviewsController : Controller
         int id,
         string interviewerSlot,
         string delegatedUserId,
-        int durationId)
+        int durationId,
+        int? replaceDelegationId)
     {
         string slot = "Primary";
         string originalInterviewerId = null;
@@ -2713,7 +2765,8 @@ public class InterviewsController : Controller
             slot,
             originalInterviewerId,
             delegatedUserId,
-            durationId);
+            durationId,
+            replaceDelegationId);
 
         if (!result.IsSuccess)
         {
@@ -2734,9 +2787,10 @@ public class InterviewsController : Controller
         if (noticeWarning != null)
             TempData["ErrorMessage"] = noticeWarning;
         else
-            TempData["SuccessMessage"] = $"{delegated.DelegatedUserName} can score {delegated.CandidateName} until {delegated.ExpirationDate:dd/MM/yyyy hh:mm tt}. {delegated.OriginalInterviewerName} remains assigned.";
+            TempData["SuccessMessage"] = $"{delegated.DelegatedUserName} can score {delegated.CandidateName} {DescribeDelegationEnd(delegated)}. "
+                + $"{delegated.OriginalInterviewerName} can still score it too; whoever submits first completes the interview.";
 
-        return RedirectToAction(nameof(Delegation));
+        return RedirectToAction(nameof(Delegate), new { id });
     }
 
     [HttpPost]
@@ -2757,11 +2811,60 @@ public class InterviewsController : Controller
         }
 
         string noticeWarning = await NotifyDelegationRemovedAsync(result.Value);
-        TempData["SuccessMessage"] = $"{result.Value.DelegatedUserName} no longer has access to score {result.Value.CandidateName}.";
+        TempData["SuccessMessage"] = $"Delegation removed. {result.Value.DelegatedUserName} can no longer score {result.Value.CandidateName}; "
+            + $"{result.Value.OriginalInterviewerName} remains the assigned interviewer.";
         if (noticeWarning != null)
             TempData["ErrorMessage"] = noticeWarning;
 
         return RedirectToAction(nameof(Delegate), new { id });
+    }
+
+    /// <summary>
+    /// The result just submitted, for the invitations it triggers (e.g. the first interview's approval
+    /// in the GM invitation). Null unless the result is Approved. The submitter is the acting user, so a
+    /// delegate is named as the approver, with the interviewer they acted for.
+    /// </summary>
+    private async Task<ApprovalSummary> BuildApprovalSummaryAsync(InterviewsDTO submitted)
+    {
+        if (submitted?.StatusId == null)
+            return null;
+
+        Result<StatusDTO> status = await _StatusService.GetById(submitted.StatusId.Value);
+        if (!status.IsSuccess || status.Value.Code != Domain.Enums.StatusCode.Approved)
+            return null;
+
+        CMS.Domain.Entities.Interviews interview = await _interviewsRepository.GetById(submitted.InterviewsId);
+        IdentityUser approver = await _userManager.GetUserAsync(User);
+        InterviewDelegationDTO delegation = await _interviewsService.GetCurrentUserDelegationAccessAsync(submitted.InterviewsId);
+
+        // The approved interview's position in the candidate's chain: 1 + its ancestors
+        int stepNumber = 0;
+        if (interview != null)
+        {
+            stepNumber = 1;
+            int? parentId = interview.ParentId;
+            HashSet<int> seen = [interview.InterviewsId];
+            while (parentId.HasValue && seen.Add(parentId.Value))
+            {
+                CMS.Domain.Entities.Interviews parent = await _interviewsRepository.GetById(parentId.Value);
+                if (parent == null)
+                    break;
+
+                stepNumber++;
+                parentId = parent.ParentId;
+            }
+        }
+
+        return new ApprovalSummary
+        {
+            StepNumber = stepNumber,
+            StageName = interview?.WorkflowStage?.Name,
+            Result = status.Value.Name,
+            ApprovedBy = approver?.UserName,
+            OnBehalfOf = delegation?.OriginalInterviewerName,
+            ApprovedOn = DateTime.Now,
+            Score = submitted.Score
+        };
     }
 
     private async Task<ActionResult> RedirectIfSubmittedResultIsClosedAsync(int interviewId)
@@ -2772,6 +2875,13 @@ public class InterviewsController : Controller
 
         TempData["ErrorMessage"] = canOpen.Error;
         return RedirectToAction(nameof(MyInterviews));
+    }
+
+    private static string DescribeDelegationEnd(InterviewDelegationDTO delegation)
+    {
+        return delegation.IsUnlimited
+            ? "with no end date"
+            : $"until {delegation.ExpirationDate:dd/MM/yyyy hh:mm tt}";
     }
 
     private async Task<string> NotifyDelegationRemovedAsync(InterviewDelegationDTO removed)

@@ -61,9 +61,6 @@ public class DelegationDurationService : IDelegationDurationService
         DelegationDuration duration = new()
         {
             Name = dto.Name.Trim(),
-            Amount = dto.Amount,
-            Unit = dto.Unit,
-            DurationMinutes = ToMinutes(dto.Amount, dto.Unit),
             IsActive = dto.IsActive,
             IsDelete = false,
             CreatedBy = userId,
@@ -72,6 +69,7 @@ public class DelegationDurationService : IDelegationDurationService
             ModifiedOn = now
         };
 
+        ApplyLength(duration, dto);
         await _repository.AddAsync(duration);
         return Result<DelegationDurationDTO>.Success(Map(duration));
     }
@@ -87,9 +85,7 @@ public class DelegationDurationService : IDelegationDurationService
             return Result<DelegationDurationDTO>.Failure(null, error);
 
         existing.Name = dto.Name.Trim();
-        existing.Amount = dto.Amount;
-        existing.Unit = dto.Unit;
-        existing.DurationMinutes = ToMinutes(dto.Amount, dto.Unit);
+        ApplyLength(existing, dto);
         existing.IsActive = dto.IsActive;
         existing.ModifiedBy = await CurrentUserIdAsync();
         existing.ModifiedOn = DateTime.Now;
@@ -115,16 +111,30 @@ public class DelegationDurationService : IDelegationDurationService
         if (dto == null || string.IsNullOrWhiteSpace(dto.Name))
             return "Name is required.";
 
-        if (dto.Amount < 1)
-            return "Enter a duration greater than zero.";
+        if (!dto.IsUnlimited)
+        {
+            if (dto.Amount < 1)
+                return "Enter a duration greater than zero.";
 
-        if (ToMinutes(dto.Amount, dto.Unit) <= 0)
-            return "Select a valid duration unit.";
+            if (ToMinutes(dto.Amount, dto.Unit) <= 0)
+                return "Select a valid duration unit.";
+        }
 
         if (await _repository.NameExistsAsync(dto.Name, excludeId))
             return "A delegation duration with this name already exists.";
 
         return null;
+    }
+
+    /// <summary>
+    /// An unlimited duration has no amount or unit; delegations created from it never expire.
+    /// </summary>
+    private static void ApplyLength(DelegationDuration duration, DelegationDurationDTO dto)
+    {
+        duration.IsUnlimited = dto.IsUnlimited;
+        duration.Amount = dto.IsUnlimited ? 0 : dto.Amount;
+        duration.Unit = dto.IsUnlimited ? DelegationDuration.UnitUnlimited : dto.Unit;
+        duration.DurationMinutes = dto.IsUnlimited ? 0 : ToMinutes(dto.Amount, dto.Unit);
     }
 
     private async Task<string> CurrentUserIdAsync()
@@ -165,6 +175,7 @@ public class DelegationDurationService : IDelegationDurationService
             Amount = duration.Amount,
             Unit = duration.Unit,
             DurationMinutes = duration.DurationMinutes,
+            IsUnlimited = duration.IsUnlimited,
             IsActive = duration.IsActive
         };
     }

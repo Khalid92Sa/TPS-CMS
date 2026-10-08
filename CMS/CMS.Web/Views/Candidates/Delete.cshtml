@@ -1,113 +1,92 @@
 ﻿@model CMS.Application.DTOs.CandidateDTO
 
 @{
-    ViewData["Title"] = "Confirm Delete";
+    ViewData["Title"] = "Delete Candidate";
 }
 
-<!-- Page Container -->
-<div class="container my-5">
-    <div class="card shadow border-0 rounded-lg">
-        <div class="card-header text-dark text-center py-4 border-bottom" style="background: linear-gradient(135deg, #486fc7, #319ca7);">
-            <h4 class="mb-0" style="color:white;">Confirm Deletion</h4>
-        </div>
-
-        <div class="card-body px-4 py-5">
-            <div class="alert alert-light text-center shadow-sm border border-warning rounded-lg">
-                <h5 class="mb-3 text-danger">Are you sure you want to delete this candidate?</h5>
-                <p class="text-muted">This action cannot be undone. All associated child entities will also be deleted.</p>
-            </div>
-
-            <div class="row justify-content-center">
-                <div class="col-lg-8" style="margin-left:20%;">
-                    <!-- Full Name -->
-                    <dl class="row align-items-center mb-4">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Full Name:</dt>
-                        <dd class="col-sm-8">@Html.DisplayFor(model => model.FullName)</dd>
-                    </dl>
-
-                    <!-- Phone Number -->
-                    <dl class="row align-items-center mb-4">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Phone Number:</dt>
-                        <dd class="col-sm-8">@Html.DisplayFor(model => model.Phone)</dd>
-                    </dl>
-
-                    <!-- CV Provider Name -->
-                    <dl class="row align-items-center mb-4">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">CV Provider Name:</dt>
-                        <dd class="col-sm-8">@Html.DisplayFor(model => model.CompanyName)</dd>
-                    </dl>
-
-                    <!-- Level -->
-                    <dl class="row align-items-center mb-4">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Level:</dt>
-                        <dd class="col-sm-8">@Html.DisplayFor(model => model.PositionName)</dd>
-                    </dl>
-
-                    <!-- Track -->
-                    <dl class="row align-items-center mb-4">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Track:</dt>
-                        <dd class="col-sm-8">@Html.DisplayFor(model => model.TrackName)</dd>
-                    </dl>
-
-                    <!-- Experience -->
-                    <dl class="row align-items-center mb-4">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Experience:</dt>
-                        <dd class="col-sm-8">@Html.DisplayFor(model => model.Experience)</dd>
-                    </dl>
-
-                    <!-- CV Attachment -->
-                    <dl class="row align-items-center mb-4">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">CV Attachment:</dt>
-                        <dd class="col-sm-8">
-                            @if (Model.CVAttachmentId != null)
-                            {
-                                <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.CVAttachmentId" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Download CV">
-                                    <i style="font-size: x-large;" class="bx bxs-cloud-download"></i>
-                                </a>
-                            }
-                            else
-                            {
-                                <span class="text-muted">There is no CV for this candidate.</span>
-                            }
-                        </dd>
-                    </dl>
-
-                </div>
-
-                 <!-- Action Buttons -->
-                    <div class="text-center mt-4">
-                        <form id="deleteForm" method="post" asp-action="Delete" asp-route-id="@Model.Id">
-                            <div class="d-flex justify-content-between mt-4">
-                                <button type="button" class="btn btn-danger px-4" onclick="showSwalConfirm()">Delete</button>
-                                <a class="btn btn-secondary" asp-action="Index">Back to list</a>
-                            </div>
-                        </form>
-                    </div>
+<div class="tps-ihead">
+    <div class="tps-ihead__who">
+        <span class="tps-ihead__avatar tps-ihead__avatar--danger" aria-hidden="true"><i class="ri-user-unfollow-line"></i></span>
+        <div>
+            <p class="tps-ihead__eyebrow">Delete candidate</p>
+            <h2 class="tps-ihead__name" dir="auto">@Model.FullName</h2>
+            <div class="tps-ihead__meta">
+                @if (!string.IsNullOrEmpty(Model.PositionName))
+                {
+                    <span class="tps-chip"><i class="ri-briefcase-4-line"></i>@Model.PositionName</span>
+                }
+                @if (!string.IsNullOrEmpty(Model.TrackName))
+                {
+                    <span class="tps-chip"><i class="ri-git-branch-line"></i>@Model.TrackName</span>
+                }
             </div>
         </div>
     </div>
 </div>
 
-<!-- SweetAlert2 Script -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    function showSwalConfirm() {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'This action will permanently delete the candidate and its data!',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#e3342f',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                document.getElementById('deleteForm').submit();
-            }
-        });
-    }
-</script>
+<div class="row justify-content-center">
+    <div class="col-xl-9">
+        <div class="tps-danger-note" role="note">
+            <i class="ri-error-warning-line"></i>
+            <div>All associated child entities, such as interviews and attachments, will also be deleted.</div>
+        </div>
 
-<!-- Font Awesome for Icons -->
-<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+        <div class="card tps-delete-card">
+            <div class="card-header">
+                <i class="ri-delete-bin-6-line"></i>
+                <h4 class="card-title">What will be deleted</h4>
+            </div>
+            <div class="card-body">
+                <dl class="tps-dl">
+                <div>
+                    <dt>Full name</dt>
+                    <dd>@Model.FullName</dd>
+                </div>
+                <div>
+                    <dt>Phone</dt>
+                    <dd><span dir="ltr">@Model.Phone</span></dd>
+                </div>
+                <div>
+                    <dt>CV provider</dt>
+                    <dd>@Model.CompanyName</dd>
+                </div>
+                <div>
+                    <dt>Level</dt>
+                    <dd>@Model.PositionName</dd>
+                </div>
+                <div>
+                    <dt>Track</dt>
+                    <dd>@Model.TrackName</dd>
+                </div>
+                <div>
+                    <dt>Experience</dt>
+                    <dd>@Model.Experience</dd>
+                </div>
+                <div>
+                    <dt>CV</dt>
+                    <dd>@if (Model.CVAttachmentId != null)
+                        {
+                            <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.CVAttachmentId"><i class="ri-file-download-line me-1"></i>Download CV</a>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic fw-normal">No CV uploaded</span>
+                        }</dd>
+                </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="deleteForm" method="post" asp-action="Delete" asp-route-id="@Model.Id">
+    <div class="tps-factions">
+        <span class="tps-factions__note"><i class="ri-information-line"></i> You'll be asked to confirm. This can't be undone.</span>
+        <div class="tps-factions__buttons">
+            <a class="btn btn-secondary" asp-action="Index">Cancel</a>
+            <button type="button" class="btn btn-danger px-4" data-tps-delete data-confirm-title="Delete this candidate?" data-confirm-text="The candidate and their interviews and files are deleted. This can't be undone."><i class="ri-delete-bin-6-line me-1"></i> Delete candidate</button>
+        </div>
+    </div>
+</form>
+
+@await Html.PartialAsync("_DeleteConfirm")

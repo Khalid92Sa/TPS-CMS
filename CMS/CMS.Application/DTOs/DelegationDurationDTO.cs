@@ -1,8 +1,9 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace CMS.Application.DTOs;
 
-public class DelegationDurationDTO
+public class DelegationDurationDTO : IValidatableObject
 {
     public int Id { get; set; }
 
@@ -10,14 +11,28 @@ public class DelegationDurationDTO
     [StringLength(100)]
     public string Name { get; set; }
 
-    [Range(1, 10000, ErrorMessage = "Enter a duration greater than zero.")]
+    // Amount and Unit are only required for a limited duration; see Validate.
     public int Amount { get; set; }
 
-    [Required(ErrorMessage = "Unit is required.")]
     public string Unit { get; set; }
 
     public int DurationMinutes { get; set; }
 
+    [Display(Name = "Unlimited duration")]
+    public bool IsUnlimited { get; set; }
+
     [Display(Name = "Enabled")]
     public bool IsActive { get; set; } = true;
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (IsUnlimited)
+            yield break;
+
+        if (Amount < 1 || Amount > 10000)
+            yield return new ValidationResult("Enter a duration greater than zero.", [nameof(Amount)]);
+
+        if (string.IsNullOrWhiteSpace(Unit))
+            yield return new ValidationResult("Unit is required.", [nameof(Unit)]);
+    }
 }

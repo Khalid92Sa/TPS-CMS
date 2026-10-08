@@ -2,402 +2,153 @@
 
 public static class HRInvitationEmailTemplate
 {
-    public static string GetFinalHRInterviewEmail(string hrName, string candidateName, string positionName, string interviewLink)
+    public static string GetFinalHRInterviewEmail(string hrName, string candidateName, string positionName, string interviewLink, ApprovalSummary approval = null)
     {
-        return $@"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='UTF-8'>
-            <title>Final HR Interview Invitation - {candidateName}</title>
-            <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    background-color: #f4f7fc;
-                    margin: 0;
-                    padding: 20px;
-                }}
-                .email-container {{
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: #ffffff;
-                    padding: 25px;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                }}
-                .header {{
-                    background-color: #2A5C83;
-                    color: #ffffff;
-                    text-align: center;
-                    padding: 15px;
-                    font-size: 20px;
-                    font-weight: bold;
-                    border-top-left-radius: 10px;
-                    border-top-right-radius: 10px;
-                }}
-                .content {{
-                    padding: 20px;
-                    font-size: 16px;
-                    color: #333;
-                    line-height: 1.6;
-                }}
-                .highlight {{
-                    font-weight: bold;
-                    color: #2A5C83;
-                }}
-                .button {{
-                    display: inline-block;
-                    background-color: #2A5C83;
-                    color: white;
-                    padding: 15px 30px;
-                    font-size: 16px;
-                    font-weight: bold;
-                    border-radius: 8px;
-                    text-decoration: none;
-                    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
-                    transition: background 0.3s, transform 0.2s;
-                }}
-                .button:hover {{
-                    background-color: #1E4A6E;
-                    transform: translateY(-2px);
-                }}
-                .footer {{
-                    text-align: center;
-                    font-size: 14px;
-                    color: #777;
-                    padding-top: 15px;
-                    border-top: 1px solid #e0e0e0;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class='email-container'>
-                <div class='header'>Candidate Management System</div>
+        var email = new EmailContent
+        {
+            Title = $"Final HR Interview Invitation - {candidateName}",
+            Preheader = $"Final HR interview with {candidateName} for {positionName}",
+            Tone = EmailTone.Primary,
+            Eyebrow = "Interview invitation",
+            Badge = "Final stage",
+            Heading = $"Final HR interview with {candidateName}",
+            RecipientName = hrName,
+            IntroHtml =
+                $"<p style=\"margin:0 0 14px;\">You are assigned to conduct a {EmailLayout.Strong("Final HR Interview")} " +
+                $"for {EmailLayout.Strong(candidateName)} for the {EmailLayout.Strong(positionName)} position.</p>" +
+                "<p style=\"margin:0;\">Please click the button below to view the invitation details.</p>",
+            DetailsTitle = "Interview details",
+            ButtonText = "View invitation",
+            ButtonUrl = interviewLink,
+            NoteHtml = "If you have any questions, please reach out to the HR team."
+        };
+        email.Details.Add(new EmailDetail("Candidate", candidateName));
+        email.Details.Add(new EmailDetail("Position", positionName));
+        email.Details.Add(new EmailDetail("Interview", "Final HR interview"));
+        ApprovalSummary.ApplyYourTurn(email, approval, candidateName, positionName, isFinalStep: true);
+        ApprovalSummary.AddTo(email, approval);
 
-                <div class='content'>
-                    <p>Dear <span class='highlight'>{hrName}</span>,</p>
-
-                    <p>
-                        You are assigned to conduct a <span class='highlight'>Final HR Interview</span> 
-                        for <span class='highlight'>{candidateName}</span> for the 
-                        <span class='highlight'>{positionName}</span> position.
-                    </p>
-
-                    <p>Please click the button below to view the invitation details:</p>
-
-                    <a href='{interviewLink}' class='button'>
-                        📩 View Invitation
-                    </a>
-
-                    <p>If you have any questions, please reach out to the HR team.</p>
-                </div>
-
-                <div class='footer'>
-                    <p>Regards,</p>
-                    <p>Sent by: <span class='highlight'>CMS</span></p>
-                </div>
-            </div>
-        </body>
-        </html>";
+        return EmailLayout.Render(email);
     }
 
-    public static string GetHRApprovalEmail(string hrName, string candidateName, string approvedBy)
+    public static string GetHRApprovalEmail(string hrName, string candidateName, string approvedBy, ApprovalSummary approval = null)
     {
-        return $@"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='UTF-8'>
-            <title>Interview Approval - {candidateName}</title>
-            <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    background-color: #f4f7fc;
-                    margin: 0;
-                    padding: 20px;
-                }}
-                .email-container {{
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: #ffffff;
-                    padding: 25px;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                }}
-                .header {{
-                    background-color: #2A5C83;
-                    color: #ffffff;
-                    text-align: center;
-                    padding: 15px;
-                    font-size: 20px;
-                    font-weight: bold;
-                    border-top-left-radius: 10px;
-                    border-top-right-radius: 10px;
-                }}
-                .content {{
-                    padding: 20px;
-                    font-size: 16px;
-                    color: #333;
-                    line-height: 1.6;
-                    text-align: center;
-                }}
-                .highlight {{
-                    font-weight: bold;
-                    color: #2A5C83;
-                }}
-                .footer {{
-                    text-align: center;
-                    font-size: 14px;
-                    color: #777;
-                    padding-top: 15px;
-                    border-top: 1px solid #e0e0e0;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class='email-container'>
-                <div class='header'>Candidate Management System</div>
+        if (approval != null)
+            return ApprovalNotice(hrName, candidateName, approval, $"Interview Approval - {candidateName}");
 
-                <div class='content'>
-                    <p>Dear <span class='highlight'>{hrName}</span>,</p>
-
-                    <p>
-                        The first interview with <span class='highlight'>{candidateName}</span> has been 
-                        <span class='highlight'>Approved</span> by <span class='highlight'>{approvedBy.Replace("_", " ")}</span>.
-                    </p>
-                </div>
-
-                <div class='footer'>
-                    <p>Regards,</p>
-                    <p>Sent by: <span class='highlight'>CMS</span></p>
-                </div>
-            </div>
-        </body>
-        </html>";
+        return Outcome(
+            hrName, candidateName, approvedBy.Replace("_", " "),
+            title: $"Interview Approval - {candidateName}",
+            interview: "First interview",
+            badge: "Approved",
+            tone: EmailTone.Success,
+            heading: $"{candidateName} passed the first interview",
+            sentence: $"The first interview with {EmailLayout.Strong(candidateName)} has been {EmailLayout.Strong("Approved")}",
+            systemName: "CMS");
     }
 
-    public static string GetHRSecondInterviewApprovalEmail(string hrName, string candidateName, string approvedBy)
+    public static string GetHRSecondInterviewApprovalEmail(string hrName, string candidateName, string approvedBy, ApprovalSummary approval = null)
     {
-        return $@"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='UTF-8'>
-            <title>Second Interview Approval - {candidateName}</title>
-            <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    background-color: #f4f7fc;
-                    margin: 0;
-                    padding: 20px;
-                }}
-                .email-container {{
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: #ffffff;
-                    padding: 25px;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                }}
-                .header {{
-                    background-color: #2A5C83;
-                    color: #ffffff;
-                    text-align: center;
-                    padding: 15px;
-                    font-size: 20px;
-                    font-weight: bold;
-                    border-top-left-radius: 10px;
-                    border-top-right-radius: 10px;
-                }}
-                .content {{
-                    padding: 20px;
-                    font-size: 16px;
-                    color: #333;
-                    line-height: 1.6;
-                    text-align: center;
-                }}
-                .highlight {{
-                    font-weight: bold;
-                    color: #2A5C83;
-                }}
-                .footer {{
-                    text-align: center;
-                    font-size: 14px;
-                    color: #777;
-                    padding-top: 15px;
-                    border-top: 1px solid #e0e0e0;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class='email-container'>
-                <div class='header'>Candidate Management System</div>
+        if (approval != null)
+            return ApprovalNotice(hrName, candidateName, approval, $"Second Interview Approval - {candidateName}");
 
-                <div class='content'>
-                    <p>Dear <span class='highlight'>{hrName}</span>,</p>
-
-                    <p>
-                        The second interview with <span class='highlight'>{candidateName}</span> has been 
-                        <span class='highlight'>Approved</span> by <span class='highlight'>{approvedBy.Replace("_", " ")}</span>.
-                    </p>
-                </div>
-
-                <div class='footer'>
-                    <p>Regards,</p>
-                    <p>Sent by: <span class='highlight'>CMS</span></p>
-                </div>
-            </div>
-        </body>
-        </html>";
+        return Outcome(
+            hrName, candidateName, approvedBy.Replace("_", " "),
+            title: $"Second Interview Approval - {candidateName}",
+            interview: "Second interview",
+            badge: "Approved",
+            tone: EmailTone.Success,
+            heading: $"{candidateName} passed the second interview",
+            sentence: $"The second interview with {EmailLayout.Strong(candidateName)} has been {EmailLayout.Strong("Approved")}",
+            systemName: "CMS");
     }
 
     public static string GetHRRejectionEmail(string hrName, string candidateName, string rejectedBy, string systemName = "CMS")
     {
-        return $@"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='UTF-8'>
-            <title>Interview Rejection - {candidateName}</title>
-            <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    background-color: #f4f7fc;
-                    margin: 0;
-                    padding: 20px;
-                }}
-                .email-container {{
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: #ffffff;
-                    padding: 25px;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                }}
-                .header {{
-                    background-color: #D9534F;
-                    color: #ffffff;
-                    text-align: center;
-                    padding: 15px;
-                    font-size: 20px;
-                    font-weight: bold;
-                    border-top-left-radius: 10px;
-                    border-top-right-radius: 10px;
-                }}
-                .content {{
-                    padding: 20px;
-                    font-size: 16px;
-                    color: #333;
-                    line-height: 1.6;
-                    text-align: center;
-                }}
-                .highlight {{
-                    font-weight: bold;
-                    color: #D9534F;
-                }}
-                .footer {{
-                    text-align: center;
-                    font-size: 14px;
-                    color: #777;
-                    padding-top: 15px;
-                    border-top: 1px solid #e0e0e0;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class='email-container'>
-                <div class='header'>{systemName} - Interview Rejection</div>
-
-                <div class='content'>
-                    <p>Dear <span class='highlight'>{hrName}</span>,</p>
-
-                    <p>
-                        The first interview with <span class='highlight'>{candidateName}</span> has been 
-                        <span class='highlight'>rejected</span> by <span class='highlight'>{rejectedBy.Replace("_", " ")}</span>.
-                    </p>
-                </div>
-
-                <div class='footer'>
-                    <p>Regards,</p>
-                    <p>Sent by: <span class='highlight'>{systemName}</span></p>
-                </div>
-            </div>
-        </body>
-        </html>";
+        return Outcome(
+            hrName, candidateName, rejectedBy.Replace("_", " "),
+            title: $"Interview Rejection - {candidateName}",
+            interview: "First interview",
+            badge: "Rejected",
+            tone: EmailTone.Danger,
+            heading: $"{candidateName} was not approved",
+            sentence: $"The first interview with {EmailLayout.Strong(candidateName)} has been {EmailLayout.Strong("rejected")}",
+            systemName: systemName);
     }
 
     public static string GetHROnHoldEmail(string hrName, string candidateName, string putOnHoldBy, string systemName = "CMS")
     {
-        return $@"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='UTF-8'>
-            <title>Interview On Hold - {candidateName}</title>
-            <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    background-color: #f4f7fc;
-                    margin: 0;
-                    padding: 20px;
-                }}
-                .email-container {{
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: #ffffff;
-                    padding: 25px;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                }}
-                .header {{
-                    background-color: #F0AD4E;
-                    color: #ffffff;
-                    text-align: center;
-                    padding: 15px;
-                    font-size: 20px;
-                    font-weight: bold;
-                    border-top-left-radius: 10px;
-                    border-top-right-radius: 10px;
-                }}
-                .content {{
-                    padding: 20px;
-                    font-size: 16px;
-                    color: #333;
-                    line-height: 1.6;
-                    text-align: center;
-                }}
-                .highlight {{
-                    font-weight: bold;
-                    color: #F0AD4E;
-                }}
-                .footer {{
-                    text-align: center;
-                    font-size: 14px;
-                    color: #777;
-                    padding-top: 15px;
-                    border-top: 1px solid #e0e0e0;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class='email-container'>
-                <div class='header'>{systemName} - Interview On Hold</div>
+        return Outcome(
+            hrName, candidateName, putOnHoldBy.Replace("_", " "),
+            title: $"Interview On Hold - {candidateName}",
+            interview: "Interview",
+            badge: "On hold",
+            tone: EmailTone.Warning,
+            heading: $"{candidateName} has been put on hold",
+            sentence: $"The interview with {EmailLayout.Strong(candidateName)} has been {EmailLayout.Strong("put on hold")}",
+            systemName: systemName);
+    }
 
-                <div class='content'>
-                    <p>Dear <span class='highlight'>{hrName}</span>,</p>
+    /// <summary>
+    /// Approval notice in the same style as the "your turn" invitations: a green "✓ approved" banner,
+    /// the candidate, and the approved step's result table. Informational: no action is asked of HR.
+    /// </summary>
+    private static string ApprovalNotice(string hrName, string candidateName, ApprovalSummary approval, string title)
+    {
+        string stage = approval.StageLabel;
+        var email = new EmailContent
+        {
+            Title = title,
+            Preheader = $"{stage} with {candidateName} approved",
+            Tone = EmailTone.Success,
+            Eyebrow = "Interview result",
+            Badge = "Approved",
+            Heading = $"{candidateName} passed the {stage.ToLowerInvariant()}",
+            RecipientName = hrName,
+            IntroHtml =
+                approval.BannerHtml() +
+                $"<p style=\"margin:0;\">The {EmailLayout.Encode(stage.ToLowerInvariant())} with {EmailLayout.Strong(candidateName)} has been " +
+                $"{EmailLayout.Strong("approved")}. The result is below.</p>",
+            DetailsTitle = "Interview details",
+            SystemName = "CMS"
+        };
+        email.Details.Add(new EmailDetail("Candidate", candidateName));
+        email.Details.Add(new EmailDetail("Interview", stage));
+        ApprovalSummary.AddTo(email, approval);
 
-                    <p>
-                        The interview with <span class='highlight'>{candidateName}</span> has been 
-                        <span class='highlight'>put on hold</span> by <span class='highlight'>{putOnHoldBy.Replace("_", " ")}</span>.
-                    </p>
-                </div>
+        return EmailLayout.Render(email);
+    }
 
-                <div class='footer'>
-                    <p>Regards,</p>
-                    <p>Sent by: <span class='highlight'>{systemName}</span></p>
-                </div>
-            </div>
-        </body>
-        </html>";
+    private static string Outcome(
+        string hrName,
+        string candidateName,
+        string decidedBy,
+        string title,
+        string interview,
+        string badge,
+        EmailTone tone,
+        string heading,
+        string sentence,
+        string systemName)
+    {
+        var email = new EmailContent
+        {
+            Title = title,
+            Preheader = $"{interview} with {candidateName}: {badge} by {decidedBy}",
+            Tone = tone,
+            Eyebrow = "Interview result",
+            Badge = badge,
+            Heading = heading,
+            RecipientName = hrName,
+            IntroHtml = $"<p style=\"margin:0;\">{sentence} by {EmailLayout.Strong(decidedBy)}.</p>",
+            DetailsTitle = "Result",
+            SystemName = systemName
+        };
+        email.Details.Add(new EmailDetail("Candidate", candidateName));
+        email.Details.Add(new EmailDetail("Interview", interview));
+        email.Details.Add(new EmailDetail("Outcome", badge));
+        email.Details.Add(new EmailDetail("Decided by", decidedBy));
+
+        return EmailLayout.Render(email);
     }
 }

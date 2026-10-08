@@ -1,4 +1,4 @@
-﻿@using CMS.Domain.Enums;
+@using CMS.Domain.Enums;
 @model CMS.Application.DTOs.InterviewsDTO
 
 @{
@@ -6,263 +6,202 @@
 }
 
 <style>
-    .interview-section {
-        background-image: url('@Url.Content("~/theme/images/job_interview.png")');
-        background-size: cover;
-        background-position: center;
-        background-color: #f7f3f3;
-        padding: 20px;
-        position: relative;
-        height: 265px; 
-        border-radius: 8px;
-    }
-
-    .interview-section::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(255, 255, 255, 0.7);
-        z-index: 1;
-    }
-
-    .interview-section h5,
-    .interview-section label,
-    .interview-section select {
-        position: relative;
-        z-index: 2;
-    }
-
-    /* Hide default error messages - they will be shown via JavaScript when needed */
+    /* Client-side messages start hidden; the page script shows them when needed */
     #interviewerIdError,
     #candidateIdError,
     #positionIdError,
     #trackIdError,
     #dateValidationMessage {
         display: none;
-        font-size: 0.9em;
-    }
-
-    /* Style for validation error messages - simple design */
-    .interview-section .text-danger,
-    .interview-section span.text-danger {
-        position: relative;
-        z-index: 3;
-        margin-top: 5px;
-        font-size: 0.9em;
-    }
-
-    /* Ensure validation messages from server are visible */
-    .interview-section .field-validation-error {
-        position: relative;
-        z-index: 3;
-        margin-top: 5px;
-        font-size: 0.9em;
-    }
-
-    .card-header {
-        color: white;
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-    }
-
-    .btn-success {
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-        border: none;
-        color: white;
-    }
-
-        .btn-success:hover {
-            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
-            color: white;
-            transition: background 0.3s ease;
-        }
-
-    .btn-secondary {
-        background-color: gray;
-        border-color: gray;
-    }
-
-    .btn-secondary:hover {
-        background-color: darkgray !important;
-        border-color: darkgray !important;
-    }
-
-    /* Pointer cursor for dropdowns */
-    select[data-selectize="true"],
-    .selectize-control,
-    .selectize-control .selectize-input,
-    .selectize-control.single .selectize-input.input-active,
-    .selectize-control.single .selectize-input {
-        cursor: pointer !important;
-    }
-
-    .selectize-control .selectize-input input {
-        cursor: pointer !important;
     }
 </style>
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css" rel="stylesheet" />
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<div class="container mt-5">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h2 style="color:white !important;">Edit Interview</h2>
+<form asp-action="Edit" asp-route-id="@Model.InterviewsId" id="editForm" class="needs-validation" novalidate>
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" asp-for="InterviewsId" />
+    <input type="hidden" asp-for="StatusId" />
+    <input type="hidden" asp-for="WorkflowStageId" />
+    <input type="hidden" asp-for="ParentId" />
+    <input asp-for="AttachmentId" hidden />
+
+    <div class="tps-ihead">
+        <div class="tps-ihead__who">
+            <span class="tps-ihead__avatar tps-ihead__avatar--icon" aria-hidden="true"><i class="ri-edit-line"></i></span>
+            <div>
+                <p class="tps-ihead__eyebrow">Editing interview</p>
+                <h2 class="tps-ihead__name" dir="auto" data-summary-title>@(Model.FullName ?? "Interview")</h2>
+                <div class="tps-ihead__meta">
+                    @if (!string.IsNullOrEmpty(Model.StatusName))
+                    {
+                        @InterviewStatusUi.Badge(Model.StatusName)
+                    }
+                    <span class="tps-chip"><i class="ri-calendar-event-line"></i>Currently @Model.Date.ToString("dd MMM yyyy, h:mm tt")</span>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <form asp-action="Edit" asp-route-id="@Model.InterviewsId" id="editForm" class="needs-validation" novalidate>
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <input type="hidden" asp-for="InterviewsId" />
-                <input type="hidden" asp-for="StatusId" />
-                <input type="hidden" asp-for="WorkflowStageId" />
-                <input type="hidden" asp-for="ParentId" />
-
-                <!-- Candidate Name -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label asp-for="CandidateId" class="form-label">
-                            <span style="color:red;">*</span> Candidate Name
-                        </label>
-                        @Html.DropDownListFor(model => model.CandidateId, (SelectList)ViewBag.candidateList, "Select a Name", new { @class = "form-control custom-dropdown", id = "CandidateId", data_selectize = "true" })
-                        <span id="candidateIdError" class="text-danger"></span>
-                        <span asp-validation-for="CandidateId" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <!-- Level -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label asp-for="PositionId" class="form-label">
-                            <span style="color:red;">*</span> Level
-                        </label>
-                        @Html.DropDownListFor(model => model.PositionId, (SelectList)ViewBag.positionList, "Select a Position", new { @class = "form-control custom-dropdown", id = "PositionId", data_selectize = "true" })
-                        <span id="positionIdError" class="text-danger"></span>
-                        <span asp-validation-for="PositionId" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <!-- Track -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label asp-for="TrackId" class="form-label">
-                            <span style="color:red;">*</span> Track
-                        </label>
-                        <select asp-for="TrackId" asp-items="@(ViewBag.Tracks)" class="form-control custom-dropdown" id="TrackId" data-selectize="true">
-                            <option value="">-- Select a track --</option>
-                        </select>
-                        <span id="trackIdError" class="text-danger"></span>
-                        <span asp-validation-for="TrackId" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <!-- Interviewers Section with Background Image -->
-                <div class="card mb-4 interview-section">
-                    <h5 class="card-title" style="margin-top:10px;">First Interview</h5>
-
-                    <!-- First Interviewer -->
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label asp-for="InterviewerId" class="form-label">
-                                <span style="color:red;">*</span> Interviewer #1
-                            </label>
-                            <select asp-for="InterviewerId" asp-items="@(ViewBag.interviewersList)" class="form-control custom-dropdown" id="InterviewerId" data-selectize="true">
-                                <option value="">-- Select an Interviewer --</option>
-                            </select>
-                            <span id="interviewerIdError" class="text-danger">Please select an interviewer.</span>
-                            <span id="interviewerIdDuplicateError" class="text-danger" style="display: none;">This interviewer is already selected as Interviewer #2.</span>
-                            <span asp-validation-for="InterviewerId" class="text-danger"></span>
-                        </div>
-                    </div>
-
-                    <!-- Second Interviewer (Optional) -->
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label asp-for="SecondInterviewerId" class="form-label">Interviewer #2 (optional)</label>
-                            <select asp-for="SecondInterviewerId" asp-items="@(ViewBag.interviewersList)" class="form-control custom-dropdown" id="SecondInterviewerId" data-selectize="true">
-                                <option value="">-- Select Second Interviewer --</option>
-                            </select>
-                            <span id="secondInterviewerIdError" class="text-danger" style="display: none;">This interviewer is already selected as Interviewer #1.</span>
-                            <span asp-validation-for="SecondInterviewerId" class="text-danger"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Architecture Interviewer (Optional) -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label asp-for="ArchitectureInterviewerId" class="form-label">Architecture Interviewer (optional)</label>
-                        <select asp-for="ArchitectureInterviewerId" asp-items="@(ViewBag.architecturesList)" class="form-control" id="ArchitectureInterviewerId">
-                            <option value="">-- Select Architecture Interviewer --</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Start from HR Checkbox -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" asp-for="StartFromHR" id="StartFromHR" />
-                            <label class="form-check-label" for="StartFromHR">
-                                Start from HR
-                            </label>
-                        </div>
-                        <small class="form-text text-muted">
-                            If checked, HR will conduct the initial interview, followed by other interviewers and then GM.
-                        </small>
-                    </div>
-                </div>
-
-                <!-- Date -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label asp-for="Date" class="form-label">
-                            <span style="color:red;">*</span> Date
-                        </label>
-                        <input asp-for="Date" onclick="this.showPicker()" class="form-control custom-dropdown" id="Date" />
-                        <span id="dateValidationMessage" class="text-danger">Please select a date.</span>
-                        <span asp-validation-for="Date" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <input asp-for="AttachmentId" hidden />
-
-                <!-- Submit Button -->
-                <div class="d-flex justify-content-between mt-4">
-                    <button type="submit" class="btn btn-success px-4">Submit</button>
-                    <a class="btn btn-secondary" asp-action="Index" asp-route-statusFilter="@ViewBag.statusFilter"
-                       asp-route-candidateFilter="@ViewBag.candidateFilter"
-                       asp-route-trackFilter="@ViewBag.trackFilter"
-                       asp-route-pageNumber="@ViewBag.PageNumber"
-                       asp-route-pageSize="@ViewBag.PageSize">Back to List</a>
-                </div>
-            </form>
+        <div class="tps-ihead__actions">
+            <a class="btn btn-secondary" asp-action="Details" asp-route-id="@Model.InterviewsId"><i class="ri-file-list-3-line me-1"></i> View details</a>
         </div>
     </div>
-</div>
+
+    <div class="row">
+        <div class="col-xl-8">
+
+            @* ---------- 1. Candidate & role ---------- *@
+            <section class="card tps-fsection" aria-labelledby="sec-candidate">
+                <div class="card-header">
+                    <span class="tps-fsection__icon"><i class="ri-user-star-line"></i></span>
+                    <div>
+                        <h4 class="tps-fsection__title" id="sec-candidate">Candidate &amp; role</h4>
+                        <p class="tps-fsection__desc">Who is being interviewed, and for which level and track.</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tps-fgrid">
+                        <div class="tps-field tps-span-all">
+                            <label asp-for="CandidateId" class="form-label">Candidate <span class="tps-req">*</span></label>
+                            @Html.DropDownListFor(model => model.CandidateId, (SelectList)ViewBag.candidateList, "Search for a candidate…", new { @class = "form-select", id = "CandidateId", data_searchable = "" })
+                            <span id="candidateIdError" class="tps-field-error"></span>
+                            <span asp-validation-for="CandidateId" class="text-danger"></span>
+                        </div>
+
+                        <div class="tps-field">
+                            <label asp-for="PositionId" class="form-label">Level <span class="tps-req">*</span></label>
+                            @Html.DropDownListFor(model => model.PositionId, (SelectList)ViewBag.positionList, "Select a level…", new { @class = "form-select", id = "PositionId", data_searchable = "" })
+                            <span id="positionIdError" class="tps-field-error"></span>
+                            <span asp-validation-for="PositionId" class="text-danger"></span>
+                        </div>
+
+                        <div class="tps-field">
+                            <label asp-for="TrackId" class="form-label">Track <span class="tps-req">*</span></label>
+                            <select asp-for="TrackId" asp-items="@(ViewBag.Tracks)" class="form-select" id="TrackId" data-searchable>
+                                <option value="">Select a track…</option>
+                            </select>
+                            <span id="trackIdError" class="tps-field-error"></span>
+                            <span asp-validation-for="TrackId" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            @* ---------- 2. Interview panel ---------- *@
+            <section class="card tps-fsection" aria-labelledby="sec-panel">
+                <div class="card-header">
+                    <span class="tps-fsection__icon"><i class="ri-team-line"></i></span>
+                    <div>
+                        <h4 class="tps-fsection__title" id="sec-panel">Interview panel</h4>
+                        <p class="tps-fsection__desc">The interviewers who will run the first interview and submit its result.</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tps-fgrid">
+                        <div class="tps-field">
+                            <label asp-for="InterviewerId" class="form-label">Interviewer 1 <span class="tps-req">*</span></label>
+                            <select asp-for="InterviewerId" asp-items="@(ViewBag.interviewersList)" class="form-select" id="InterviewerId" data-searchable>
+                                <option value="">Search for an interviewer…</option>
+                            </select>
+                            <span id="interviewerIdError" class="tps-field-error">Select the first interviewer.</span>
+                            <span id="interviewerIdDuplicateError" class="tps-field-error" style="display: none;">This person is already Interviewer 2.</span>
+                            <span asp-validation-for="InterviewerId" class="text-danger"></span>
+                        </div>
+
+                        <div class="tps-field">
+                            <label asp-for="SecondInterviewerId" class="form-label">Interviewer 2 <span class="text-muted fw-normal">(optional)</span></label>
+                            <select asp-for="SecondInterviewerId" asp-items="@(ViewBag.interviewersList)" class="form-select" id="SecondInterviewerId" data-searchable>
+                                <option value="">No second interviewer</option>
+                            </select>
+                            <span id="secondInterviewerIdError" class="tps-field-error" style="display: none;">This person is already Interviewer 1.</span>
+                            <span asp-validation-for="SecondInterviewerId" class="text-danger"></span>
+                        </div>
+
+                        <div class="tps-field tps-span-all">
+                            <label asp-for="ArchitectureInterviewerId" class="form-label">Architecture interviewer <span class="text-muted fw-normal">(optional)</span></label>
+                            <select asp-for="ArchitectureInterviewerId" asp-items="@(ViewBag.architecturesList)" class="form-select" id="ArchitectureInterviewerId">
+                                <option value="">No architecture review</option>
+                            </select>
+                            <div class="tps-hint" id="architectureHint">Not available when a General Manager is on the panel.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            @* ---------- 3. Schedule & workflow ---------- *@
+            <section class="card tps-fsection" aria-labelledby="sec-schedule">
+                <div class="card-header">
+                    <span class="tps-fsection__icon"><i class="ri-calendar-event-line"></i></span>
+                    <div>
+                        <h4 class="tps-fsection__title" id="sec-schedule">Schedule &amp; workflow</h4>
+                        <p class="tps-fsection__desc">When the interview happens and which stages follow it.</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tps-fgrid">
+                        <div class="tps-field">
+                            <label asp-for="Date" class="form-label">Date and time <span class="tps-req">*</span></label>
+                            <input asp-for="Date" onclick="this.showPicker()" class="form-control" id="Date" />
+                            <span id="dateValidationMessage" class="tps-field-error">Choose the interview date and time.</span>
+                            <span asp-validation-for="Date" class="text-danger"></span>
+                        </div>
+
+                        <div class="tps-span-all">
+                            <label class="tps-switch-card form-switch" for="StartFromHR">
+                                <input class="form-check-input" type="checkbox" asp-for="StartFromHR" id="StartFromHR" role="switch" />
+                                <span>
+                                    <span class="tps-switch-card__title">Start the workflow with HR</span>
+                                    <span class="tps-switch-card__desc d-block">HR interviews first, then the interviewers, and the General Manager reviews last.</span>
+                                    <span class="tps-flow" id="flowPreview" aria-live="polite"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        @* ---------- Live summary ---------- *@
+        <div class="col-xl-4">
+            <aside class="card tps-aside" aria-label="Interview summary">
+                <div class="card-header">
+                    <h4 class="card-title">Summary</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="tps-summary">
+                        <li><i class="ri-user-star-line"></i><div><div class="tps-summary__label">Candidate</div><div class="tps-summary__value" data-summary="candidate">Not selected</div></div></li>
+                        <li><i class="ri-briefcase-4-line"></i><div><div class="tps-summary__label">Level · Track</div><div class="tps-summary__value" data-summary="level-track">Not selected</div></div></li>
+                        <li><i class="ri-team-line"></i><div><div class="tps-summary__label">Panel</div><div class="tps-summary__value" data-summary="panel">Not selected</div></div></li>
+                        <li><i class="ri-calendar-event-line"></i><div><div class="tps-summary__label">When</div><div class="tps-summary__value" data-summary="date">Not set</div></div></li>
+                    </ul>
+                    <hr />
+                    <p class="text-muted fs-13 mb-0"><i class="ri-information-line me-1"></i> Changes apply to this interview step only.</p>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <div class="tps-factions">
+        <span class="tps-factions__note"><i class="ri-information-line"></i> Fields marked <span class="tps-req">*</span> are required.</span>
+        <div class="tps-factions__buttons">
+            <a class="btn btn-secondary" asp-action="Index" asp-route-statusFilter="@ViewBag.statusFilter"
+               asp-route-candidateFilter="@ViewBag.candidateFilter"
+               asp-route-trackFilter="@ViewBag.trackFilter"
+               asp-route-pageNumber="@ViewBag.PageNumber"
+               asp-route-pageSize="@ViewBag.PageSize">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4"><i class="ri-save-line me-1"></i> Save changes</button>
+        </div>
+    </div>
+</form>
 
 <script>
-        $(document).ready(function () {
-        // Apply Selectize.js to all dropdowns
-        $('[data-selectize="true"]').selectize({
-            allowEmptyOption: false,
-            searchField: 'text',
-            placeholder: "Start typing to search...",
-            selectOnTab: true,
-        });
-
-        // Check for server-side validation errors on page load and show them
-        // ASP.NET Core renders validation errors in spans with class "field-validation-error"
+    $(document).ready(function () {
+        // Show duplicate-interviewer errors returned by the server
         var interviewer1ErrorSpan = $('span[data-valmsg-for="InterviewerId"].field-validation-error');
         var interviewer2ErrorSpan = $('span[data-valmsg-for="SecondInterviewerId"].field-validation-error');
-        
-        // Get error text from any found error spans
+
         var interviewer1Error = interviewer1ErrorSpan.text();
         var interviewer2Error = interviewer2ErrorSpan.text();
-        
+
         if (interviewer1Error && interviewer1Error.includes('Interviewer #2')) {
             $('#interviewerIdDuplicateError').text(interviewer1Error.trim()).show();
         }
@@ -274,10 +213,8 @@
         function validateInterviewerSelection(changedField) {
             var interviewer1 = $('#InterviewerId').val();
             var interviewer2 = $('#SecondInterviewerId').val();
-            
-            // If both are selected and they're the same
+
             if (interviewer1 && interviewer2 && interviewer1 === interviewer2) {
-                // Show error under the field that was just changed
                 if (changedField === 'InterviewerId') {
                     $('#interviewerIdDuplicateError').show();
                     $('#secondInterviewerIdError').hide();
@@ -285,154 +222,166 @@
                     $('#secondInterviewerIdError').show();
                     $('#interviewerIdDuplicateError').hide();
                 } else {
-                    // If called from form submission, show error under Interviewer #2 by default
                     $('#secondInterviewerIdError').show();
                     $('#interviewerIdDuplicateError').hide();
                 }
                 return false;
             } else {
-                // Clear both error messages only when they're different or one is empty
                 $('#secondInterviewerIdError').hide();
                 $('#interviewerIdDuplicateError').hide();
                 return true;
             }
         }
 
-        // Function to check if GM is selected and disable Architecture Interviewer field
+        // When a General Manager is on the panel, the architecture interviewer is not used
         function checkAndDisableArchitectureInterviewer() {
             var gmUserIds = @Html.Raw(Json.Serialize(ViewBag.GMUserIds ?? new List<string>()));
             var interviewer1 = $('#InterviewerId').val();
             var interviewer2 = $('#SecondInterviewerId').val();
             var architectureField = $('#ArchitectureInterviewerId');
-            var architectureSelectize = architectureField[0] && architectureField[0].selectize;
 
-            // Check if either interviewer is a GM
             var isGMSelected = (interviewer1 && gmUserIds.includes(interviewer1)) ||
-                              (interviewer2 && gmUserIds.includes(interviewer2));
+                               (interviewer2 && gmUserIds.includes(interviewer2));
 
             if (isGMSelected) {
-                if (architectureSelectize) {
-                    architectureSelectize.clear();
-                    architectureSelectize.disable();
-                } else {
-                    architectureField.prop('disabled', true);
-                    architectureField.val('');
-                }
-            } else if (architectureSelectize) {
-                architectureSelectize.enable();
+                architectureField.prop('disabled', true);
+                architectureField.val('');
             } else {
                 architectureField.prop('disabled', false);
             }
+            $('#architectureHint').toggleClass('text-warning', !!isGMSelected);
         }
 
-        function bindInterviewerChangeHandler(selector, changedField) {
-            var element = $(selector)[0];
-            if (element && element.selectize) {
-                element.selectize.on('change', function () {
-                    validateInterviewerSelection(changedField);
-                    checkAndDisableArchitectureInterviewer();
-                });
-            } else {
-                $(document).on('change', selector, function () {
-                    validateInterviewerSelection(changedField);
-                    checkAndDisableArchitectureInterviewer();
-                });
-            }
-        }
-
-        bindInterviewerChangeHandler('#InterviewerId', 'InterviewerId');
-        bindInterviewerChangeHandler('#SecondInterviewerId', 'SecondInterviewerId');
+        $(document).on('change', '#InterviewerId', function () {
+            validateInterviewerSelection('InterviewerId');
+            checkAndDisableArchitectureInterviewer();
+        });
+        $(document).on('change', '#SecondInterviewerId', function () {
+            validateInterviewerSelection('SecondInterviewerId');
+            checkAndDisableArchitectureInterviewer();
+        });
 
         checkAndDisableArchitectureInterviewer();
 
+        // ---------- Live summary and workflow preview ----------
+        function selectedText(selector) {
+            var el = $(selector)[0];
+            return el && el.value ? el.options[el.selectedIndex].text : '';
+        }
+
+        function setSummary(key, text) {
+            var el = document.querySelector('[data-summary="' + key + '"]');
+            if (!el) return;
+            el.textContent = text || (key === 'date' ? 'Not set' : 'Not selected');
+            el.classList.toggle('is-empty', !text);
+        }
+
+        function formatDate(value) {
+            if (!value) return '';
+            var d = new Date(value);
+            return isNaN(d.getTime()) ? value : d.toLocaleString(undefined, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function renderFlow() {
+            var steps = $('#StartFromHR').is(':checked')
+                ? ['HR', 'Interviewers', 'General Manager']
+                : ['Interviewers', 'Management review', 'Decision'];
+            document.getElementById('flowPreview').innerHTML =
+                steps.map(function (s) { return '<span>' + s + '</span>'; }).join('<i class="ri-arrow-right-s-line"></i>');
+        }
+
+        function updateSummary() {
+            var candidate = selectedText('#CandidateId');
+            setSummary('candidate', candidate);
+            if (candidate) $('[data-summary-title]').text(candidate);
+            setSummary('level-track', [selectedText('#PositionId'), selectedText('#TrackId')].filter(Boolean).join(' · '));
+            var panel = [selectedText('#InterviewerId'), selectedText('#SecondInterviewerId')].filter(Boolean);
+            var arch = selectedText('#ArchitectureInterviewerId');
+            setSummary('panel', panel.join(' & ') + (arch ? ' + ' + arch + ' (architecture)' : ''));
+            setSummary('date', formatDate($('#Date').val()));
+            renderFlow();
+        }
+
+        $('#editForm').on('change input', 'select, input', updateSummary);
+        updateSummary();
+
+        // ---------- Submit ----------
         $('#editForm').submit(function (e) {
-            e.preventDefault(); // Prevent form submission
+            e.preventDefault();
 
             var isValid = true;
 
-            // Get values from the form
             var candidateId = $('#CandidateId').val();
             var positionId = $('#PositionId').val();
             var trackId = $('#TrackId').val();
             var interviewerId = $('#InterviewerId').val();
             var date = $('#Date').val();
 
-            // Validate Candidate
             if (!candidateId) {
-                $('#candidateIdError').text('Candidate is required.').show();
+                $('#candidateIdError').text('Select the candidate.').show();
                 isValid = false;
             } else {
                 $('#candidateIdError').hide();
             }
 
-            // Validate Position
             if (!positionId) {
-                $('#positionIdError').text('Level is required.').show();
+                $('#positionIdError').text('Select the level.').show();
                 isValid = false;
             } else {
                 $('#positionIdError').hide();
             }
 
-            // Validate Track
             if (!trackId) {
-                $('#trackIdError').text('Track is required.').show();
+                $('#trackIdError').text('Select the track.').show();
                 isValid = false;
             } else {
                 $('#trackIdError').hide();
             }
 
-            // Validate Interviewer
             if (!interviewerId) {
-                $('#interviewerIdError').text('First Interviewer is required.').show();
+                $('#interviewerIdError').text('Select the first interviewer.').show();
                 isValid = false;
             } else {
                 $('#interviewerIdError').hide();
             }
 
-            // Validate that Interviewer #1 and #2 are not the same
             var interviewer1 = $('#InterviewerId').val();
             var interviewer2 = $('#SecondInterviewerId').val();
-            
+
             if (interviewer1 && interviewer2 && interviewer1 === interviewer2) {
-                // Show error and prevent submission - error will persist until user changes selection
                 validateInterviewerSelection('');
                 isValid = false;
             } else {
-                // Clear errors if they're different
                 $('#secondInterviewerIdError').hide();
                 $('#interviewerIdDuplicateError').hide();
             }
 
-            // Validate Date
             if (!date) {
-                $('#dateValidationMessage').text('Date is required.').show();
+                $('#dateValidationMessage').text('Choose the interview date and time.').show();
                 isValid = false;
             } else {
                 $('#dateValidationMessage').hide();
             }
 
-            // If validation fails, don't proceed - keep error messages visible
             if (!isValid) {
+                var firstError = $('.tps-field-error:visible').first();
+                if (firstError.length) firstError[0].closest('.tps-field').scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return false;
             }
 
-            if (isValid) {
-                Swal.fire({
-                    title: 'Are you sure?',
-                    text: 'Do you want to submit the changes?',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: 'Yes, submit it!',
-                    cancelButtonText: 'No, cancel!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // If the user clicks "Yes", proceed with form submission
-                        $('#editForm')[0].submit();
-                    }
-                });
-            }
+            Swal.fire({
+                title: 'Save changes to this interview?',
+                text: 'The interview will be updated with the details you entered.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Save changes',
+                cancelButtonText: 'Back',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#editForm')[0].submit();
+                }
+            });
         });
     });
 </script>

@@ -25,6 +25,14 @@ public class InterviewsDTO
     public string modifiedBy { set; get; }
     public DateTime ModifiedOn { set; get; }
 
+    /// <summary>Set only when the result was submitted through a delegation: the delegate who submitted it.</summary>
+    public string ResultSubmittedByName { get; set; }
+
+    /// <summary>Set only when the result was submitted through a delegation: the interviewer the delegate acted for.</summary>
+    public string ResultSubmittedForName { get; set; }
+
+    public DateTime? ResultSubmittedOn { get; set; }
+
     public string PositionName { get; set; }
 
     [Required(ErrorMessage = "Please select a Candidate.")]

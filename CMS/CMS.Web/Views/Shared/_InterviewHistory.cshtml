@@ -1,0 +1,230 @@
+@model IEnumerable<CMS.Application.DTOs.InterviewsDTO>
+@*
+    Interview history timeline, shared by Interviews/ShowHistory, Interviews/ShowHistoryForHRFirstFlow
+    and the SearchInterviews equivalents. The parent view sets:
+      ViewData["HistoryChronological"]  bool  - true when Model is already oldest-first (HR-first flow)
+      ViewData["HistoryBack"]           IDictionary<string,string> route values incl. "action"/"controller"
+      ViewData["HistoryFlowLabel"]      string - e.g. "HR-first flow"
+*@
+@{
+    var steps = (Model ?? Enumerable.Empty<CMS.Application.DTOs.InterviewsDTO>()).Where(s => s != null).ToList();
+    bool chronological = ViewData["HistoryChronological"] as bool? ?? false;
+    if (!chronological)
+    {
+        // ShowHistory walks from the current interview up to the first one: show oldest first
+        steps.Reverse();
+    }
+
+    var back = ViewData["HistoryBack"] as IDictionary<string, string> ?? new Dictionary<string, string> { ["action"] = "MyInterviews" };
+    string backAction = back.TryGetValue("action", out var a) ? a : "MyInterviews";
+    string backController = back.TryGetValue("controller", out var c) ? c : null;
+    var backRoute = back.Where(kv => kv.Key != "action" && kv.Key != "controller" && !string.IsNullOrEmpty(kv.Value))
+                        .ToDictionary(kv => kv.Key, kv => kv.Value);
+
+    string candidateName = ViewBag.CandidateName as string ?? steps.FirstOrDefault()?.FullName ?? "Candidate";
+    var latest = steps.LastOrDefault();
+    string company = steps.Select(s => s.CompanyName).FirstOrDefault(n => !string.IsNullOrEmpty(n));
+    string flowLabel = ViewData["HistoryFlowLabel"] as string;
+
+    bool isAdminOrHr = User.IsInRole("Admin") || User.IsInRole("HR Manager");
+    bool isManagement = isAdminOrHr || User.IsInRole("General Manager");
+
+    // Same visibility rules as the Details page: HR notes for Admin/HR, GM notes for Admin/HR/GM.
+    bool IsRestricted(CMS.Application.DTOs.InterviewsDTO s) =>
+        (s.InterviewerRole == "HR Manager" && !isAdminOrHr)
+        || (s.InterviewerRole == "General Manager" && !isManagement);
+
+    string StepIcon(string status) => InterviewStatusUi.Resolve(status) switch
+    {
+        InterviewStatusUi.Kind.Approved => "ri-checkbox-circle-line",
+        InterviewStatusUi.Kind.Rejected => "ri-close-circle-line",
+        InterviewStatusUi.Kind.OnHold => "ri-pause-circle-line",
+        InterviewStatusUi.Kind.Pending => "ri-time-line",
+        _ => "ri-record-circle-line"
+    };
+
+    string StepTitle(CMS.Application.DTOs.InterviewsDTO s, int index)
+    {
+        if (!string.IsNullOrWhiteSpace(s.StageName)) return s.StageName;
+        return s.InterviewerRole switch
+        {
+            "HR Manager" => "HR interview",
+            "General Manager" => "Management review",
+            "Solution Architecture" => "Architecture review",
+            _ => index == 0 ? "First interview" : $"Interview step {index + 1}"
+        };
+    }
+
+    string Initials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(new[] { ' ', '.', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 1 ? parts[0].Substring(0, Math.Min(2, parts[0].Length)) : $"{parts[0][0]}{parts[1][0]}";
+    }
+}
+
+<div class="tps-ihead">
+    <div class="tps-ihead__who">
+        <span class="tps-ihead__avatar" aria-hidden="true">@Initials(candidateName)</span>
+        <div>
+            <p class="tps-ihead__eyebrow">Interview history@(string.IsNullOrEmpty(flowLabel) ? "" : $" · {flowLabel}")</p>
+            <h2 class="tps-ihead__name" dir="auto">@candidateName</h2>
+            <div class="tps-ihead__meta">
+                @if (latest != null)
+                {
+                    <span class="tps-chip">Current status</span>
+                    @InterviewStatusUi.Badge(latest.StatusName)
+                }
+                <span class="tps-chip"><i class="ri-git-commit-line"></i>@steps.Count @(steps.Count == 1 ? "step" : "steps")</span>
+                @if (!string.IsNullOrEmpty(latest?.Name))
+                {
+                    <span class="tps-chip"><i class="ri-briefcase-4-line"></i>@latest.Name</span>
+                }
+                @if (!string.IsNullOrEmpty(latest?.TrackName))
+                {
+                    <span class="tps-chip"><i class="ri-git-branch-line"></i>@latest.TrackName</span>
+                }
+                @if (!string.IsNullOrEmpty(company))
+                {
+                    <span class="tps-chip"><i class="ri-building-2-line"></i>@company</span>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="tps-ihead__actions">
+        <a class="btn btn-secondary" asp-action="@backAction" asp-controller="@backController" asp-all-route-data="backRoute">
+            <i class="ri-arrow-left-line me-1"></i> Back to list
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="tps-section-title">
+            <div>
+                <h4 class="card-title">What happened</h4>
+                <p>Each step of the interview process, oldest first, with who handled it and the result.</p>
+            </div>
+            @InterviewStatusUi.Legend()
+        </div>
+    </div>
+    <div class="card-body">
+        @if (steps.Count == 0)
+        {
+            <div class="text-center text-muted py-5">
+                <i class="ri-history-line fs-24 d-block mb-2"></i>
+                No interview history is available for this candidate.
+            </div>
+        }
+        else
+        {
+            <ol class="tps-timeline">
+                @for (int i = 0; i < steps.Count; i++)
+                {
+                    var s = steps[i];
+                    var kind = InterviewStatusUi.Key(s.StatusName);
+                    bool decided = InterviewStatusUi.Resolve(s.StatusName) != InterviewStatusUi.Kind.Pending;
+                    bool restricted = IsRestricted(s);
+                    bool hasSecond = !string.IsNullOrEmpty(s.SecondInterviewerName) && s.SecondInterviewerName != "User not found";
+
+                    <li class="tps-timeline__item tps-timeline__item--@kind">
+                        <span class="tps-timeline__dot" aria-hidden="true"><i class="@StepIcon(s.StatusName)"></i></span>
+                        <article class="tps-step-card" aria-label="@StepTitle(s, i)">
+                            <header class="tps-step-card__head">
+                                <div>
+                                    <div class="tps-step-card__title">@StepTitle(s, i)</div>
+                                    <div class="tps-step-card__sub">
+                                        Scheduled for @s.Date.ToString("ddd, dd MMM yyyy, h:mm tt")
+                                        @if (!string.IsNullOrEmpty(s.InterviewerRole) && s.InterviewerRole != "User not found")
+                                        {
+                                            <text> · @s.InterviewerRole</text>
+                                        }
+                                    </div>
+                                </div>
+                                @InterviewStatusUi.Badge(s.StatusName)
+                            </header>
+
+                            <div class="tps-step-card__body">
+                                <div class="tps-metrics">
+                                    <div class="tps-metric">
+                                        <div class="tps-metric__label">Interviewer@(hasSecond ? "s" : "")</div>
+                                        <div class="tps-metric__value">
+                                            @(s.InterviewerName ?? "—")@if (hasSecond)
+                                            {
+                                                <text> &amp; @s.SecondInterviewerName</text>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="tps-metric">
+                                        <div class="tps-metric__label">Score</div>
+                                        <div class="tps-metric__value @(s.Score.HasValue ? "" : "is-empty")">@(s.Score.HasValue ? $"{s.Score} / 5" : "No score")</div>
+                                    </div>
+                                    @if (!restricted)
+                                    {
+                                        <div class="tps-metric">
+                                            <div class="tps-metric__label">Actual experience</div>
+                                            <div class="tps-metric__value @(s.ActualExperience.HasValue ? "" : "is-empty")">@(s.ActualExperience.HasValue ? $"{s.ActualExperience} years" : "Not recorded")</div>
+                                        </div>
+                                    }
+                                    <div class="tps-metric">
+                                        <div class="tps-metric__label">@(decided ? "Result submitted" : "Result")</div>
+                                        @if (decided && !string.IsNullOrEmpty(s.ResultSubmittedForName))
+                                        {
+                                            @* Submitted by a delegate: show the delegate and who they acted for *@
+                                            <div class="tps-metric__value">
+                                                @s.ResultSubmittedByName
+                                                <div class="text-muted fs-12 fw-normal">
+                                                    Delegate for @s.ResultSubmittedForName@(s.ResultSubmittedOn.HasValue ? $" · {s.ResultSubmittedOn.Value:dd MMM yyyy, h:mm tt}" : "")
+                                                </div>
+                                            </div>
+                                        }
+                                        else if (decided && !string.IsNullOrEmpty(s.modifiedBy))
+                                        {
+                                            <div class="tps-metric__value">
+                                                @s.modifiedBy
+                                                <div class="text-muted fs-12 fw-normal">@s.ModifiedOn.ToString("dd MMM yyyy, h:mm tt")</div>
+                                            </div>
+                                        }
+                                        else if (decided)
+                                        {
+                                            <div class="tps-metric__value">Recorded</div>
+                                        }
+                                        else
+                                        {
+                                            <div class="tps-metric__value is-empty">Awaiting result</div>
+                                        }
+                                    </div>
+                                </div>
+
+                                @if (restricted)
+                                {
+                                    <div class="tps-step-restricted">
+                                        <i class="ri-lock-line"></i> Notes and evaluation for this step are visible to HR and management only.
+                                    </div>
+                                }
+                                else
+                                {
+                                    @if (!string.IsNullOrEmpty(s.Notes))
+                                    {
+                                        <div class="tps-step-notes">
+                                            <div class="tps-metric__label mb-1">Notes</div>
+                                            @await Html.PartialAsync("_NotesContent", new { Content = s.Notes, MaxLength = 160 })
+                                        </div>
+                                    }
+                                    @if (s.AttachmentId != null)
+                                    {
+                                        <div>
+                                            <a class="btn btn-outline-primary btn-sm" asp-controller="Attachments" asp-action="Download" asp-route-id="@s.AttachmentId">
+                                                <i class="ri-file-download-line me-1"></i> Download evaluation
+                                            </a>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </article>
+                    </li>
+                }
+            </ol>
+        }
+    </div>
+</div>

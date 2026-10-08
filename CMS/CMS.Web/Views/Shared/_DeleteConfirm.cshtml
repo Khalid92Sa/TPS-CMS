@@ -1,0 +1,59 @@
+@*
+    Confirmation for every Delete page. Put data-tps-delete on the Delete button inside the form:
+      data-confirm-title   dialog title              (default "Delete this record?")
+      data-confirm-text    dialog text               (default "This can't be undone.")
+      data-confirm-label   confirm button label      (default "Delete")
+    Optional AJAX mode (used by Tracks): the form is POSTed with fetch and the anti-forgery header,
+    then the user is sent to data-redirect after a success message:
+      data-ajax="true" data-redirect="/tracks/index" data-success-text="…"
+*@
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    (function () {
+        document.querySelectorAll('[data-tps-delete]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var form = button.closest('form');
+                if (!form) return;
+
+                Swal.fire({
+                    title: button.getAttribute('data-confirm-title') || 'Delete this record?',
+                    text: button.getAttribute('data-confirm-text') || 'This can\'t be undone.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: button.getAttribute('data-confirm-label') || 'Delete',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true,
+                    focusCancel: true,
+                    customClass: { confirmButton: 'tps-swal-danger' }
+                }).then(function (result) {
+                    if (!result.isConfirmed) return;
+
+                    if (button.getAttribute('data-ajax') !== 'true') {
+                        form.submit();
+                        return;
+                    }
+
+                    var token = form.querySelector('input[name="__RequestVerificationToken"]');
+                    button.disabled = true;
+                    fetch(form.action, {
+                        method: 'POST',
+                        headers: token ? { 'RequestVerificationToken': token.value } : {}
+                    }).then(function (response) {
+                        if (!response.ok) throw new Error(response.status);
+                        return Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted',
+                            text: button.getAttribute('data-success-text') || 'The record was deleted.',
+                            confirmButtonText: 'OK'
+                        }).then(function () {
+                            window.location.href = button.getAttribute('data-redirect') || '/';
+                        });
+                    }).catch(function () {
+                        button.disabled = false;
+                        Swal.fire({ icon: 'error', title: 'Couldn\'t delete', text: 'Something went wrong. Try again.', confirmButtonText: 'OK' });
+                    });
+                });
+            });
+        });
+    })();
+</script>

@@ -1,39 +1,51 @@
-﻿@model IEnumerable<CMS.Application.DTOs.NotificationsDTO>
+@model IEnumerable<CMS.Application.DTOs.NotificationsDTO>
 
 @{
     ViewData["Title"] = "Notifications";
+    var items = Model ?? Enumerable.Empty<CMS.Application.DTOs.NotificationsDTO>();
+    var unread = items.Where(n => !n.IsRead).Reverse().ToList();
+    var read = items.Where(n => n.IsRead).Reverse().ToList();
 }
 
-<div class="row">
-    <div class="col-lg-12">
-        <div class="card">
-            <div class="card-body">
-                <table id="add-rows" class="table table-nowrap dt-responsive table-bordered display" style="width:100%">
-                    <thead>
-                        <tr>
-                            <th>
-                                @Html.DisplayNameFor(model => model.Title)
-                            </th>
-                            <th>Sent Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var notification in Model.Reverse())
-                        {
-                            <tr>
-                                <td>
-                                    <a href="@Url.Action("Details", "Notifications", new { id = notification.NotificationsId })">
-                                        <span style="@(notification.IsRead ? "color: blue;" : "font-weight: bold; color: black;")">
-                                            @Html.Raw(notification.Title)
-                                        </span>
-                                    </a>
-                                </td>
-                                <td>@notification.SendDate</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+<div class="tps-ihead">
+    <div class="tps-ihead__who">
+        <span class="tps-ihead__avatar tps-ihead__avatar--icon" aria-hidden="true"><i class="ri-notification-3-line"></i></span>
+        <div>
+            <p class="tps-ihead__eyebrow">Inbox</p>
+            <h2 class="tps-ihead__name">Notifications</h2>
+            <div class="tps-ihead__meta">
+                <span class="tps-chip"><i class="ri-mail-unread-line"></i>@unread.Count unread</span>
+                <span class="tps-chip"><i class="ri-mail-open-line"></i>@read.Count read</span>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="tps-section-title">
+            <div>
+                <h4 class="card-title">Unread</h4>
+                <p>Newest first.</p>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="tps-notices">
+            @{ ViewData["NoticesRead"] = false; }
+            @await Html.PartialAsync("_NotificationRows", unread)
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title">Read</h4>
+    </div>
+    <div class="card-body">
+        <div class="tps-notices">
+            @{ ViewData["NoticesRead"] = true; }
+            @await Html.PartialAsync("_NotificationRows", read)
         </div>
     </div>
 </div>

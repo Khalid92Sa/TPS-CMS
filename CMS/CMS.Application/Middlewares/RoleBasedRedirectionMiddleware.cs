@@ -67,7 +67,10 @@ namespace CMS.Application.Middlewares
                     }
                 }
 
-                if (!context.User.Identity.IsAuthenticated && !currentPath.Contains("/users/login"))
+                // The landing page ("/" and "/welcome") is public
+                bool isPublicLandingPage = currentPath == "/" || currentPath == "/welcome";
+
+                if (!context.User.Identity.IsAuthenticated && !currentPath.Contains("/users/login") && !isPublicLandingPage)
                 {
                     context.Response.Redirect("/users/login");
                     return;

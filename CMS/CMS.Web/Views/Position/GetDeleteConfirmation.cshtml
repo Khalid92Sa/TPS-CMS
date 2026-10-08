@@ -1,82 +1,65 @@
 ﻿@model CMS.Application.DTOs.PositionDTO
 
 @{
-    ViewData["Title"] = "Confirm Delete";
+    ViewData["Title"] = "Delete Position";
 }
 
-<!-- Page Container -->
-<div class="container my-5">
-    <div class="card shadow border-0 rounded-lg">
-        <div class="card-header text-dark text-center py-4 border-bottom" style="background: linear-gradient(135deg, #486fc7, #319ca7);">
-            <h4 class="mb-0" style="color:white;">Confirm Deletion</h4>
-        </div>
-
-        <div class="card-body px-4 py-5">
-            <div class="alert alert-light text-center shadow-sm border border-warning rounded-lg">
-                <h5 class="mb-3 text-danger">Are you sure you want to delete this position?</h5>
-                <p class="text-muted">This action cannot be undone. All associated child entities will also be deleted.</p>
-            </div>
-
-            <div class="row justify-content-center">
-                <div class="col-lg-8" style="margin-left:20%;">
-                    <!-- Position Name -->
-                    <dl class="row align-items-center mb-4">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Position Name:</dt>
-                        <dd class="col-sm-8">@Html.DisplayFor(model => model.Name)</dd>
-                    </dl>
-
-                    <!-- Evaluation Form -->
-                    <dl class="row align-items-center mb-4">
-                        <dt class="col-sm-4 text-right font-weight-bold text-secondary">Evaluation Form:</dt>
-                        <dd class="col-sm-8">
-                            @if (Model.EvaluationId != null)
-                            {
-                                <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.EvaluationId">
-                                    <i class="bx bxs-cloud-download" style="font-size: x-large;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Download Form"></i>
-                                </a>
-                            }
-                            else
-                            {
-                                <span class="text-muted">There is no evaluation form for this position.</span>
-                            }
-                        </dd>
-                    </dl>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="text-center mt-4">
-                    <form id="deleteForm" method="post" action="@Url.Action("DeletePosition", "Position", new { id = Model.Id })">
-                        <div class="d-flex justify-content-between mt-4">
-                            <button type="button" class="btn btn-danger px-4" onclick="showSwalConfirm()">Delete</button>
-                            <a class="btn btn-secondary" asp-action="GetPositions">Back to list</a>
-                        </div>
-                    </form>
-                </div>
+<div class="tps-ihead">
+    <div class="tps-ihead__who">
+        <span class="tps-ihead__avatar tps-ihead__avatar--danger" aria-hidden="true"><i class="ri-briefcase-4-line"></i></span>
+        <div>
+            <p class="tps-ihead__eyebrow">Delete position</p>
+            <h2 class="tps-ihead__name" dir="auto">@Model.Name</h2>
+            <div class="tps-ihead__meta">
+                <span class="tps-chip"><i class="ri-file-text-line"></i>@(Model.EvaluationId != null ? "Has evaluation template" : "No evaluation template")</span>
             </div>
         </div>
     </div>
 </div>
 
-<!-- SweetAlert2 Script -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    function showSwalConfirm() {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'This action will permanently delete the position and its data!',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#e3342f',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                document.getElementById('deleteForm').submit();
-            }
-        });
-    }
-</script>
+<div class="row justify-content-center">
+    <div class="col-xl-9">
+        <div class="tps-danger-note" role="note">
+            <i class="ri-error-warning-line"></i>
+            <div>All associated child entities will also be deleted.</div>
+        </div>
 
-<!-- Font Awesome for Icons -->
-<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+        <div class="card tps-delete-card">
+            <div class="card-header">
+                <i class="ri-delete-bin-6-line"></i>
+                <h4 class="card-title">What will be deleted</h4>
+            </div>
+            <div class="card-body">
+                <dl class="tps-dl">
+                <div>
+                    <dt>Position name</dt>
+                    <dd>@Model.Name</dd>
+                </div>
+                <div>
+                    <dt>Evaluation template</dt>
+                    <dd>@if (Model.EvaluationId != null)
+                        {
+                            <a asp-controller="Attachments" asp-action="Download" asp-route-id="@Model.EvaluationId"><i class="ri-file-download-line me-1"></i>Download template</a>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic fw-normal">No evaluation template</span>
+                        }</dd>
+                </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="deleteForm" method="post" action="@Url.Action("DeletePosition", "Position", new { id = Model.Id })">
+    <div class="tps-factions">
+        <span class="tps-factions__note"><i class="ri-information-line"></i> You'll be asked to confirm. This can't be undone.</span>
+        <div class="tps-factions__buttons">
+            <a class="btn btn-secondary" asp-action="GetPositions">Cancel</a>
+            <button type="button" class="btn btn-danger px-4" data-tps-delete data-confirm-title="Delete this position?" data-confirm-text="The position and its related data are deleted. This can't be undone."><i class="ri-delete-bin-6-line me-1"></i> Delete position</button>
+        </div>
+    </div>
+</form>
+
+@await Html.PartialAsync("_DeleteConfirm")

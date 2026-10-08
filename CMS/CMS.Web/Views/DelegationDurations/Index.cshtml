@@ -36,7 +36,7 @@
                             {
                                 <tr>
                                     <td>@item.Name</td>
-                                    <td>@item.Amount @item.Unit</td>
+                                    <td>@(item.IsUnlimited ? "Unlimited (no end date)" : $"{item.Amount} {item.Unit}")</td>
                                     <td>
                                         @if (item.IsActive)
                                         {
@@ -48,12 +48,19 @@
                                         }
                                     </td>
                                     <td>
-                                        <a class="bx bxs-edit-alt" style="font-size:x-large" asp-action="Edit" asp-route-id="@item.Id" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit"></a> |
-                                        <form asp-action="SetActive" asp-route-id="@item.Id" method="post" class="d-inline">
+                                        <a class="bx bxs-edit-alt" style="font-size:x-large" asp-action="Edit" asp-route-id="@item.Id" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit"></a>
+                                        <form asp-action="SetActive" asp-route-id="@item.Id" method="post" class="d-inline ms-2 align-middle">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="isActive" value="@(item.IsActive ? "false" : "true")" />
-                                            <button type="submit" class="btn btn-link p-0 border-0 align-baseline" data-bs-toggle="tooltip" data-bs-placement="bottom" title="@(item.IsActive ? "Disable" : "Enable")">
-                                                <i class="mdi @(item.IsActive ? "mdi-toggle-switch text-success" : "mdi-toggle-switch-off text-secondary")" style="font-size:x-large;"></i>
+                                            <button type="submit"
+                                                    class="tps-toggle @(item.IsActive ? "is-on" : null)"
+                                                    role="switch"
+                                                    aria-checked="@(item.IsActive ? "true" : "false")"
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-placement="bottom"
+                                                    title="@(item.IsActive ? "Disable" : "Enable")"
+                                                    aria-label="@(item.IsActive ? "Disable" : "Enable")">
+                                                <span class="tps-toggle__thumb"></span>
                                             </button>
                                         </form>
                                     </td>

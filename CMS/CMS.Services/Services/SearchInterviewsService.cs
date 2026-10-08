@@ -1,5 +1,6 @@
 ﻿using CMS.Application.DTOs;
 using CMS.Application.Extensions;
+using CMS.Application.Helpers;
 using CMS.Domain;
 using CMS.Domain.Entities;
 using CMS.Domain.Enums;
@@ -28,6 +29,7 @@ public class SearchInterviewsService : ISearchInterviewsService
     private readonly ICompanyService _companyService;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IAttachmentService _attachmentService;
+    private readonly IUserRepository _userRepository;
 
     public SearchInterviewsService(
         IInterviewsRepository interviewsRepository,
@@ -39,7 +41,8 @@ public class SearchInterviewsService : ISearchInterviewsService
         IHttpContextAccessor httpContextAccessor,
         IStatusRepository statusRepository,
         ApplicationDbContext Db,
-        ICompanyService companyService)
+        ICompanyService companyService,
+        IUserRepository userRepository)
     {
         _interviewsRepository = interviewsRepository;
         _candidateService = candidateService;
@@ -51,6 +54,7 @@ public class SearchInterviewsService : ISearchInterviewsService
         _statusRepository = statusRepository;
         _db = Db;
         _companyService = companyService;
+        _userRepository = userRepository;
     }
 
     public async Task<List<UsersDTO>> GetAllInterviewers()
@@ -161,44 +165,85 @@ public class SearchInterviewsService : ISearchInterviewsService
             if (interviews is null)
                 return Result<List<InterviewsDTO>>.Failure(null, "No career offers found");
 
-            List<InterviewsDTO> interviewsDTO = new List<InterviewsDTO>();
-            foreach (Interviews c in interviews)
-            {
-                string userName = await GetInterviewerName(c.InterviewerId);
-                string SeconduserName = await GetInterviewerName(c.SecondInterviewerId);
-
-                InterviewsDTO com = new InterviewsDTO
-                {
-                    InterviewsId = c.InterviewsId,
-                    Score = c.Score,
-                    StatusId = c.StatusId,
-                    StatusName = c.Status.Name,
-                    Date = c.Date,
-                    PositionId = c.PositionId,
-                    Name = c.Position.Name,
-                    TrackId = c.TrackId,
-                    TrackName = c.Track.Name,
-                    Notes = c.Notes,
-                    StopCycleNote = c.StopCycleNote,
-                    ParentId = c.ParentId,
-                    InterviewerId = c.InterviewerId,
-                    InterviewerName = userName,
-                    SecondInterviewerId = c.SecondInterviewerId,
-                    SecondInterviewerName = SeconduserName,
-                    CandidateId = c.CandidateId,
-                    FullName = c.Candidate.FullName,
-                    AttachmentId = c.AttachmentId,
-                    StartFromHR = c.StartFromHR
-                };
-
-                interviewsDTO.Add(com);
-            }
-            return Result<List<InterviewsDTO>>.Success(interviewsDTO);
+            return Result<List<InterviewsDTO>>.Success(await ToSearchListDtosAsync(interviews));
         }
         catch (Exception ex)
         {
             return Result<List<InterviewsDTO>>.Failure(null, $"Unable to get Interview: {ex.InnerException.Message}");
         }
+    }
+
+    /// <summary>
+    /// One page of the interview search: each candidate's latest interview matching the filter,
+    /// newest first. Only the page rows are loaded and mapped.
+    /// </summary>
+    public async Task<Result<PaginatedList<InterviewsDTO>>> GetLatestInterviewPerCandidatePageAsync(
+        InterviewListFilter filter,
+        int pageNumber,
+        int pageSize)
+    {
+        try
+        {
+            (List<Interviews> items, int totalCount) = await _interviewsRepository.GetLatestInterviewPerCandidatePageAsync(filter, pageNumber, pageSize);
+            List<InterviewsDTO> page = await ToSearchListDtosAsync(items);
+            // The candidate is already loaded with the row, so no extra query per row for the CV
+            for (int i = 0; i < items.Count; i++)
+                page[i].CandidateCVAttachmentId = items[i].Candidate?.CVAttachmentId;
+
+            return Result<PaginatedList<InterviewsDTO>>.Success(new PaginatedList<InterviewsDTO>(page, totalCount, pageNumber, pageSize));
+        }
+        catch (Exception ex)
+        {
+            return Result<PaginatedList<InterviewsDTO>>.Failure(null, $"Unable to get Interview: {ex.InnerException?.Message ?? ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Maps interviews for the search list. Interviewer names are read for all rows in one query
+    /// instead of one lookup per interviewer; missing users show "User not found" as before.
+    /// </summary>
+    private async Task<List<InterviewsDTO>> ToSearchListDtosAsync(List<Interviews> interviews)
+    {
+        Dictionary<string, string> names = await _userRepository.GetUserNamesAsync(
+            interviews.SelectMany(i => new[] { i.InterviewerId, i.SecondInterviewerId }));
+
+        string NameOf(string id) => !string.IsNullOrEmpty(id) && names.TryGetValue(id, out string name) ? name : "User not found";
+
+        List<InterviewsDTO> interviewsDTO = new List<InterviewsDTO>();
+
+        foreach (Interviews c in interviews)
+        {
+            string userName = NameOf(c.InterviewerId);
+            string SeconduserName = NameOf(c.SecondInterviewerId);
+
+            InterviewsDTO com = new InterviewsDTO
+            {
+                InterviewsId = c.InterviewsId,
+                Score = c.Score,
+                StatusId = c.StatusId,
+                StatusName = c.Status.Name,
+                Date = c.Date,
+                PositionId = c.PositionId,
+                Name = c.Position.Name,
+                TrackId = c.TrackId,
+                TrackName = c.Track.Name,
+                Notes = c.Notes,
+                StopCycleNote = c.StopCycleNote,
+                ParentId = c.ParentId,
+                InterviewerId = c.InterviewerId,
+                InterviewerName = userName,
+                SecondInterviewerId = c.SecondInterviewerId,
+                SecondInterviewerName = SeconduserName,
+                CandidateId = c.CandidateId,
+                FullName = c.Candidate.FullName,
+                AttachmentId = c.AttachmentId,
+                StartFromHR = c.StartFromHR
+            };
+
+            interviewsDTO.Add(com);
+        }
+
+        return interviewsDTO;
     }
 
     public async Task<Result<InterviewsDTO>> GetById(int id)
@@ -503,6 +548,7 @@ public class SearchInterviewsService : ISearchInterviewsService
                     interviewDTO.CompanyName = null;
             }
 
+            await EnrichHistoryStepsAsync(interviewsDTOs);
             return Result<List<InterviewsDTO>>.Success(interviewsDTOs);
 
         }
@@ -708,6 +754,7 @@ public class SearchInterviewsService : ISearchInterviewsService
             gmInterviews = [.. gmInterviews.OrderBy(i => i.Date).ThenBy(i => i.InterviewsId)];
             interviewsDTOs.AddRange(gmInterviews);
 
+            await EnrichHistoryStepsAsync(interviewsDTOs);
             return Result<List<InterviewsDTO>>.Success(interviewsDTOs);
         }
         catch (Exception ex)
@@ -787,4 +834,70 @@ public class SearchInterviewsService : ISearchInterviewsService
         }
     }
 
+    /// <summary>
+    /// History rows come from the interview-details mapping, which copies some values (interviewer,
+    /// notes, experience, evaluation) from the first interview. Fill each step from its own record and
+    /// record who submitted it and when, so the history shows what actually happened at each step.
+    /// </summary>
+    private async Task EnrichHistoryStepsAsync(List<InterviewsDTO> steps)
+    {
+        if (steps == null)
+            return;
+
+        foreach (InterviewsDTO dto in steps)
+        {
+            if (dto == null)
+                continue;
+
+            Interviews step = await _interviewsRepository.GetById(dto.InterviewsId);
+            if (step == null)
+                continue;
+
+            dto.InterviewerId = step.InterviewerId;
+            dto.InterviewerName = await HistoryUserNameAsync(step.InterviewerId);
+            dto.SecondInterviewerId = step.SecondInterviewerId;
+            dto.SecondInterviewerName = await HistoryUserNameAsync(step.SecondInterviewerId);
+            dto.InterviewerRole = await HistoryUserRoleAsync(step.InterviewerId);
+            dto.Score = step.Score;
+            dto.Notes = step.Notes;
+            dto.ActualExperience = step.ActualExperience;
+            dto.AttachmentId = step.AttachmentId;
+            dto.isUpdated = step.IsUpdated;
+            dto.StartFromHR = step.StartFromHR;
+            dto.CreatedOn = step.CreatedOn;
+            dto.ModifiedOn = step.ModifiedOn;
+            dto.modifiedBy = await HistoryUserNameAsync(step.ModifiedBy);
+
+            // Result submitted through a delegation: show the delegate and who they acted for
+            InterviewDelegation delegation = await _interviewsRepository.GetCompletedDelegationAsync(step.InterviewsId);
+            if (delegation != null)
+            {
+                dto.ResultSubmittedByName = await HistoryUserNameAsync(delegation.DelegatedUserId);
+                dto.ResultSubmittedForName = await HistoryUserNameAsync(delegation.OriginalInterviewerId);
+                dto.ResultSubmittedOn = delegation.ModifiedOn;
+            }
+        }
+    }
+
+    private async Task<string> HistoryUserNameAsync(string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+            return null;
+
+        IdentityUser user = await _userManager.FindByIdAsync(userId);
+        return user?.UserName;
+    }
+
+    private async Task<string> HistoryUserRoleAsync(string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+            return null;
+
+        IdentityUser user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+            return null;
+
+        IList<string> roles = await _userManager.GetRolesAsync(user);
+        return roles?.FirstOrDefault();
+    }
 }

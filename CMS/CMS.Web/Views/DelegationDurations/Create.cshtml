@@ -1,131 +1,38 @@
 @model CMS.Application.DTOs.DelegationDurationDTO
+
 @{
     ViewData["Title"] = "Add Delegation Duration";
+    ViewData["UnitPlaceholder"] = true;
+    ViewData["ConfirmVerb"] = "add";
 }
 
-<div class="container mt-4">
-    <div class="card shadow">
-        <div class="card-header" style="background: linear-gradient(135deg, #486fc7, #319ca7); color: white;">
-            <h4 class="mb-0" style="color:white;">Add Delegation Duration</h4>
-        </div>
-        <div class="card-body">
-            <form id="durationForm" asp-action="Create" method="post" novalidate>
-                @Html.AntiForgeryToken()
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<form id="durationForm" asp-action="Create" method="post" novalidate>
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-                <div class="form-group mb-3">
-                    <label asp-for="Name" class="form-label"><span class="text-danger">*</span> Name</label>
-                    <input asp-for="Name" class="form-control" maxlength="100" />
-                    <span id="nameError" class="text-danger" style="display:none;"></span>
-                    <span asp-validation-for="Name" class="text-danger"></span>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6 form-group mb-3">
-                        <label asp-for="Amount" class="form-label"><span class="text-danger">*</span> Amount</label>
-                        <input asp-for="Amount" class="form-control" type="number" />
-                        <span id="amountError" class="text-danger" style="display:none;"></span>
-                        <span asp-validation-for="Amount" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6 form-group mb-3">
-                        <label asp-for="Unit" class="form-label"><span class="text-danger">*</span> Unit</label>
-                        <select asp-for="Unit" class="form-control" asp-items="ViewBag.Units">
-                            <option value="">-- Select unit --</option>
-                        </select>
-                        <span id="unitError" class="text-danger" style="display:none;"></span>
-                        <span asp-validation-for="Unit" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <div class="form-check mb-3">
-                    <input asp-for="IsActive" class="form-check-input" />
-                    <label asp-for="IsActive" class="form-check-label">Enabled</label>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Save</button>
-                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-            </form>
+    <div class="tps-ihead">
+        <div class="tps-ihead__who">
+            <span class="tps-ihead__avatar tps-ihead__avatar--entity" aria-hidden="true"><i class="ri-timer-line"></i></span>
+            <div>
+                <p class="tps-ihead__eyebrow">Delegation durations</p>
+                <h2 class="tps-ihead__name">New access period</h2>
+            </div>
         </div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    var allowDurationSubmit = false;
-    var nameInput = document.getElementById('Name');
-    var amountInput = document.getElementById('Amount');
-    var unitInput = document.getElementById('Unit');
+    <div class="row justify-content-center">
+        <div class="col-xl-9">
+            @await Html.PartialAsync("_DurationFields", Model)
+        </div>
+    </div>
 
-    function setFieldError(input, errorId, message) {
-        var error = document.getElementById(errorId);
-        if (message) {
-            error.textContent = message;
-            error.style.display = 'block';
-            input.classList.add('is-invalid');
-            return false;
-        }
+    <div class="tps-factions">
+        <span class="tps-factions__note"><i class="ri-information-line"></i> Fields marked <span class="tps-req">*</span> are required.</span>
+        <div class="tps-factions__buttons">
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4"><i class="ri-add-line me-1"></i> Add period</button>
+        </div>
+    </div>
+</form>
 
-        error.textContent = '';
-        error.style.display = 'none';
-        input.classList.remove('is-invalid');
-        return true;
-    }
-
-    function validateDurationForm() {
-        var name = nameInput.value.trim();
-        var amountValue = amountInput.value.trim();
-        var amount = Number(amountValue);
-        var unit = unitInput.value;
-        var nameOk = setFieldError(nameInput, 'nameError', name ? '' : 'Name is required.');
-        var amountMessage = '';
-        if (!amountValue || Number.isNaN(amount))
-            amountMessage = 'Enter a duration greater than zero.';
-        else if (!Number.isInteger(amount) || amount < 1 || amount > 10000)
-            amountMessage = 'Enter a whole number from 1 to 10000.';
-
-        var amountOk = setFieldError(amountInput, 'amountError', amountMessage);
-        var unitOk = setFieldError(unitInput, 'unitError', unit ? '' : 'Select a duration unit.');
-        return nameOk && amountOk && unitOk;
-    }
-
-    nameInput.addEventListener('input', function () {
-        if (nameInput.value.trim())
-            setFieldError(nameInput, 'nameError', '');
-    });
-
-    amountInput.addEventListener('input', function () {
-        if (amountInput.value.trim())
-            setFieldError(amountInput, 'amountError', '');
-    });
-
-    unitInput.addEventListener('change', function () {
-        if (unitInput.value)
-            setFieldError(unitInput, 'unitError', '');
-    });
-
-    document.getElementById('durationForm').addEventListener('submit', function (event) {
-        if (allowDurationSubmit)
-            return;
-
-        event.preventDefault();
-        if (!validateDurationForm())
-            return;
-
-        var name = nameInput.value.trim();
-        var amount = amountInput.value.trim();
-        var unit = unitInput.options[unitInput.selectedIndex].text;
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'You are about to add the delegation duration "' + name + '" (' + amount + ' ' + unit + ').',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, add it!',
-            cancelButtonText: 'No, cancel!'
-        }).then(function (result) {
-            if (result.isConfirmed) {
-                allowDurationSubmit = true;
-                document.getElementById('durationForm').submit();
-            }
-        });
-    });
-</script>
+@await Html.PartialAsync("_DurationScript")

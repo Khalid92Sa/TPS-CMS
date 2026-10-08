@@ -1,115 +1,98 @@
-﻿@model CMS.Application.DTOs.CompanyDTO
+@model CMS.Application.DTOs.CompanyDTO
 
-<style>
-    .text-muted-custom {
-        color: #6c757d;
-        font-style: italic;
-    }
+@{
+    ViewData["Title"] = "Company Details";
+}
 
-    .details-card {
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .card-header-custom {
-        background-color: #405189;
-        color: white;
-        padding: 20px;
-        border-bottom: 3px solid #ffffff;
-    }
-
-    .card-body-custom {
-        padding: 20px;
-    }
-
-    dt {
-        font-weight: bold;
-        color: #333;
-    }
-
-    dd {
-        margin-bottom: 1rem;
-    }
-
-    .card-header {
-        color: white;
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-    }
-
-    .btn-success {
-        background: linear-gradient(135deg, #486fc7, #319ca7);
-        border: none;
-        color: white;
-    }
-
-        .btn-success:hover {
-            background: linear-gradient(135deg, #5a9bc5, #3bc6c7);
-            color: white;
-            transition: background 0.3s ease;
-        }
-
-    .btn-secondary {
-        background-color: gray;
-        border-color: gray;
-    }
-
-        .btn-secondary:hover {
-            background-color: darkgray !important;
-            border-color: darkgray !important;
-        }
-</style>
-
-<div class="card details-card">
-    <div class="card-header card-header-custom">
-        <h2 style="color:white;">Company Details</h2>
+<div class="tps-ihead">
+    <div class="tps-ihead__who">
+        <span class="tps-ihead__avatar tps-ihead__avatar--entity" aria-hidden="true"><i class="ri-building-2-line"></i></span>
+        <div>
+            <p class="tps-ihead__eyebrow">Company</p>
+            <h2 class="tps-ihead__name" dir="auto">@Model.Name</h2>
+            <div class="tps-ihead__meta">
+                @if (!string.IsNullOrEmpty(Model.CountryName))
+                {
+                    <span class="tps-chip"><i class="ri-earth-line"></i>@Model.CountryName</span>
+                }
+            </div>
+        </div>
     </div>
-
-    <div class="card-body card-body-custom">
-        <dl class="row">
-            <dt class="col-sm-2">Company Name:</dt>
-            <dd class="col-sm-10">@Html.DisplayFor(model => model.Name)</dd>
-
-            <dt class="col-sm-2">Country Name:</dt>
-            <dd class="col-sm-10">@Html.DisplayFor(model => model.CountryName)</dd>
-
-            @if (Model.PersonName != null)
-            {
-                <dt class="col-sm-2">Person Name:</dt>
-                <dd class="col-sm-10">@Html.DisplayFor(model => model.PersonName)</dd>
-            }
-            else
-            {
-                <dt class="col-sm-2">Person Name:</dt>
-                <dd class="col-sm-10 text-muted-custom">There is no person name to contact.</dd>
-            }
-
-            @if (Model.Email != null)
-            {
-                <dt class="col-sm-2">Email:</dt>
-                <dd class="col-sm-10">@Html.DisplayFor(model => model.Email)</dd>
-            }
-            else
-            {
-                <dt class="col-sm-2">Email:</dt>
-                <dd class="col-sm-10 text-muted-custom">There is no email to contact.</dd>
-            }
-
-            @if (Model.PhoneNumber != null)
-            {
-                <dt class="col-sm-2">Phone Number:</dt>
-                <dd class="col-sm-10">@Html.DisplayFor(model => model.PhoneNumber)</dd>
-            }
-            else
-            {
-                <dt class="col-sm-2">Phone Number:</dt>
-                <dd class="col-sm-10 text-muted-custom">There is no phone number to contact.</dd>
-            }
-        </dl>
+    <div class="tps-ihead__actions">
+        <a class="btn btn-secondary" asp-action="GetCompanies"><i class="ri-arrow-left-line me-1"></i> Back to list</a>
+        <a class="btn btn-primary" asp-action="UpdateCompany" asp-route-id="@Model.Id"><i class="ri-edit-line me-1"></i> Edit</a>
     </div>
 </div>
 
-<div class="form-group text-center mt-3">
-    <a asp-action="UpdateCompany" asp-route-id="@Model.Id" class="btn btn-success">Edit</a>
-    <a class="btn btn-secondary" asp-action="GetCompanies">Back to List</a>
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Company</h4>
+            </div>
+            <div class="card-body">
+                <dl class="tps-dl">
+                    <div>
+                        <dt>Company name</dt>
+                        <dd dir="auto">@Model.Name</dd>
+                    </div>
+                    <div>
+                        <dt>Country</dt>
+                        @if (!string.IsNullOrEmpty(Model.CountryName))
+                        {
+                            <dd><a asp-controller="Country" asp-action="ShowCompanies" asp-route-id="@Model.CountryId">@Model.CountryName</a></dd>
+                        }
+                        else
+                        {
+                            <dd class="is-empty">Not set</dd>
+                        }
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Contact person</h4>
+            </div>
+            <div class="card-body">
+                <dl class="tps-dl">
+                    <div>
+                        <dt>Name</dt>
+                        @if (!string.IsNullOrEmpty(Model.PersonName))
+                        {
+                            <dd dir="auto">@Model.PersonName</dd>
+                        }
+                        else
+                        {
+                            <dd class="is-empty">No contact person</dd>
+                        }
+                    </div>
+                    <div>
+                        <dt>Email</dt>
+                        @if (!string.IsNullOrEmpty(Model.Email))
+                        {
+                            <dd><span class="user-select-all">@Model.Email</span></dd>
+                        }
+                        else
+                        {
+                            <dd class="is-empty">No email</dd>
+                        }
+                    </div>
+                    <div>
+                        <dt>Phone</dt>
+                        @if (!string.IsNullOrEmpty(Model.PhoneNumber))
+                        {
+                            <dd><span dir="ltr" class="user-select-all">@Model.PhoneNumber</span></dd>
+                        }
+                        else
+                        {
+                            <dd class="is-empty">No phone number</dd>
+                        }
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </div>
 </div>
