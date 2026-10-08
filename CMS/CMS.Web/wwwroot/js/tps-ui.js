@@ -4,6 +4,7 @@
  *  2. Searchable selects (Tom Select) applied to form selects
  *  3. Tidy table action columns
  *  4. Full screen that survives page changes
+ *  5. Sidebar scroll position that survives page changes
  */
 (function () {
     "use strict";
@@ -388,10 +389,62 @@
         });
     }
 
+    /* ---------------------------------------------------------------
+     * 5. Sidebar scroll position
+     *    Velzon's app.js rebuilds the menu on every load (so it starts at the top) and ~250 ms
+     *    later scrolls to the active item, which made the menu jump while pages loaded. The exact
+     *    position is saved when leaving a page and put back as soon as the menu's SimpleBar
+     *    scroller exists. tps-theme-init.js hides the menu until then (a <style> element with id
+     *    "tps-sidebar-restoring") and stops app.js from scrolling it itself.
+     * ------------------------------------------------------------- */
+    var SIDEBAR_KEY = "tps-sidebar-scroll";
+
+    function sidebarScroller() {
+        var menu = document.querySelector(".app-menu");
+        return menu ? menu.querySelector(".simplebar-content-wrapper") : null;
+    }
+
+    function revealSidebar() {
+        var hide = document.getElementById("tps-sidebar-restoring");
+        if (hide) hide.remove();
+    }
+
+    function initSidebarScroll() {
+        window.addEventListener("pagehide", function () {
+            var scroller = sidebarScroller();
+            if (!scroller) return;
+            try { sessionStorage.setItem(SIDEBAR_KEY, String(Math.round(scroller.scrollTop))); } catch (e) { }
+        });
+
+        if (!document.getElementById("tps-sidebar-restoring")) return;
+
+        var target = NaN;
+        try { target = parseInt(sessionStorage.getItem(SIDEBAR_KEY), 10); } catch (e) { }
+        if (isNaN(target)) { revealSidebar(); return; }
+
+        var started = Date.now();
+        (function restore() {
+            var scroller = sidebarScroller();
+            if (scroller) {
+                scroller.scrollTop = target;
+                var max = scroller.scrollHeight - scroller.clientHeight;
+                // Done once the position holds, or the menu is shorter than before and we're at its end
+                if (Math.abs(scroller.scrollTop - target) <= 1 || (max > 0 && scroller.scrollTop >= max - 1)) {
+                    revealSidebar();
+                    return;
+                }
+            }
+            // Never leave the menu hidden if SimpleBar is slow or missing
+            if (Date.now() - started > 1500) { revealSidebar(); return; }
+            requestAnimationFrame(restore);
+        })();
+    }
+
     function init() {
         enhanceAll();
         tidyActionCells();
         initFullscreen();
+        initSidebarScroll();
     }
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

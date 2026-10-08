@@ -33,4 +33,20 @@
             sessionStorage.setItem("defaultAttribute", JSON.stringify(attrs));
         }
     } catch (e) { /* storage blocked */ }
+
+    // Sidebar scroll position from the previous page (saved by tps-ui.js). Hide the menu until
+    // tps-ui.js puts it back, and tell Velzon's app.js to skip its own "scroll to active item",
+    // so the menu never shows at the top and then jumps while pages load.
+    // Uses a <style> element, never a class or attribute on <html>: layout.js compares every
+    // <html> attribute with sessionStorage "defaultAttribute" and clears storage and reloads the
+    // page when they differ.
+    try {
+        if (sessionStorage.getItem("tps-sidebar-scroll") !== null) {
+            var hide = document.createElement("style");
+            hide.id = "tps-sidebar-restoring";
+            hide.textContent = ".app-menu #scrollbar{visibility:hidden}";
+            document.head.appendChild(hide);
+            window.__tpsSidebarRestore = true;
+        }
+    } catch (e) { /* storage blocked */ }
 })();
