@@ -17,7 +17,11 @@
 
     var back = ViewData["HistoryBack"] as IDictionary<string, string> ?? new Dictionary<string, string> { ["action"] = "MyInterviews" };
     string backAction = back.TryGetValue("action", out var a) ? a : "MyInterviews";
-    string backController = back.TryGetValue("controller", out var c) ? c : null;
+    // Default to the current controller: a null asp-controller reaches the tag helper as "", which
+    // routes to the default controller (users) and gives /users/myinterviews (404).
+    string backController = back.TryGetValue("controller", out var c) && !string.IsNullOrEmpty(c)
+        ? c
+        : ViewContext.RouteData.Values["controller"]?.ToString();
     var backRoute = back.Where(kv => kv.Key != "action" && kv.Key != "controller" && !string.IsNullOrEmpty(kv.Value))
                         .ToDictionary(kv => kv.Key, kv => kv.Value);
 
