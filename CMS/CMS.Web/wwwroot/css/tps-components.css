@@ -510,6 +510,18 @@ button.tps-icon-btn {
     font-size: 11px;
     font-weight: 600;
 }
+
+#candidate-sources-map {
+    width: 100%;
+    height: 360px;
+    border-radius: var(--tps-radius);
+    background: var(--tps-surface-2) !important;
+}
+
+    #candidate-sources-map svg {
+        width: 100% !important;
+        height: 100% !important;
+    }
 /* The map script appends this tip to the page and only sets top/left.
    Without a shrink-to-fit width it becomes a full-width bar at the bottom. */
 .jvm-tooltip {

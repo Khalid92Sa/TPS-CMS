@@ -1074,6 +1074,7 @@ a.tps-kpi:hover .tps-kpi__hint { color: var(--tps-primary); }
 .tps-tree .accordion-item { border: 0; border-bottom: 1px solid var(--tps-border); background: transparent; }
 .tps-tree .accordion-item:last-child { border-bottom: 0; }
 .tps-tree .accordion-button { padding: 0.9rem 0.25rem; gap: 0.5rem; background: transparent; }
+.tps-tree .accordion-button::after { margin-left: 0;}
 .tps-tree .accordion-button:not(.collapsed) { background: transparent; }
 .tps-tree .accordion-body { padding: 0 0 1rem 1.75rem; }
 .tps-tree .list-group-item { padding: 0.65rem 0.75rem; }

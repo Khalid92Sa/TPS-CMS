@@ -76,7 +76,7 @@
 
 <div class="row">
     <!-- Job views by location -->
-    <div class="col-xl-7">
+    <div class="col-xl-12">
         <div class="card">
             <div class="card-header">
                 <div class="tps-section-title">
@@ -94,7 +94,7 @@
     </div>
 
     <!-- Pipeline by country and position -->
-    <div class="col-xl-5">
+    <div class="col-xl-12">
         <div class="card">
             <div class="card-header">
                 <div class="tps-section-title">
@@ -121,7 +121,7 @@
                                 <h2 class="accordion-header" id="countryheading-@i">
                                     <button class="accordion-button collapsed d-flex align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#countrycollapse-@i" aria-expanded="false" aria-controls="countrycollapse-@i">
                                         <i class="ri-map-pin-2-line text-primary"></i> @country.Name
-                                        <span class="tps-count">@country.Positions.Count positions · @candidateCount candidates</span>
+                                        <span class="tps-count ms-auto">@country.Positions.Count positions · @candidateCount candidates</span>
                                     </button>
                                 </h2>
                                 <div id="countrycollapse-@i" class="accordion-collapse collapse" data-bs-parent="#countryAccordion">

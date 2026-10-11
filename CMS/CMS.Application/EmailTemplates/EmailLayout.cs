@@ -267,7 +267,7 @@ public static class EmailLayout
         // Footer
         html.Append($@"
 <tr><td align=""center"" style=""padding:20px 24px 0;font-family:{FontStack};font-size:12px;line-height:18px;color:{Subtle};"">
-  This is an automated message from the TPS Candidate &amp; Interview Management System.<br>
+  This is an automated message from the TPS Candidate Management System.<br>
   Please do not reply to this email. For questions, contact the HR team.<br>
   &copy; TechProcess Solutions
 </td></tr>
