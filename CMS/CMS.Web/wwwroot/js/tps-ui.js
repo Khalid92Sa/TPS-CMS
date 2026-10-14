@@ -1,6 +1,6 @@
 /*
  * TPS shared UI behaviour. Loaded at the end of <body> on every page.
- *  1. Theme switcher (Light / Dark / System)
+ *  1. Theme switcher (Light / Dark / System) and brand color picker
  *  2. Searchable selects (Tom Select) applied to form selects
  *  3. Tidy table action columns
  *  4. Full screen that survives page changes
@@ -24,26 +24,20 @@
         return pref === "dark" || (pref === "system" && darkQuery && darkQuery.matches) ? "dark" : "light";
     }
 
-    function applyTheme(pref, animate) {
+    function applyTheme(pref) {
         var resolved = resolve(pref);
-
-        if (animate) {
-            html.classList.add("tps-theme-switching");
-            window.setTimeout(function () { html.classList.remove("tps-theme-switching"); }, 320);
-        }
 
         html.setAttribute("data-bs-theme", resolved);
         html.setAttribute("data-tps-theme-pref", pref);
 
         try {
             localStorage.setItem(THEME_KEY, pref);
-            // Keep Velzon's session copy in step (see tps-theme-init.js).
+            // Update values in place. Deleting and re-adding keys reorders the JSON, and
+            // Velzon's layout.js reloads the page when that order no longer matches <html>.
             sessionStorage.setItem("data-bs-theme", resolved);
             var stored = sessionStorage.getItem("defaultAttribute");
             if (stored) {
                 var attrs = JSON.parse(stored);
-                delete attrs["data-bs-theme"];
-                delete attrs["data-tps-theme-pref"];
                 attrs["data-bs-theme"] = resolved;
                 attrs["data-tps-theme-pref"] = pref;
                 sessionStorage.setItem("defaultAttribute", JSON.stringify(attrs));
@@ -76,28 +70,136 @@
         var set = e.target.closest("[data-tps-theme-set]");
         if (set) {
             e.preventDefault();
-            applyTheme(set.getAttribute("data-tps-theme-set"), true);
+            applyTheme(set.getAttribute("data-tps-theme-set"));
             return;
         }
         var toggle = e.target.closest("[data-tps-theme-toggle]");
         if (toggle) {
             e.preventDefault();
-            applyTheme(resolve(readPref()) === "dark" ? "light" : "dark", true);
+            applyTheme(resolve(readPref()) === "dark" ? "light" : "dark");
         }
     });
 
     if (darkQuery) {
-        var onSystemChange = function () { if (readPref() === "system") applyTheme("system", true); };
+        var onSystemChange = function () { if (readPref() === "system") applyTheme("system"); };
         if (darkQuery.addEventListener) darkQuery.addEventListener("change", onSystemChange);
         else if (darkQuery.addListener) darkQuery.addListener(onSystemChange);
     }
 
     // Another tab changed the theme
     window.addEventListener("storage", function (e) {
-        if (e.key === THEME_KEY && e.newValue) applyTheme(e.newValue, true);
+        if (e.key === THEME_KEY && e.newValue) applyTheme(e.newValue);
     });
 
     syncThemeControls(readPref(), resolve(readPref()));
+
+    /* ---------------------------------------------------------------
+     * 1b. Brand color picker (topbar, next to the theme toggle)
+     *     Color math and storage live in tps-theme-init.js (window.TPSBrand).
+     *     Independent of Light/Dark: the same picked color is adapted per mode.
+     * ------------------------------------------------------------- */
+    var brand = window.TPSBrand;
+
+    function syncColorControls(picked) {
+        var value = picked || brand.DEFAULT;
+        document.querySelectorAll("[data-tps-color-input]").forEach(function (el) {
+            if (el.value.toLowerCase() !== value) el.value = value;
+        });
+        document.querySelectorAll("[data-tps-color-hex]").forEach(function (el) {
+            if (document.activeElement !== el) el.value = value;
+            el.classList.remove("is-invalid");
+        });
+        document.querySelectorAll("[data-tps-color-reset]").forEach(function (el) {
+            el.disabled = !picked;
+        });
+    }
+
+    // A picked color (even the default blue) themes the whole app, sidebar and sign-in panel
+    // included; only "Reset to default" (null) returns to the original light palette.
+    function setBrand(picked, persist) {
+        brand.apply(picked);
+        if (persist) brand.save(picked);
+        syncColorControls(picked);
+        window.dispatchEvent(new CustomEvent("tps:brandchange", { detail: { color: picked || brand.DEFAULT } }));
+    }
+
+    if (brand) {
+        // Live preview while dragging; one rAF per frame keeps it smooth.
+        var pendingColor = null;
+        document.addEventListener("input", function (e) {
+            if (e.target.matches("[data-tps-color-input]")) {
+                if (pendingColor === null) {
+                    window.requestAnimationFrame(function () {
+                        brand.apply(pendingColor.toLowerCase());
+                        pendingColor = null;
+                    });
+                }
+                pendingColor = e.target.value;
+                return;
+            }
+            if (e.target.matches("[data-tps-color-hex]")) {
+                var v = e.target.value.trim();
+                if (v && v.charAt(0) !== "#") v = "#" + v;
+                var ok = !!brand.parse(v) && v.length === 7;
+                e.target.classList.toggle("is-invalid", !ok && v.length >= 7);
+                if (ok) setBrand(v.toLowerCase(), true);
+            }
+        });
+
+        document.addEventListener("change", function (e) {
+            if (e.target.matches("[data-tps-color-input]")) setBrand(e.target.value.toLowerCase(), true);
+        });
+
+        document.addEventListener("focusout", function (e) {
+            if (e.target.matches && e.target.matches("[data-tps-color-hex]")) syncColorControls(brand.read());
+        });
+
+        // Popover on the sign-in and landing pages (the app topbar uses a Bootstrap dropdown).
+        function setPopOpen(pop, open) {
+            pop.classList.toggle("is-open", open);
+            var toggle = pop.querySelector("[data-tps-color-pop-toggle]");
+            if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        }
+
+        function closePops(except) {
+            document.querySelectorAll(".tps-color-pop.is-open").forEach(function (pop) {
+                if (pop !== except) setPopOpen(pop, false);
+            });
+        }
+
+        document.addEventListener("click", function (e) {
+            if (e.target.closest("[data-tps-color-reset]")) {
+                e.preventDefault();
+                setBrand(null, true);
+                return;
+            }
+            var popToggle = e.target.closest("[data-tps-color-pop-toggle]");
+            if (popToggle) {
+                e.preventDefault();
+                var pop = popToggle.closest(".tps-color-pop");
+                closePops(pop);
+                setPopOpen(pop, !pop.classList.contains("is-open"));
+                return;
+            }
+            if (!e.target.closest(".tps-color-pop")) closePops(null);
+        });
+
+        document.addEventListener("keydown", function (e) {
+            if (e.key !== "Escape") return;
+            var open = document.querySelector(".tps-color-pop.is-open");
+            if (!open) return;
+            setPopOpen(open, false);
+            var toggle = open.querySelector("[data-tps-color-pop-toggle]");
+            if (toggle) toggle.focus();
+        });
+
+        // Another tab changed the color
+        window.addEventListener("storage", function (e) {
+            if (e.key === brand.KEY) setBrand(brand.parse(e.newValue) ? e.newValue : null, false);
+        });
+
+        syncColorControls(brand.read());
+    }
 
     /* ---------------------------------------------------------------
      * 2. Searchable selects
@@ -391,61 +493,112 @@
 
     /* ---------------------------------------------------------------
      * 5. Sidebar scroll position
-     *    Velzon's app.js rebuilds the menu on every load (so it starts at the top) and ~250 ms
-     *    later scrolls to the active item, which made the menu jump while pages loaded. The exact
-     *    position is saved when leaving a page and put back as soon as the menu's SimpleBar
-     *    scroller exists. tps-theme-init.js hides the menu until then (a <style> element with id
-     *    "tps-sidebar-restoring") and stops app.js from scrolling it itself.
+     *    The menu used to paint at the top, then jump, because SimpleBar built its
+     *    scroller on DOMContentLoaded (after first paint) and only then was scrollTop
+     *    restored. Build the one real scroller (#scrollbar) and restore scroll now,
+     *    while this parser-blocking script is still running, so the first paint is
+     *    already at the saved position. A second SimpleBar on #navbar-nav is not
+     *    created (app.js); that nested bar rewrote the menu and reset the scroll.
+     *    tps-theme-init.js sets __tpsSidebarRestore so Velzon does not scroll again.
      * ------------------------------------------------------------- */
     var SIDEBAR_KEY = "tps-sidebar-scroll";
 
-    function sidebarScroller() {
-        var menu = document.querySelector(".app-menu");
-        return menu ? menu.querySelector(".simplebar-content-wrapper") : null;
+    function sidebarHost() {
+        return document.getElementById("scrollbar");
     }
 
-    function revealSidebar() {
-        var hide = document.getElementById("tps-sidebar-restoring");
-        if (hide) hide.remove();
+    function sidebarScroller() {
+        var host = sidebarHost();
+        if (!host || !window.SimpleBar) return host ? host.querySelector(".simplebar-content-wrapper") : null;
+        var bar = null;
+        try {
+            if (SimpleBar.instances && typeof SimpleBar.instances.get === "function") bar = SimpleBar.instances.get(host);
+        } catch (e) { }
+        if (!bar) {
+            try { bar = new SimpleBar(host); } catch (e2) { return host.querySelector(".simplebar-content-wrapper"); }
+        }
+        return (bar && typeof bar.getScrollElement === "function")
+            ? bar.getScrollElement()
+            : host.querySelector(".simplebar-content-wrapper");
+    }
+
+    function saveSidebarScroll() {
+        var host = sidebarHost();
+        var scroller = host ? host.querySelector(".simplebar-content-wrapper") : null;
+        if (!scroller) return;
+        try { sessionStorage.setItem(SIDEBAR_KEY, String(Math.round(scroller.scrollTop))); } catch (e) { }
+    }
+
+    function savedSidebarScroll() {
+        var target = NaN;
+        try { target = parseInt(sessionStorage.getItem(SIDEBAR_KEY), 10); } catch (e) { }
+        return target;
+    }
+
+    function applySidebarScroll(scroller, target) {
+        if (isNaN(target)) return true;
+        if (!scroller) return false;
+        var max = scroller.scrollHeight - scroller.clientHeight;
+        if (max < 1 && target > 0) return false;
+        var next = Math.min(target, Math.max(0, max));
+        if (scroller.scrollTop !== next) scroller.scrollTop = next;
+        return Math.abs(scroller.scrollTop - next) <= 1;
     }
 
     function initSidebarScroll() {
-        window.addEventListener("pagehide", function () {
-            var scroller = sidebarScroller();
-            if (!scroller) return;
-            try { sessionStorage.setItem(SIDEBAR_KEY, String(Math.round(scroller.scrollTop))); } catch (e) { }
-        });
+        var host = sidebarHost();
+        if (!host) return;
+        window.addEventListener("pagehide", saveSidebarScroll);
+        document.addEventListener("click", function (e) {
+            if (e.target.closest && e.target.closest(".app-menu a[href]")) saveSidebarScroll();
+        }, true);
 
-        if (!document.getElementById("tps-sidebar-restoring")) return;
+        // The inline script after the menu in _Layout already scrolled #scrollbar natively
+        // before the first paint. Building SimpleBar below moves the content into its own
+        // scroller (at 0), so carry that position over in this same task: no frame is
+        // painted in between.
+        var target = savedSidebarScroll();
+        if (isNaN(target) && typeof window.__tpsSidebarTarget === "number") target = window.__tpsSidebarTarget;
+        if (isNaN(target) && host.scrollTop > 0) target = host.scrollTop;
 
-        var target = NaN;
-        try { target = parseInt(sessionStorage.getItem(SIDEBAR_KEY), 10); } catch (e) { }
-        if (isNaN(target)) { revealSidebar(); return; }
+        // Build SimpleBar, then clear any native offset left on #scrollbar (from the inline
+        // script or an early wheel scroll). Left in place, it shifts SimpleBar's whole scroller
+        // up: the last items are cut off and a gap opens above the sidebar footer.
+        var scroller = sidebarScroller();
+        if (host.scrollTop !== 0) host.scrollTop = 0;
+        if (isNaN(target)) return;
+        if (applySidebarScroll(scroller, target)) return;
 
-        var started = Date.now();
-        (function restore() {
-            var scroller = sidebarScroller();
-            if (scroller) {
-                scroller.scrollTop = target;
-                var max = scroller.scrollHeight - scroller.clientHeight;
-                // Done once the position holds, or the menu is shorter than before and we're at its end
-                if (Math.abs(scroller.scrollTop - target) <= 1 || (max > 0 && scroller.scrollTop >= max - 1)) {
-                    revealSidebar();
-                    return;
-                }
+        var pending = true;
+        var observer = null;
+        function retry() {
+            if (!pending) return;
+            if (applySidebarScroll(sidebarScroller(), target)) {
+                pending = false;
+                if (observer) observer.disconnect();
             }
-            // Never leave the menu hidden if SimpleBar is slow or missing
-            if (Date.now() - started > 1500) { revealSidebar(); return; }
-            requestAnimationFrame(restore);
-        })();
+        }
+        if (window.ResizeObserver) {
+            observer = new ResizeObserver(retry);
+            observer.observe(sidebarHost());
+        }
+        requestAnimationFrame(function () {
+            retry();
+            requestAnimationFrame(retry);
+        });
     }
 
     function init() {
-        enhanceAll();
+        // Tom Select is loaded after this file so the menu can be restored before that download.
+        if (window.TomSelect) enhanceAll();
+        else document.addEventListener("DOMContentLoaded", function () { if (window.TomSelect) enhanceAll(); });
         tidyActionCells();
         initFullscreen();
-        initSidebarScroll();
     }
+
+    // The sidebar markup is already parsed. Restore it before first paint, even while
+    // document.readyState is still "loading" (waiting for DOMContentLoaded paints the top first).
+    initSidebarScroll();
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
     else init();
@@ -453,6 +606,6 @@
     window.TPS = window.TPS || {};
     window.TPS.enhanceSelects = enhanceAll;
     window.TPS.tidyActionCells = tidyActionCells;
-    window.TPS.setTheme = function (pref) { applyTheme(pref, true); };
+    window.TPS.setTheme = function (pref) { applyTheme(pref); };
     window.TPS.statusKind = statusKind;
 })();

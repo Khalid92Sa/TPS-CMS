@@ -39,7 +39,8 @@
         <!-- Brand panel -->
         <section class="tps-auth__brand" aria-label="About the system">
             <a href="/" class="tps-auth__logo">
-                <img src="~/theme/images/TechProcessSolutions-logo_White.svg" alt="TechProcess Solutions" />
+                <img class="tps-logo-for-light" src="~/theme/images/TechProcessSolutions-logo_grey.svg" alt="TechProcess Solutions" />
+                <img class="tps-logo-for-dark" src="~/theme/images/TechProcessSolutions-logo_White.svg" alt="TechProcess Solutions" />
             </a>
 
             <div class="tps-auth__pitch">
@@ -61,9 +62,21 @@
 
         <!-- Form panel -->
         <section class="tps-auth__panel">
-            <button type="button" class="tps-theme-fab tps-auth__theme" data-tps-theme-toggle aria-label="Switch to dark mode">
-                <i class="ri-moon-clear-line" data-tps-theme-icon></i>
-            </button>
+            <div class="tps-auth__theme">
+                <button type="button" class="tps-theme-fab" data-tps-theme-toggle aria-label="Switch to dark mode">
+                    <i class="ri-moon-clear-line" data-tps-theme-icon></i>
+                </button>
+                <div class="tps-color-pop">
+                    <button type="button" class="tps-theme-fab tps-color-button" data-tps-color-pop-toggle
+                            aria-haspopup="true" aria-expanded="false" aria-label="Theme color" title="Theme color">
+                        <i class="ri-palette-line"></i>
+                        <span class="tps-color-button__dot" aria-hidden="true"></span>
+                    </button>
+                    <div class="tps-color-pop__panel tps-color-menu" role="dialog" aria-label="Theme color">
+                        <partial name="_ThemeColorPanel" />
+                    </div>
+                </div>
+            </div>
 
             <div class="tps-auth__card">
                 @RenderBody()

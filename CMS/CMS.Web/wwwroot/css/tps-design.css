@@ -8,11 +8,13 @@
 
 /* ---------- 1. Tokens ------------------------------------------------ */
 :root {
-    /* Brand */
+    /* Brand. The primary set can be overridden per user by the color picker
+       (tps-theme-init.js / tps-ui.js write an inline <style id="tps-brand-override">). */
     --tps-primary: #2856c8;
     --tps-primary-rgb: 40, 86, 200;
     --tps-primary-strong: #1d43a3;
     --tps-primary-soft: #e8eefb;
+    --tps-primary-deep: #1d43a3; /* fill behind white text, same in both modes */
     --tps-accent: #128a88;
     --tps-accent-rgb: 18, 138, 136;
     --tps-accent-soft: #e2f4f3;
@@ -88,15 +90,43 @@
     --tps-shadow-lg: 0 12px 32px rgba(14, 26, 43, 0.12);
     --tps-focus: 0 0 0 3px rgba(var(--tps-primary-rgb), 0.22);
 
-    /* Sidebar (dark in both themes) */
-    --tps-side-bg: #0e1a2b;
-    --tps-side-border: #1b2a40;
-    --tps-side-text: #a9b6c9;
-    --tps-side-text-strong: #ffffff;
-    --tps-side-section: #61728b;
-    --tps-side-hover: rgba(255, 255, 255, 0.06);
-    --tps-side-active: rgba(110, 147, 240, 0.16);
-    --tps-side-active-bar: #6e93f0;
+    /* Sidebar: light surface in light mode, navy in dark mode.
+       Hover/active follow the primary so a custom brand color reaches the menu. */
+    --tps-side-bg: var(--tps-surface);
+    --tps-side-border: var(--tps-border);
+    --tps-side-text: #3e4e66;
+    --tps-side-text-strong: var(--tps-heading);
+    --tps-side-section: var(--tps-muted);
+    --tps-side-hover: rgba(var(--tps-primary-rgb), 0.07);
+    --tps-side-active: rgba(var(--tps-primary-rgb), 0.12);
+    --tps-side-active-bar: var(--tps-primary);
+
+    /* Text on a solid --tps-primary fill (buttons, active page, chips) */
+    --tps-on-primary: #fff;
+
+    /* Wordmark variant, as display values: color logo on light surfaces, white on dark.
+       Page chrome, sidebar and sign-in panel can differ once a brand color is picked. */
+    --tps-logo-color: block;
+    --tps-logo-white: none;
+    --tps-side-logo-color: block;
+    --tps-side-logo-white: none;
+    --tps-panel-logo-color: block;
+    --tps-panel-logo-white: none;
+
+    /* Sign-in brand panel (left half of the login page) */
+    --tps-panel-bg: var(--tps-bg);
+    --tps-panel-glow-1: rgba(var(--tps-primary-rgb), 0.14);
+    --tps-panel-glow-2: rgba(var(--tps-accent-rgb), 0.12);
+    --tps-panel-grid: rgba(23, 34, 52, 0.045);
+    --tps-panel-border: var(--tps-border);
+    --tps-panel-text: var(--tps-text);
+    --tps-panel-heading: var(--tps-heading);
+    --tps-panel-muted: var(--tps-muted);
+    --tps-panel-accent: var(--tps-primary);
+    --tps-panel-accent-2: var(--tps-accent);
+    --tps-panel-card-bg: rgba(255, 255, 255, 0.78);
+    --tps-panel-card-border: rgba(var(--tps-primary-rgb), 0.16);
+    --tps-panel-card-text: var(--tps-heading);
 }
 
 html:root[data-bs-theme=dark] {
@@ -158,6 +188,36 @@ html:root[data-bs-theme=dark] {
 
     --tps-side-bg: #08101b;
     --tps-side-border: #172335;
+    --tps-side-text: #a9b6c9;
+    --tps-side-text-strong: #ffffff;
+    --tps-side-section: #61728b;
+    --tps-side-hover: rgba(255, 255, 255, 0.06);
+    --tps-side-active: rgba(var(--tps-primary-rgb), 0.16);
+    --tps-side-active-bar: var(--tps-primary);
+
+    --tps-on-primary: #0b121d;
+
+    --tps-logo-color: none;
+    --tps-logo-white: block;
+    --tps-side-logo-color: none;
+    --tps-side-logo-white: block;
+    --tps-panel-logo-color: none;
+    --tps-panel-logo-white: block;
+
+    /* Navy sign-in panel */
+    --tps-panel-bg: var(--tps-ink);
+    --tps-panel-glow-1: rgba(var(--tps-primary-rgb), 0.28);
+    --tps-panel-glow-2: rgba(60, 194, 188, 0.18);
+    --tps-panel-grid: rgba(255, 255, 255, 0.035);
+    --tps-panel-border: #172335;
+    --tps-panel-text: #c9d4e4;
+    --tps-panel-heading: #fff;
+    --tps-panel-muted: #a9b6c9;
+    --tps-panel-accent: #8fb0f7;
+    --tps-panel-accent-2: #5fd3c9;
+    --tps-panel-card-bg: rgba(255, 255, 255, 0.03);
+    --tps-panel-card-border: rgba(255, 255, 255, 0.09);
+    --tps-panel-card-text: #dbe3ef;
 }
 
 /* ---------- 2. Velzon / Bootstrap variable mapping -------------------
@@ -245,6 +305,40 @@ html:root[data-layout] {
     --vz-vertical-menu-width: 256px;
 }
 
+/* Bootstrap component variables that bootstrap.min.css sets to Velzon's #405189 on the
+   component itself (so the :root mapping above does not reach them). */
+.btn-primary {
+    --vz-btn-color: var(--tps-on-primary);
+    --vz-btn-bg: var(--tps-primary);
+    --vz-btn-border-color: var(--tps-primary);
+    --vz-btn-hover-color: var(--tps-on-primary);
+    --vz-btn-hover-bg: var(--tps-primary-strong);
+    --vz-btn-hover-border-color: var(--tps-primary-strong);
+    --vz-btn-active-color: var(--tps-on-primary);
+    --vz-btn-active-bg: var(--tps-primary-strong);
+    --vz-btn-active-border-color: var(--tps-primary-strong);
+    --vz-btn-disabled-color: var(--tps-on-primary);
+    --vz-btn-disabled-bg: var(--tps-primary);
+    --vz-btn-disabled-border-color: var(--tps-primary);
+}
+.pagination {
+    --vz-pagination-color: var(--tps-primary);
+    --vz-pagination-hover-color: var(--tps-primary-strong);
+    --vz-pagination-focus-color: var(--tps-primary-strong);
+    --vz-pagination-focus-box-shadow: var(--tps-focus);
+    --vz-pagination-active-color: var(--tps-on-primary);
+    --vz-pagination-active-bg: var(--tps-primary);
+    --vz-pagination-active-border-color: var(--tps-primary);
+}
+.list-group {
+    --vz-list-group-active-color: var(--tps-on-primary);
+    --vz-list-group-active-bg: var(--tps-primary);
+    --vz-list-group-active-border-color: var(--tps-primary);
+}
+.nav-pills { --vz-nav-pills-link-active-color: var(--tps-on-primary); --vz-nav-pills-link-active-bg: var(--tps-primary); }
+.dropdown-menu { --vz-dropdown-link-active-color: var(--tps-on-primary); --vz-dropdown-link-active-bg: var(--tps-primary); }
+.form-check-input[type=checkbox]:indeterminate { background-color: var(--tps-primary); border-color: var(--tps-primary); }
+
 /* ---------- 3. Base ---------------------------------------------------- */
 body {
     background: var(--tps-bg);
@@ -326,11 +420,28 @@ table, .table, .counter-value, .tps-num { font-variant-numeric: tabular-nums; }
 .tps-brand__logo-head { fill: #fff; }
 .tps-brand__logo-body { fill: none; stroke: #fff; stroke-width: 2.3; stroke-linecap: round; }
 /* the ring matches the mark's gradient so the badge reads as cut out of the figure */
-.tps-brand__logo-badge { fill: #fff; stroke: #2350b8; stroke-width: 1.6; }
+.tps-brand__logo-badge { fill: #fff; stroke: var(--tps-primary-strong); stroke-width: 1.6; }
 .tps-brand__logo-check { fill: none; stroke: #0f9f6e; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .tps-brand__text { display: flex; flex-direction: column; min-width: 0; gap: 0.15rem; }
-.tps-brand__name { color: #fff; font-family: var(--tps-font-display); font-weight: 700; font-size: 0.88rem; }
+.tps-brand__name { color: var(--tps-side-text-strong); font-family: var(--tps-font-display); font-weight: 700; font-size: 0.88rem; }
+
+/* White wordmark on dark surfaces, color wordmark on light ones (see --tps-*logo-* tokens) */
+.tps-logo-for-light { display: var(--tps-logo-color) !important; }
+.tps-logo-for-dark { display: var(--tps-logo-white) !important; }
+.app-menu .tps-logo-for-light { display: var(--tps-side-logo-color) !important; }
+.app-menu .tps-logo-for-dark { display: var(--tps-side-logo-white) !important; }
+.tps-auth__brand .tps-logo-for-light { display: var(--tps-panel-logo-color) !important; }
+.tps-auth__brand .tps-logo-for-dark { display: var(--tps-panel-logo-white) !important; }
+/* On a picked brand color the multi-color wordmark loses contrast, so it is drawn in one
+   color (white or ink) through --tps-logo-filter; "none" keeps the original artwork. */
+.app-menu .navbar-brand-box img { filter: var(--tps-side-logo-filter, none); }
+.tps-auth__brand .tps-auth__logo img { filter: var(--tps-panel-logo-filter, none); }
+
+.app-menu .navbar-brand-box .btn { color: var(--tps-side-section); }
+.app-menu .navbar-brand-box .btn:hover { color: var(--tps-side-text-strong); }
+
+.app-menu .simplebar-scrollbar::before { background: var(--tps-side-section); }
 .tps-brand__sub { color: var(--tps-side-section); font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
 
 .app-menu .navbar-nav .menu-title {
@@ -410,6 +521,20 @@ table, .table, .counter-value, .tps-num { font-variant-numeric: tabular-nums; }
         height: auto !important;
     }
 }
+
+/* Native scrolling only until SimpleBar wraps the menu (it then sets data-simplebar="init"),
+   so the inline script after the menu in _Layout can set the saved position before the
+   first paint. It must stop once SimpleBar is built: #scrollbar still reports the full
+   content height (SimpleBar's placeholder), so it would stay a second scroller and the
+   wheel would scroll it past the end of the list, leaving a gap above the footer and
+   cutting off the last item. The native bar is hidden so nothing shifts sideways.
+   Not for the collapsed (sm) sidebar: its hover labels fly out past the menu edge. */
+html:not([data-sidebar-size^=sm]) .app-menu #scrollbar:not([data-simplebar="init"]) {
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+}
+html:not([data-sidebar-size^=sm]) .app-menu #scrollbar:not([data-simplebar="init"])::-webkit-scrollbar { display: none; }
 
 .tps-sidebar-footer {
     position: relative;
@@ -636,7 +761,7 @@ html:root[data-bs-theme=dark] .btn.btn-success { color: #0b121d !important; }
     border: 0;
 }
 
-.btn.btn-soft-success:hover, .btn.btn-soft-primary:hover { background: var(--tps-primary); color: #fff; }
+.btn.btn-soft-success:hover, .btn.btn-soft-primary:hover { background: var(--tps-primary); color: var(--tps-on-primary); }
 
 .btn-link { color: var(--tps-primary); font-weight: 500; text-decoration: none; }
 
@@ -958,7 +1083,7 @@ table td a.text-danger:hover { background: var(--tps-danger-soft); color: var(--
 }
 
 .pagination-container .page-link:hover { background: var(--tps-surface-3) !important; border-color: var(--tps-border-strong) !important; }
-.pagination-container .page-item.active .page-link { background: var(--tps-primary) !important; border-color: var(--tps-primary) !important; color: #fff !important; }
+.pagination-container .page-item.active .page-link { background: var(--tps-primary) !important; border-color: var(--tps-primary) !important; color: var(--tps-on-primary) !important; }
 .pagination-container .page-item.disabled .page-link { opacity: 0.45; pointer-events: none; }
 
 .pagination-container .rows-per-page,

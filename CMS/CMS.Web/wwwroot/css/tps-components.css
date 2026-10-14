@@ -6,17 +6,9 @@
    Everything is colored through --tps-* tokens so both themes work.
    ===================================================================== */
 
-/* ---------- 1. Theme switching ------------------------------------------ */
-html.tps-theme-switching,
-html.tps-theme-switching *,
-html.tps-theme-switching *::before,
-html.tps-theme-switching *::after {
-    transition: background-color 0.28s ease, border-color 0.28s ease, color 0.2s ease, fill 0.28s ease, stroke 0.28s ease !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    html.tps-theme-switching, html.tps-theme-switching * { transition: none !important; }
-}
+/* ---------- 1. Theme switching ------------------------------------------
+   The theme is a single attribute on <html>. Do not transition every element:
+   that forces a style recalculation and an animation for the whole document. */
 
 .tps-theme-menu { width: 220px; padding: 0.4rem; }
 
@@ -60,6 +52,97 @@ html.tps-theme-switching *::after {
 }
 
 .tps-theme-fab:hover { color: var(--tps-heading); border-color: var(--tps-border-strong); }
+
+/* Brand color picker in the topbar */
+.tps-color-button { position: relative; }
+.tps-color-button__dot {
+    position: absolute;
+    right: 7px;
+    bottom: 7px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--tps-primary);
+    box-shadow: 0 0 0 2px var(--tps-surface);
+    pointer-events: none;
+}
+
+/* Panel contents (Views/Shared/_ThemeColorPanel.cshtml). Self-contained: the landing page has no Bootstrap. */
+.tps-color-menu { width: 248px; padding: 0.4rem 0.75rem 0.75rem; text-align: left; }
+.tps-color-menu__title {
+    margin: 0;
+    padding: 0.35rem 0 0.5rem;
+    color: var(--tps-muted);
+    font-family: var(--tps-font-body);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 0.6875rem;
+}
+.tps-color-menu__row { display: flex; align-items: center; gap: 0.5rem; }
+.tps-color-menu__swatch {
+    flex: none;
+    width: 42px;
+    height: 34px;
+    padding: 2px;
+    border: 1px solid var(--tps-border-strong);
+    border-radius: var(--tps-radius-sm);
+    background: var(--tps-surface);
+    cursor: pointer;
+}
+.tps-color-menu__swatch::-webkit-color-swatch-wrapper { padding: 0; }
+.tps-color-menu__swatch::-webkit-color-swatch { border: 0; border-radius: 4px; }
+.tps-color-menu__swatch::-moz-color-swatch { border: 0; border-radius: 4px; }
+.tps-color-menu__hex {
+    flex: 1;
+    min-width: 0;
+    height: 34px;
+    padding: 0 0.6rem;
+    border: 1px solid var(--tps-border-strong);
+    border-radius: var(--tps-radius-sm);
+    background: var(--tps-surface);
+    color: var(--tps-text);
+    font-family: var(--tps-font-mono);
+    font-size: var(--tps-fs-sm);
+    text-transform: lowercase;
+}
+.tps-color-menu__hex:focus { outline: none; border-color: var(--tps-primary); box-shadow: var(--tps-focus); }
+.tps-color-menu__hex.is-invalid { border-color: var(--tps-danger); }
+.tps-color-menu__hint { margin: 0.6rem 0 0.75rem; color: var(--tps-muted); font-size: 0.72rem; line-height: 1.45; }
+.tps-color-menu__reset {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: 100%;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--tps-border-strong);
+    border-radius: var(--tps-radius-sm);
+    background: var(--tps-surface);
+    color: var(--tps-text);
+    font-family: var(--tps-font-body);
+    font-size: var(--tps-fs-sm);
+    font-weight: 500;
+    cursor: pointer;
+}
+.tps-color-menu__reset:hover:not(:disabled) { background: var(--tps-surface-3); color: var(--tps-heading); }
+.tps-color-menu__reset:disabled { opacity: 0.55; cursor: default; }
+
+/* Popover version for the sign-in and landing pages (no Bootstrap dropdown there) */
+.tps-color-pop { position: relative; display: inline-flex; }
+.tps-color-pop__panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    z-index: 1050;
+    background: var(--tps-surface);
+    border: 1px solid var(--tps-border);
+    border-radius: var(--tps-radius);
+    box-shadow: var(--tps-shadow-lg);
+}
+.tps-color-pop.is-open .tps-color-pop__panel { display: block; }
+.tps-color-pop .tps-color-button__dot { right: 5px; bottom: 5px; }
 
 /* ---------- 2. Dark-mode fixes for Bootstrap utilities used in views ---- */
 html:root[data-bs-theme=dark] .bg-white,
@@ -695,15 +778,18 @@ button.tps-icon-btn {
     margin-top: 1rem;
     padding: 0.75rem 0.9rem 0.75rem 1.1rem;
     border-radius: 12px;
-    background: var(--tps-ink);
-    color: #dbe3ef;
+    background: var(--tps-surface);
+    color: var(--tps-text);
+    border: 1px solid var(--tps-border-strong);
     box-shadow: var(--tps-shadow-lg);
 }
 
-.tps-bulkbar strong { color: #fff; }
-.tps-bulkbar .btn-light { background: rgba(255, 255, 255, 0.08) !important; border-color: rgba(255, 255, 255, 0.16) !important; color: #fff !important; box-shadow: none; }
-.tps-bulkbar .btn-light:hover { background: rgba(255, 255, 255, 0.16) !important; }
-html:root[data-bs-theme=dark] .tps-bulkbar { background: var(--tps-surface-3); border: 1px solid var(--tps-border-strong); }
+.tps-bulkbar strong { color: var(--tps-heading); }
+.tps-bulkbar .btn-light { background: var(--tps-surface-3) !important; border-color: var(--tps-border) !important; color: var(--tps-heading) !important; box-shadow: none; }
+.tps-bulkbar .btn-light:hover { background: var(--tps-border) !important; }
+html:root[data-bs-theme=dark] .tps-bulkbar { background: var(--tps-surface-3); border: 1px solid var(--tps-border-strong); color: var(--tps-text); }
+html:root[data-bs-theme=dark] .tps-bulkbar .btn-light { background: rgba(255, 255, 255, 0.08) !important; border-color: rgba(255, 255, 255, 0.16) !important; color: var(--tps-heading) !important; }
+html:root[data-bs-theme=dark] .tps-bulkbar .btn-light:hover { background: rgba(255, 255, 255, 0.16) !important; }
 
 .tps-check { width: 1.05rem; height: 1.05rem; cursor: pointer; }
 .tps-row-selected > td { background: var(--tps-primary-soft) !important; }
@@ -1419,7 +1505,7 @@ legend.form-label { font-size: var(--tps-fs-sm); float: none; width: auto; margi
     padding: 0.05rem 0.4rem;
     border-radius: 999px;
     background: var(--tps-primary);
-    color: #fff;
+    color: var(--tps-on-primary);
     font-size: 0.7rem;
     font-weight: 700;
     text-align: center;

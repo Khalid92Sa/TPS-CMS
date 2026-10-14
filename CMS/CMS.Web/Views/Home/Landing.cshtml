@@ -25,7 +25,8 @@
     <header class="lp-hero">
         <nav class="lp-nav lp-wrap" aria-label="Main">
             <a href="/" class="lp-nav__logo">
-                <img src="~/theme/images/TechProcessSolutions-logo_White.svg" alt="TechProcess Solutions" />
+                <img class="tps-logo-for-light" src="~/theme/images/TechProcessSolutions-logo_grey.svg" alt="TechProcess Solutions" />
+                <img class="tps-logo-for-dark" src="~/theme/images/TechProcessSolutions-logo_White.svg" alt="TechProcess Solutions" />
             </a>
             <ul class="lp-nav__links">
                 <li><a href="#features">Features</a></li>
@@ -35,6 +36,16 @@
                 <button type="button" class="lp-theme" data-tps-theme-toggle aria-label="Switch to dark mode">
                     <i class="ri-moon-clear-line" data-tps-theme-icon></i>
                 </button>
+                <div class="tps-color-pop">
+                    <button type="button" class="lp-theme tps-color-button" data-tps-color-pop-toggle
+                            aria-haspopup="true" aria-expanded="false" aria-label="Theme color" title="Theme color">
+                        <i class="ri-palette-line"></i>
+                        <span class="tps-color-button__dot" aria-hidden="true"></span>
+                    </button>
+                    <div class="tps-color-pop__panel tps-color-menu" role="dialog" aria-label="Theme color">
+                        <partial name="_ThemeColorPanel" />
+                    </div>
+                </div>
                 <a href="/users/login" class="lp-btn lp-btn--light lp-btn--sm">
                     <i class="ri-login-box-line"></i> Sign in
                 </a>
@@ -193,7 +204,7 @@
                     <h2>Ready to review your pipeline?</h2>
                     <p>Sign in with your TPS work email. Need an account? Ask your HR administrator.</p>
                 </div>
-                <a href="/users/login" class="lp-btn lp-btn--light">
+                <a href="/users/login" class="lp-btn lp-btn--primary">
                     Sign in to your workspace <i class="ri-arrow-right-line"></i>
                 </a>
             </div>

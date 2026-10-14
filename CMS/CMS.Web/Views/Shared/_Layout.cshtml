@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Identity;
+@using Microsoft.AspNetCore.Identity;
 @inject SignInManager<IdentityUser> SignInManager
 @inject UserManager<IdentityUser> UserManager
 @{
@@ -30,6 +30,20 @@
     <script src="~/js/tps-theme-init.js" asp-append-version="true"></script>
     <!-- Layout config Js -->
     <script src="~/theme/js/layout.js"></script>
+    <script>
+        // app.js collapses the sidebar to icons on 768-1024px wide windows (laptops with display
+        // scaling), but only after the page has painted with the full sidebar, so the menu visibly
+        // collapsed on every page. Apply the same rule before the first paint. Only once Velzon's
+        // attribute snapshot exists: on the first page app.js takes that snapshot from <html>, and
+        // it must hold the server's value or layout.js reloads every following page.
+        (function () {
+            var html = document.documentElement;
+            try { if (!sessionStorage.getItem("defaultAttribute")) return; } catch (e) { return; }
+            if (html.getAttribute("data-layout") !== "vertical") return;
+            var w = html.clientWidth;
+            if (w > 767 && w < 1025) html.setAttribute("data-sidebar-size", "sm");
+        })();
+    </script>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -91,6 +105,19 @@
                                     data-tps-theme-toggle aria-label="Switch to dark mode" title="Switch to dark mode">
                                 <i class="ri-moon-clear-line fs-20" data-tps-theme-icon></i>
                             </button>
+                        </div>
+
+                        <!-- Brand color: any color, kept in Light and Dark mode (tps-ui.js) -->
+                        <div class="dropdown ms-1 header-item">
+                            <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle tps-color-button" id="tps-color-button"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false"
+                                    aria-label="Theme color" title="Theme color">
+                                <i class="ri-palette-line fs-20"></i>
+                                <span class="tps-color-button__dot" aria-hidden="true"></span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end tps-color-menu" aria-labelledby="tps-color-button">
+                                <partial name="_ThemeColorPanel" />
+                            </div>
                         </div>
 
 
@@ -349,7 +376,8 @@
    <!-- LOGO -->
 <div class="navbar-brand-box">
     <a href="@homeUrl" class="tps-brand" aria-label="Candidate Management System home">
-        <img style="width: 200px;height: 45px;" src="/theme/images/TechProcessSolutions-logo_White.svg" alt="" height="17">
+        <img class="tps-logo-for-light" style="width: 200px;height: 45px;" src="/theme/images/TechProcessSolutions-logo_grey.svg" alt="TechProcess Solutions" height="17">
+        <img class="tps-logo-for-dark" style="width: 200px;height: 45px;" src="/theme/images/TechProcessSolutions-logo_White.svg" alt="TechProcess Solutions" height="17">
     </a>
     <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover" aria-label="Pin sidebar">
         <i class="ri-record-circle-line"></i>
@@ -428,6 +456,30 @@
             </div>
 
             <div class="sidebar-background"></div>
+            <script>
+                // Put the menu at its scroll position now, before the browser can paint it.
+                // The scripts at the end of <body> run too late: on screens where the menu
+                // overflows (laptops), it was painted at the top first and then jumped.
+                // Must stay after the footer: the footer sets the menu's final height.
+                // #scrollbar scrolls natively until SimpleBar takes over (tps-design.css);
+                // tps-ui.js moves this position into SimpleBar's scroller.
+                (function () {
+                    var host = document.getElementById("scrollbar");
+                    if (!host || host.scrollHeight <= host.clientHeight) return;
+                    var y = NaN;
+                    try { y = parseInt(sessionStorage.getItem("tps-sidebar-scroll"), 10); } catch (e) { }
+                    if (isNaN(y)) {
+                        // No saved position (new tab, or Velzon cleared storage): show the active item.
+                        var active = host.querySelector(".nav-link.active");
+                        if (!active) return;
+                        var box = host.getBoundingClientRect(), item = active.getBoundingClientRect();
+                        if (item.bottom <= box.bottom) return;
+                        y = item.top - box.top - (box.height - item.height) / 2;
+                    }
+                    host.scrollTop = y;
+                    window.__tpsSidebarTarget = host.scrollTop;
+                })();
+            </script>
         </div>
         <!-- Left Sidebar End -->
         <!-- Vertical Overlay-->
@@ -499,12 +551,10 @@
         }
     }
 
-    <!-- App js -->
+    <!-- App js, then shared UI (restores the menu before the Tom Select download) -->
     <script src="~/theme/js/app.js" asp-append-version="true"></script>
-
-    <!-- Searchable selects + theme switcher + shared UI -->
-    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
     <script src="~/js/tps-ui.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
 
 
@@ -723,9 +773,7 @@
             yearElement.textContent = currentYear;
         }
 
-        // Update the year when the page loads and then set up a timer to update it annually.
         updateYear();
-        setInterval(updateYear, 1000); // Update every second (adjust as needed)
     </script>
 
     @* Request loading is handled by ~/js/tps-loader.js (loaded in <head>). *@
@@ -748,4 +796,4 @@
     </script>
 
 </body>
-</html>
+</html>

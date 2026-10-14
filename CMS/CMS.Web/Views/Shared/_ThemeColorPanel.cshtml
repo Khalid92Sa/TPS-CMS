@@ -1,0 +1,12 @@
+@* Brand color picker contents. Wired up by ~/js/tps-ui.js (data-tps-color-*), styled in tps-components.css.
+   Used in the app topbar dropdown (_Layout) and the popover on the sign-in and landing pages. *@
+<h6 class="tps-color-menu__title">Theme color</h6>
+<div class="tps-color-menu__row">
+    <input type="color" class="tps-color-menu__swatch" value="#2856c8" data-tps-color-input aria-label="Pick a theme color" />
+    <input type="text" class="tps-color-menu__hex" value="#2856c8" maxlength="7"
+           spellcheck="false" autocomplete="off" data-tps-color-hex aria-label="Theme color hex code" />
+</div>
+<p class="tps-color-menu__hint">Colors the side menu, the sign-in panel, buttons, links and highlights. Adjusted for contrast in Light and Dark mode.</p>
+<button type="button" class="tps-color-menu__reset" data-tps-color-reset>
+    <i class="ri-restart-line"></i> Reset to default
+</button>
