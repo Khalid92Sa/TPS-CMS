@@ -104,8 +104,7 @@
     /* Text on a solid --tps-primary fill (buttons, active page, chips) */
     --tps-on-primary: #fff;
 
-    /* Wordmark variant, as display values: color logo on light surfaces, white on dark.
-       Page chrome, sidebar and sign-in panel can differ once a brand color is picked. */
+    /* Wordmark follows Light/Dark only. The color picker does not swap it. */
     --tps-logo-color: block;
     --tps-logo-white: none;
     --tps-side-logo-color: block;
@@ -426,17 +425,15 @@ table, .table, .counter-value, .tps-num { font-variant-numeric: tabular-nums; }
 .tps-brand__text { display: flex; flex-direction: column; min-width: 0; gap: 0.15rem; }
 .tps-brand__name { color: var(--tps-side-text-strong); font-family: var(--tps-font-display); font-weight: 700; font-size: 0.88rem; }
 
-/* White wordmark on dark surfaces, color wordmark on light ones (see --tps-*logo-* tokens) */
+/* Grey wordmark in Light mode, white wordmark in Dark mode. */
 .tps-logo-for-light { display: var(--tps-logo-color) !important; }
 .tps-logo-for-dark { display: var(--tps-logo-white) !important; }
-.app-menu .tps-logo-for-light { display: var(--tps-side-logo-color) !important; }
-.app-menu .tps-logo-for-dark { display: var(--tps-side-logo-white) !important; }
-.tps-auth__brand .tps-logo-for-light { display: var(--tps-panel-logo-color) !important; }
-.tps-auth__brand .tps-logo-for-dark { display: var(--tps-panel-logo-white) !important; }
-/* On a picked brand color the multi-color wordmark loses contrast, so it is drawn in one
-   color (white or ink) through --tps-logo-filter; "none" keeps the original artwork. */
-.app-menu .navbar-brand-box img { filter: var(--tps-side-logo-filter, none); }
-.tps-auth__brand .tps-auth__logo img { filter: var(--tps-panel-logo-filter, none); }
+.app-menu .tps-logo-for-light { display: var(--tps-logo-color) !important; }
+.app-menu .tps-logo-for-dark { display: var(--tps-logo-white) !important; }
+.tps-auth__brand .tps-logo-for-light { display: var(--tps-logo-color) !important; }
+.tps-auth__brand .tps-logo-for-dark { display: var(--tps-logo-white) !important; }
+.app-menu .navbar-brand-box img,
+.tps-auth__brand .tps-auth__logo img { filter: none; }
 
 .app-menu .navbar-brand-box .btn { color: var(--tps-side-section); }
 .app-menu .navbar-brand-box .btn:hover { color: var(--tps-side-text-strong); }

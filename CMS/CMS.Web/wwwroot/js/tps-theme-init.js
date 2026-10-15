@@ -112,15 +112,12 @@
     // pair with a minimum contrast, so any picked color stays readable.
     function chrome(bg) {
         var on = contrast(WHITE, bg) >= contrast(INK, bg) ? WHITE : INK;
-        var light = on === INK; // light surface: color wordmark, dark text
+        var light = on === INK;
         // Menu text a little softer than headings when there is room, never below 4.5:1.
         var text = reach(mix(on, bg, 0.16), on, bg, Math.max(4.5, Math.min(7, contrast(on, bg) * 0.85)));
         var muted = reach(mix(on, bg, 0.42), on, bg, 4.5);
         var border = mix(bg, on, 0.14);
         var a = function (alpha) { return "rgba(" + rgb(on) + "," + alpha + ")"; };
-        var logoColor = light ? "block" : "none", logoWhite = light ? "none" : "block";
-        // One-color wordmark: the multi-color artwork does not hold up on every brand color.
-        var logoFilter = light ? "brightness(0) opacity(0.86)" : "brightness(0) invert(1)";
         return "--tps-side-bg:" + hex(bg) + ";" +
             "--tps-side-border:" + hex(border) + ";" +
             "--tps-side-text:" + hex(text) + ";" +
@@ -129,9 +126,6 @@
             "--tps-side-hover:" + a(0.08) + ";" +
             "--tps-side-active:" + a(0.16) + ";" +
             "--tps-side-active-bar:" + hex(on) + ";" +
-            "--tps-side-logo-color:" + logoColor + ";" +
-            "--tps-side-logo-white:" + logoWhite + ";" +
-            "--tps-side-logo-filter:" + logoFilter + ";" +
             "--tps-panel-bg:" + hex(bg) + ";" +
             "--tps-panel-glow-1:rgba(255,255,255," + (light ? 0.4 : 0.14) + ");" +
             "--tps-panel-glow-2:rgba(0,0,0," + (light ? 0.06 : 0.18) + ");" +
@@ -144,10 +138,7 @@
             "--tps-panel-accent-2:" + hex(on) + ";" +
             "--tps-panel-card-bg:" + a(0.08) + ";" +
             "--tps-panel-card-border:" + a(0.18) + ";" +
-            "--tps-panel-card-text:" + hex(on) + ";" +
-            "--tps-panel-logo-color:" + logoColor + ";" +
-            "--tps-panel-logo-white:" + logoWhite + ";" +
-            "--tps-panel-logo-filter:" + logoFilter + ";";
+            "--tps-panel-card-text:" + hex(on) + ";";
     }
 
     function css(picked) {
