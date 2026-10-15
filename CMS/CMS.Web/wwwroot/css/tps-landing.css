@@ -74,6 +74,7 @@ body.tps-landing {
         radial-gradient(800px 480px at -8% 108%, rgba(var(--tps-accent-rgb), 0.12), transparent 62%),
         var(--tps-bg);
     color: var(--tps-text);
+    padding-top: 4.75rem;
     padding-bottom: clamp(3rem, 7vw, 6rem);
     overflow: hidden;
 }
@@ -92,12 +93,23 @@ body.tps-landing {
 
 .lp-hero > * { position: relative; }
 
+.lp-nav-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--tps-bg) 88%, transparent);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--tps-border);
+}
+
 .lp-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1.5rem;
-    padding-block: 1.25rem;
+    padding-block: 0.85rem;
 }
 
 .lp-nav__logo img { height: 36px; width: auto; display: block; }
@@ -325,6 +337,31 @@ body.tps-landing {
 #workflow .lp-eyebrow { color: var(--tps-primary); }
 html:root:not([data-bs-theme=dark]) #workflow-title { color: #0b1220; }
 
+#home,
+#about,
+#features { scroll-margin-top: 5.5rem; }
+
+.lp-about__points {
+    list-style: none;
+    margin: 0 auto;
+    padding: 0;
+    max-width: 900px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.lp-about__points li {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--tps-heading);
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+.lp-about__points i { color: var(--tps-primary); font-size: 1.1rem; }
+
 /* Features */
 .lp-features {
     display: grid;
@@ -495,6 +532,7 @@ html:root:not([data-bs-theme=dark]) #workflow-title { color: #0b1220; }
 @media (max-width: 991.98px) {
     .lp-hero__body { grid-template-columns: 1fr; }
     .lp-preview { transform: none; max-width: 640px; }
+    .lp-about__points { grid-template-columns: 1fr; }
     .lp-features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .lp-roles { grid-template-columns: 1fr; }
 }

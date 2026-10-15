@@ -21,14 +21,15 @@
 </head>
 <body class="tps-landing">
 
-    <!-- ========== Hero ========== -->
-    <header class="lp-hero">
+    <div class="lp-nav-bar">
         <nav class="lp-nav lp-wrap" aria-label="Main">
             <a href="/" class="lp-nav__logo">
                 <img class="tps-logo-for-light" src="~/theme/images/TechProcessSolutions-logo_grey.svg" alt="TechProcess Solutions" />
                 <img class="tps-logo-for-dark" src="~/theme/images/TechProcessSolutions-logo_White.svg" alt="TechProcess Solutions" />
             </a>
             <ul class="lp-nav__links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
                 <li><a href="#features">Features</a></li>
             </ul>
             <div class="lp-nav__end">
@@ -50,7 +51,10 @@
                 </a>
             </div>
         </nav>
+    </div>
 
+    <!-- ========== Hero ========== -->
+    <header class="lp-hero" id="home">
         <div class="lp-hero__body lp-wrap">
             <div class="lp-hero__copy">
                 <p class="lp-eyebrow">Candidate Management System</p>
@@ -114,6 +118,25 @@
     </header>
 
     <main>
+        <!-- ========== About ========== -->
+        <section class="lp-section lp-wrap" id="about" aria-labelledby="about-title">
+            <div class="lp-section__head">
+                <p class="lp-eyebrow lp-eyebrow--dark">About</p>
+                <h2 id="about-title">One workspace for how TPS hires</h2>
+                <p>
+                    The Candidate Management System is the recruitment record for TechProcess Solutions.
+                    HR, interviewers, architects and managers follow the same candidate from first contact
+                    to a recorded decision. Stages have a named owner, access follows each person's role,
+                    and evaluations stay on the candidate.
+                </p>
+            </div>
+            <ul class="lp-about__points">
+                <li><i class="ri-building-2-line"></i> Built for TechProcess Solutions staff</li>
+                <li><i class="ri-route-line"></i> Structured stages with a clear owner</li>
+                <li><i class="ri-lock-2-line"></i> Each role sees only its own work</li>
+            </ul>
+        </section>
+
         <!-- ========== Features ========== -->
         <section class="lp-section lp-wrap" id="features" aria-labelledby="features-title">
             <div class="lp-section__head">
