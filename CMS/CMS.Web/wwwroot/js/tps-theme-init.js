@@ -212,5 +212,8 @@
 
     window.TPSBrand = { KEY: KEY, DEFAULT: "#2856c8", parse: parse, hex: hex, read: read, apply: apply, save: save };
 
-    apply(read());
+    // The color picker is gone. Drop any color still saved in this browser
+    // so the default palette is what the page shows.
+    try { localStorage.removeItem(KEY); } catch (e) { }
+    apply(null);
 })();

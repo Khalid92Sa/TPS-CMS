@@ -107,20 +107,6 @@
                             </button>
                         </div>
 
-                        <!-- Brand color: any color, kept in Light and Dark mode (tps-ui.js) -->
-                        <div class="dropdown ms-1 header-item">
-                            <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle tps-color-button" id="tps-color-button"
-                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false"
-                                    aria-label="Theme color" title="Theme color">
-                                <i class="ri-palette-line fs-20"></i>
-                                <span class="tps-color-button__dot" aria-hidden="true"></span>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-end tps-color-menu" aria-labelledby="tps-color-button">
-                                <partial name="_ThemeColorPanel" />
-                            </div>
-                        </div>
-
-
                         @if (User.IsInRole("General Manager"))
                         {
                             <script>
